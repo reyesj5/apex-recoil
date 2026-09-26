@@ -8,5 +8,9 @@ jupyterlab = "*"
 seaborn = "*"
 matplotlib = "*"
 numpy = "*"
+opencv-python = "*"
+scipy = "*"
+tabulate = "*"
 
 [dev-packages]
+pytest = "*"

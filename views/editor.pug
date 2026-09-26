@@ -17,42 +17,145 @@ extends layout
 block content
   #editor
     #tools
-      input(type="file" id="file-selector" multiple)
-      p#filename
-      p
-        input(type='text' id='threshold')
-        | threshold
-      p
-        input(type='checkbox' id='auto-targets')
-        | auto targets
-      p
-        input(type='text' id='target-from')
-        | target from
-      p
-        input(type='text' id='target-to')
-        | target to
-      button#accept-auto convert auto
-      p
-        input(type='checkbox' id='enable-threshold')
-        | enable threshold
-      p
-        input(type='checkbox' id='connect-hover')
-        | connect on hover
-      p
-        input(type='text' id='weapon')
-        | weapon
-      p
-        input(type='text' id='barrel')
-        | barrel (0..3)
-      p
-        input(type='text' id='stock')
-        | stock (0..3)
-      p
-        input(type='text' id='distance')
-        | raw distance
-      p comment
-        textarea#comment(cols="30", rows="2")
-      button#clear clear
-      p#count
-      #text
+      .nav-bar
+        a(href="/" class="back-link") ← Back to Trainer
+        h2 Recoil Editor & Manager
+      
+      .manager-section
+        h3 Weapon Specs Manager
+        .form-group
+          label(for="weapon-select") Select Weapon:
+          select#weapon-select
+        
+        .form-row
+          .form-group
+            label(for="weapon-rpm") RPM:
+            input(type="number" id="weapon-rpm" step="1" min="100" max="1500")
+          .form-group
+            label(for="weapon-multiplier") Multiplier:
+            input(type="number" id="weapon-multiplier" step="0.01" min="0.1" max="2.0")
+        
+        .mags-group
+          label Magazine Sizes (Tiers 0 - 4):
+          .mags-row
+            .mag-col
+              span.tier-badge.tier-0 Base
+              input(type="number" id="mag-0" min="1" max="100")
+            .mag-col
+              span.tier-badge.tier-1 L1
+              input(type="number" id="mag-1" min="1" max="100")
+            .mag-col
+              span.tier-badge.tier-2 L2
+              input(type="number" id="mag-2" min="1" max="100")
+            .mag-col
+              span.tier-badge.tier-3 L3
+              input(type="number" id="mag-3" min="1" max="100")
+            .mag-col
+              span.tier-badge.tier-4(title="Corrupted Magazine") Corrupted
+              input(type="number" id="mag-4" min="1" max="100")
+
+        .spec-stats
+          span#spec-shot-info Shots: 0
+          span#spec-interval-info Interval: 0 ms
+
+        .action-row
+          button#save-weapon-btn.primary-btn 💾 Save to specs.json
+          button#reload-specs-btn.secondary-btn 🔄 Reload
+        
+        #save-status-msg
+
+        details.json-drawer
+          summary 📋 Paste / Import Discovery JSON
+          textarea#json-import(rows="4" placeholder="Paste discovery spec JSON here...")
+          button#apply-json-btn.small-btn Apply to Selected Weapon
+
+      hr.divider
+
+      .capture-studio-section
+        h3 🎥 In-Game Auto-Capture Studio
+        p.section-desc Hands-free spray capture: auto-records when you shoot in Apex Firing Range.
+        
+        .capture-controls
+          .action-row
+            button#start-capture-btn.primary-btn(type="button") 🔴 Connect Game Window
+            button#stop-capture-btn.danger-btn.hidden(type="button") ⏹ Disconnect
+            button#manual-record-btn.secondary-btn.hidden(type="button") ⏺ Manual Spray
+        
+        #capture-status-bar.status-bar
+          span#capture-status-badge.badge.badge-off Not Connected
+          span#trigger-status-badge.badge.badge-off Trigger Idle
+
+        .monitor-panel#monitor-panel.hidden
+          .video-container
+            video#capture-preview-video(autoplay muted playsinline)
+            #rec-indicator.rec-indicator.hidden ● REC
+          .audio-meter-wrap
+            .meter-header
+              span Gunfire Audio Sensor:
+              span#audio-level-text 0%
+            .meter-bar
+              #audio-level-fill.meter-fill
+              #trigger-threshold-line.meter-threshold-line
+            .threshold-control
+              label(for="trigger-threshold-slider") Trigger Sensitivity:
+              input(type="range" id="trigger-threshold-slider" min="5" max="80" value="25")
+        
+        .samples-manager
+          .samples-header
+            span#samples-counter-label Collected Samples (0)
+            button#clear-samples-btn.small-btn(type="button") 🗑 Clear All
+          
+          #samples-list.samples-list
+            p#no-samples-msg.empty-msg No sprays recorded yet. Connect your game window and fire your weapon!
+          
+          .session-actions
+            button#process-session-btn.primary-btn(type="button" disabled) ⚡ Analyze Sprays & Calculate Recoil
+            #session-process-status
+
+      hr.divider
+
+      .trace-section
+        h3 Image Pattern Extraction (Legacy / Fine-tune)
+        input(type="file" id="file-selector" multiple)
+        p#filename
+        .form-row
+          .form-group
+            label Threshold:
+            input(type='text' id='threshold')
+          .form-group
+            label Distance:
+            input(type='text' id='distance')
+        .form-row
+          label
+            input(type='checkbox' id='auto-targets')
+            | auto targets
+          label
+            input(type='checkbox' id='enable-threshold')
+            | threshold
+          label
+            input(type='checkbox' id='connect-hover')
+            | connect hover
+        .form-row
+          .form-group
+            label Target From:
+            input(type='text' id='target-from')
+          .form-group
+            label Target To:
+            input(type='text' id='target-to')
+        .action-row
+          button#accept-auto.small-btn convert auto
+          button#clear.small-btn clear
+        
+        .form-row
+          .form-group
+            label Barrel (0..3):
+            input(type='text' id='barrel')
+          .form-group
+            label Stock (0..3):
+            input(type='text' id='stock')
+        
+        p Comment:
+          textarea#comment(cols="30", rows="2")
+        p#count
+        #text
     #stage

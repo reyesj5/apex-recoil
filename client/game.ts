@@ -441,8 +441,11 @@ function weaponControls() {
     d.classList.add('selected');
     const w = selectedWeapon();
     console.log('mags', w.mags.length);
-    for (let i = 0; i <= 3; i++) {
-      setClass(document.querySelector(`#mag-select .mag-${i}`), 'hidden', w.mags.length == 1);
+    for (let i = 0; i <= 4; i++) {
+      const magElem = document.querySelector(`#mag-select .mag-${i}`) as HTMLElement | null;
+      if (magElem) {
+        setClass(magElem, 'hidden', w.mags.length == 1 || i >= w.mags.length);
+      }
     }
     setClass(document.querySelector(`#mag-select .mag-drop`), 'hidden', w.mags.length != 1);
     document.querySelectorAll(".mod").forEach(e => {
@@ -454,12 +457,10 @@ function weaponControls() {
       setClass(document.querySelector(`.mod-${v}`), 'hidden', false);
     }
   });
-  for (let i = 0; i <= 3; i++) {
+  for (let i = 0; i <= 4; i++) {
     const d = document.querySelector(`#mag-select .mag-${i}`) as HTMLDivElement;
     if (d != null) {
       d.addEventListener('click', () => aMag.set(i));
-    } else {
-      console.error(`#mag-select .mag-${i}`, 'not found');
     }
   }
   aMag.watch((v: number) => {

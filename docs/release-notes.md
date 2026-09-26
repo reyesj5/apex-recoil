@@ -1,3 +1,11 @@
+# v260922
+
+- **Corrupted Magazine (Tier 4 / Red Magazine)**: Full support across all magazine selectors, weapon specs, editor UI, and English, Russian, and Chinese translations.
+- **In-Game Auto-Capture Studio (`/editor`)**: Hands-free window capture studio for Apex Legends. Features an acoustic gunfire sensor to auto-trigger spray recording, embedded sample video player, 1-click sample discard, slot re-recording, and batch analysis.
+- **Web UI Weapon Manager (`/editor`)**: Visual editor dashboard to quickly tune weapon RPM, multiplier, and magazine tiers with direct API saving and automated `.bak` backups.
+- **Automated Video Discovery Engine**: Python pipeline in `processing/recoil_discovery` that automatically discovers rate of fire (RPM), shot count, and chronological bullet decals from video clips without manual lookup.
+- **Server Port Fallback**: Express server automatically falls back to port 3001 if port 3000 is in use by other background dev services.
+
 # v240915
 
 - Added splash screen about current state of the project;

@@ -69,6 +69,15 @@ function onError(error) {
       process.exit(1);
       break;
     case 'EADDRINUSE':
+      if (!process.env.PORT && typeof port === 'number' && port < 3010) {
+        console.warn(bind + ' is already in use. Retrying on port ' + (port + 1) + '...');
+        port++;
+        app.set('port', port);
+        setTimeout(function () {
+          server.listen(port);
+        }, 100);
+        return;
+      }
       console.error(bind + ' is already in use');
       process.exit(1);
       break;
@@ -86,5 +95,6 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
+  console.log('Apex Recoil server running at http://localhost:' + addr.port);
   debug('Listening on ' + bind);
 }

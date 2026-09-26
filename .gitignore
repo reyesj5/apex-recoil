@@ -62,3 +62,35 @@ typings/
 
 # next.js build output
 .next
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Recoil Discovery generated plots & temporary outputs
+diff_*.png
+*_trial.json
+*_aggregated_spec.json
+*_test_spec.json
+*.json.bak
+*.bak
+
+# Operating System
+.DS_Store
+Thumbs.db

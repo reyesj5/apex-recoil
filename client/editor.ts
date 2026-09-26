@@ -58,6 +58,7 @@ export function setupEditor() {
   setupControls();
   initImage();
   loadSpecs();
+  initWeaponManagerUI();
   aComment.watch((v: string) => {
     const comment = document.getElementById('comment');
     if (comment != null) (comment as HTMLTextAreaElement).value = v;
@@ -423,3 +424,729 @@ function setText(t: string) {
     c.innerText = t;
   }
 }
+
+let loadedSpecsList: any[] = JSON.parse(JSON.stringify(specs));
+
+function initWeaponManagerUI() {
+  const sel = document.getElementById('weapon-select') as HTMLSelectElement | null;
+  if (!sel) return;
+
+  const populateDropdown = () => {
+    sel.innerHTML = '';
+    loadedSpecsList.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.name;
+      opt.text = s.name.toUpperCase();
+      sel.appendChild(opt);
+    });
+  };
+
+  populateDropdown();
+
+  sel.addEventListener('change', () => {
+    loadWeaponIntoManager(sel.value);
+  });
+
+  document.getElementById('save-weapon-btn')?.addEventListener('click', saveCurrentWeaponSpec);
+  document.getElementById('reload-specs-btn')?.addEventListener('click', reloadSpecsFromServer);
+  document.getElementById('apply-json-btn')?.addEventListener('click', applyJsonToWeapon);
+
+  initGameCaptureStudio();
+
+  // Load initial weapon
+  if (loadedSpecsList.length > 0) {
+    loadWeaponIntoManager(loadedSpecsList[0].name);
+  }
+}
+
+function loadWeaponIntoManager(name: string) {
+  const w = loadedSpecsList.find(s => s.name === name);
+  if (!w) return;
+
+  const rpmInput = document.getElementById('weapon-rpm') as HTMLInputElement | null;
+  const multInput = document.getElementById('weapon-multiplier') as HTMLInputElement | null;
+  const mag0 = document.getElementById('mag-0') as HTMLInputElement | null;
+  const mag1 = document.getElementById('mag-1') as HTMLInputElement | null;
+  const mag2 = document.getElementById('mag-2') as HTMLInputElement | null;
+  const mag3 = document.getElementById('mag-3') as HTMLInputElement | null;
+  const mag4 = document.getElementById('mag-4') as HTMLInputElement | null;
+  const shotInfo = document.getElementById('spec-shot-info');
+  const intervalInfo = document.getElementById('spec-interval-info');
+  const statusMsg = document.getElementById('save-status-msg');
+
+  if (rpmInput) rpmInput.value = String(w.rpm || 600);
+  if (multInput) multInput.value = String(w.multiplier || 0.73);
+
+  const mags = w.mags || [];
+  if (mag0) mag0.value = mags[0] ? String(mags[0].size) : '';
+  if (mag1) mag1.value = mags[1] ? String(mags[1].size) : (mags[0] ? String(mags[0].size) : '');
+  if (mag2) mag2.value = mags[2] ? String(mags[2].size) : '';
+  if (mag3) mag3.value = mags[3] ? String(mags[3].size) : (mags[mags.length - 1] ? String(mags[mags.length - 1].size) : '');
+  if (mag4) mag4.value = mags[4] ? String(mags[4].size) : '';
+
+  const shotCount = w.x ? w.x.length : 0;
+  if (shotInfo) shotInfo.innerText = `Shots: ${shotCount}`;
+  const interval = w.rpm ? Math.round(60000 / w.rpm) : 0;
+  if (intervalInfo) intervalInfo.innerText = `Interval: ${interval} ms`;
+
+  if (statusMsg) {
+    statusMsg.innerText = '';
+    statusMsg.className = '';
+  }
+
+  displayWeaponOnCanvas(w);
+}
+
+function displayWeaponOnCanvas(w: any) {
+  clear();
+  if (w && w.x && w.y) {
+    const minLen = Math.min(w.x.length, w.y.length);
+    const startX = window.innerWidth / 2;
+    const startY = window.innerHeight * 0.75;
+    for (let i = 0; i < minLen; i++) {
+      addPoint({ x: startX + w.x[i] * 1.5, y: startY + w.y[i] * 1.5 }, `${i}`);
+      if (i > 0) {
+        addEdge(`${i - 1}`, `${i}`);
+      }
+    }
+    updateShapes();
+    stage.batchDraw();
+  }
+}
+
+function saveCurrentWeaponSpec() {
+  const sel = document.getElementById('weapon-select') as HTMLSelectElement | null;
+  const statusMsg = document.getElementById('save-status-msg');
+  if (!sel) return;
+
+  const name = sel.value;
+  const w = loadedSpecsList.find(s => s.name === name);
+  if (!w) return;
+
+  const rpmInput = document.getElementById('weapon-rpm') as HTMLInputElement | null;
+  const multInput = document.getElementById('weapon-multiplier') as HTMLInputElement | null;
+  const mag0 = document.getElementById('mag-0') as HTMLInputElement | null;
+  const mag1 = document.getElementById('mag-1') as HTMLInputElement | null;
+  const mag2 = document.getElementById('mag-2') as HTMLInputElement | null;
+  const mag3 = document.getElementById('mag-3') as HTMLInputElement | null;
+  const mag4 = document.getElementById('mag-4') as HTMLInputElement | null;
+
+  const newRpm = rpmInput ? Number(rpmInput.value) : (w.rpm || 600);
+  const newMult = multInput ? Number(multInput.value) : (w.multiplier || 0.73);
+
+  const mags = [];
+  if (mag0 && mag0.value) mags.push({ size: Number(mag0.value), audio: `${name}_${mag0.value}` });
+  if (mag1 && mag1.value) mags.push({ size: Number(mag1.value), audio: `${name}_${mag1.value}` });
+  if (mag2 && mag2.value) mags.push({ size: Number(mag2.value), audio: `${name}_${mag2.value}` });
+  if (mag3 && mag3.value) mags.push({ size: Number(mag3.value), audio: `${name}_${mag3.value}` });
+  if (mag4 && mag4.value) mags.push({ size: Number(mag4.value), audio: `${name}_${mag4.value}` });
+
+  w.rpm = newRpm;
+  w.multiplier = newMult;
+  if (mags.length > 0) w.mags = mags;
+
+  // Recalculate time points based on updated RPM
+  const interval = 60000 / newRpm;
+  w.time_points = (w.x || []).map((_: any, idx: number) => Math.round(idx * interval));
+
+  if (statusMsg) {
+    statusMsg.innerText = 'Saving...';
+    statusMsg.className = '';
+  }
+
+  fetch('/api/specs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ weapon: w })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      if (statusMsg) {
+        statusMsg.innerText = `✅ Saved ${name.toUpperCase()} to specs.json!`;
+        statusMsg.className = 'success';
+      }
+      loadWeaponIntoManager(name);
+    } else {
+      if (statusMsg) {
+        statusMsg.innerText = `❌ Error: ${data.error || 'Failed to save'}`;
+        statusMsg.className = 'error';
+      }
+    }
+  })
+  .catch(err => {
+    if (statusMsg) {
+      statusMsg.innerText = `❌ Request failed: ${err.message}`;
+      statusMsg.className = 'error';
+    }
+  });
+}
+
+function reloadSpecsFromServer() {
+  const statusMsg = document.getElementById('save-status-msg');
+  if (statusMsg) {
+    statusMsg.innerText = 'Reloading specs from server...';
+    statusMsg.className = '';
+  }
+
+  fetch('/api/specs')
+    .then(res => res.json())
+    .then(data => {
+      if (Array.isArray(data)) {
+        loadedSpecsList = data;
+        const sel = document.getElementById('weapon-select') as HTMLSelectElement | null;
+        if (sel) {
+          const curr = sel.value;
+          sel.innerHTML = '';
+          loadedSpecsList.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.name;
+            opt.text = s.name.toUpperCase();
+            if (s.name === curr) opt.selected = true;
+            sel.appendChild(opt);
+          });
+          loadWeaponIntoManager(sel.value);
+        }
+        if (statusMsg) {
+          statusMsg.innerText = '✅ Reloaded specs successfully!';
+          statusMsg.className = 'success';
+        }
+      }
+    })
+    .catch(err => {
+      if (statusMsg) {
+        statusMsg.innerText = `❌ Reload failed: ${err.message}`;
+        statusMsg.className = 'error';
+      }
+    });
+}
+
+function applyJsonToWeapon() {
+  const jsonText = (document.getElementById('json-import') as HTMLTextAreaElement | null)?.value;
+  const statusMsg = document.getElementById('save-status-msg');
+  if (!jsonText) return;
+
+  try {
+    const parsed = JSON.parse(jsonText);
+    const sel = document.getElementById('weapon-select') as HTMLSelectElement | null;
+    const name = sel?.value;
+    if (!name) return;
+    const w = loadedSpecsList.find(s => s.name === name);
+    if (!w) return;
+
+    if (parsed.x && parsed.y) {
+      w.x = parsed.x;
+      w.y = parsed.y;
+    }
+    if (parsed.rpm) w.rpm = parsed.rpm;
+    if (parsed.time_points) w.time_points = parsed.time_points;
+    if (parsed.mags) w.mags = parsed.mags;
+
+    loadWeaponIntoManager(name);
+    if (statusMsg) {
+      statusMsg.innerText = `✅ Applied JSON to ${name.toUpperCase()}! Click 'Save' to persist.`;
+      statusMsg.className = 'success';
+    }
+  } catch (e) {
+    if (statusMsg) {
+      statusMsg.innerText = '❌ Invalid JSON format!';
+      statusMsg.className = 'error';
+    }
+  }
+}
+
+interface RecordedSample {
+  id: string;
+  name: string;
+  blob: Blob;
+  objectUrl: string;
+  durationSec: number;
+  timestamp: Date;
+}
+
+let captureStream: MediaStream | null = null;
+let audioCtx: AudioContext | null = null;
+let analyser: AnalyserNode | null = null;
+let mediaRecorder: MediaRecorder | null = null;
+let recordedChunks: Blob[] = [];
+let isRecordingSpray = false;
+let sprayStartTime = 0;
+let lastGunfireTime = 0;
+let audioMonitorTimer: any = null;
+const silenceThresholdMs = 450;
+let reRecordSlotIndex: number | null = null;
+const capturedSamples: RecordedSample[] = [];
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function initGameCaptureStudio() {
+  const startBtn = document.getElementById('start-capture-btn');
+  const stopBtn = document.getElementById('stop-capture-btn');
+  const manualBtn = document.getElementById('manual-record-btn');
+  const clearBtn = document.getElementById('clear-samples-btn');
+  const processBtn = document.getElementById('process-session-btn');
+  const thresholdSlider = document.getElementById('trigger-threshold-slider') as HTMLInputElement | null;
+  const thresholdLine = document.getElementById('trigger-threshold-line') as HTMLDivElement | null;
+
+  if (thresholdSlider && thresholdLine) {
+    thresholdSlider.addEventListener('input', () => {
+      thresholdLine.style.left = `${thresholdSlider.value}%`;
+    });
+    thresholdLine.style.left = `${thresholdSlider.value}%`;
+  }
+
+  startBtn?.addEventListener('click', startGameCapture);
+  stopBtn?.addEventListener('click', stopGameCapture);
+  manualBtn?.addEventListener('click', toggleManualRecord);
+  clearBtn?.addEventListener('click', clearAllSamples);
+  processBtn?.addEventListener('click', processSessionSprays);
+}
+
+async function startGameCapture() {
+  const previewVideo = document.getElementById('capture-preview-video') as HTMLVideoElement | null;
+  const monitorPanel = document.getElementById('monitor-panel');
+  const startBtn = document.getElementById('start-capture-btn');
+  const stopBtn = document.getElementById('stop-capture-btn');
+  const manualBtn = document.getElementById('manual-record-btn');
+  const capBadge = document.getElementById('capture-status-badge');
+  const trigBadge = document.getElementById('trigger-status-badge');
+
+  try {
+    captureStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { displaySurface: 'window' } as any,
+      audio: true
+    });
+
+    if (previewVideo) {
+      previewVideo.srcObject = captureStream;
+      previewVideo.play().catch(() => {});
+    }
+
+    monitorPanel?.classList.remove('hidden');
+    startBtn?.classList.add('hidden');
+    stopBtn?.classList.remove('hidden');
+    manualBtn?.classList.remove('hidden');
+
+    if (capBadge) {
+      capBadge.innerText = '🟢 Connected to Game';
+      capBadge.className = 'badge badge-active';
+    }
+
+    captureStream.getVideoTracks().forEach(track => {
+      track.onended = () => {
+        stopGameCapture();
+      };
+    });
+
+    // Audio setup
+    const audioTracks = captureStream.getAudioTracks();
+    if (audioTracks.length > 0) {
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        const source = audioCtx.createMediaStreamSource(captureStream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        source.connect(analyser);
+
+        if (trigBadge) {
+          trigBadge.innerText = '🟡 Trigger Listening (Audio)';
+          trigBadge.className = 'badge badge-active';
+        }
+
+        startAudioMonitorLoop();
+      } catch (e) {
+        console.warn('Web Audio init error:', e);
+        if (trigBadge) {
+          trigBadge.innerText = '🟡 Audio Sensor Warning (Use Manual)';
+          trigBadge.className = 'badge badge-off';
+        }
+      }
+    } else {
+      if (trigBadge) {
+        trigBadge.innerText = '⚠️ No Audio Track (Use Manual Spray)';
+        trigBadge.className = 'badge badge-off';
+      }
+    }
+  } catch (err: any) {
+    console.error('getDisplayMedia error:', err);
+    alert('Could not start screen capture: ' + (err.message || err));
+  }
+}
+
+function stopGameCapture() {
+  if (isRecordingSpray) {
+    stopRecordingSpray();
+  }
+
+  if (audioMonitorTimer) {
+    clearInterval(audioMonitorTimer);
+    audioMonitorTimer = null;
+  }
+
+  if (audioCtx) {
+    audioCtx.close().catch(() => {});
+    audioCtx = null;
+  }
+  analyser = null;
+
+  if (captureStream) {
+    captureStream.getTracks().forEach(t => t.stop());
+    captureStream = null;
+  }
+
+  const previewVideo = document.getElementById('capture-preview-video') as HTMLVideoElement | null;
+  if (previewVideo) {
+    previewVideo.srcObject = null;
+  }
+
+  document.getElementById('monitor-panel')?.classList.add('hidden');
+  document.getElementById('start-capture-btn')?.classList.remove('hidden');
+  document.getElementById('stop-capture-btn')?.classList.add('hidden');
+  document.getElementById('manual-record-btn')?.classList.add('hidden');
+
+  const capBadge = document.getElementById('capture-status-badge');
+  const trigBadge = document.getElementById('trigger-status-badge');
+  if (capBadge) {
+    capBadge.innerText = 'Not Connected';
+    capBadge.className = 'badge badge-off';
+  }
+  if (trigBadge) {
+    trigBadge.innerText = 'Trigger Idle';
+    trigBadge.className = 'badge badge-off';
+  }
+}
+
+function startAudioMonitorLoop() {
+  if (audioMonitorTimer) clearInterval(audioMonitorTimer);
+
+  const levelFill = document.getElementById('audio-level-fill');
+  const levelText = document.getElementById('audio-level-text');
+  const thresholdSlider = document.getElementById('trigger-threshold-slider') as HTMLInputElement | null;
+
+  const dataArray = new Uint8Array(analyser?.frequencyBinCount || 256);
+
+  audioMonitorTimer = setInterval(() => {
+    if (!analyser) return;
+
+    analyser.getByteTimeDomainData(dataArray);
+
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      const v = (dataArray[i] - 128) / 128;
+      sum += v * v;
+    }
+    const rms = Math.sqrt(sum / dataArray.length);
+    const pct = Math.min(100, Math.round(rms * 280));
+
+    if (levelFill) {
+      levelFill.style.width = `${pct}%`;
+    }
+    if (levelText) {
+      levelText.innerText = `${pct}%`;
+    }
+
+    const thresholdPct = thresholdSlider ? Number(thresholdSlider.value) : 25;
+    const isTriggered = pct >= thresholdPct;
+
+    if (levelFill) {
+      if (isTriggered) {
+        levelFill.classList.add('triggered');
+      } else {
+        levelFill.classList.remove('triggered');
+      }
+    }
+
+    const now = performance.now();
+
+    if (isTriggered) {
+      lastGunfireTime = now;
+      if (!isRecordingSpray) {
+        startRecordingSpray();
+      }
+    } else if (isRecordingSpray) {
+      if (now - lastGunfireTime > silenceThresholdMs) {
+        stopRecordingSpray();
+      } else if (now - sprayStartTime > 6000) {
+        stopRecordingSpray();
+      }
+    }
+  }, 25);
+}
+
+function toggleManualRecord() {
+  const manualBtn = document.getElementById('manual-record-btn');
+  if (!isRecordingSpray) {
+    startRecordingSpray();
+    if (manualBtn) manualBtn.innerText = '⏹ Finish Spray';
+  } else {
+    stopRecordingSpray();
+    if (manualBtn) manualBtn.innerText = '⏺ Manual Spray';
+  }
+}
+
+function startRecordingSpray() {
+  if (isRecordingSpray || !captureStream) return;
+  isRecordingSpray = true;
+  sprayStartTime = performance.now();
+  lastGunfireTime = sprayStartTime;
+  recordedChunks = [];
+
+  document.getElementById('rec-indicator')?.classList.remove('hidden');
+  const trigBadge = document.getElementById('trigger-status-badge');
+  if (trigBadge) {
+    trigBadge.innerText = '● RECORDING SPRAY';
+    trigBadge.className = 'badge badge-rec';
+  }
+
+  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+    ? 'video/webm;codecs=vp9'
+    : 'video/webm';
+
+  try {
+    mediaRecorder = new MediaRecorder(captureStream, { mimeType });
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        recordedChunks.push(e.data);
+      }
+    };
+    mediaRecorder.onstop = () => {
+      const durationSec = (performance.now() - sprayStartTime) / 1000;
+      if (durationSec >= 0.3) {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        addCapturedSample(blob, durationSec);
+      }
+    };
+    mediaRecorder.start(50);
+  } catch (e) {
+    console.error('MediaRecorder start error:', e);
+  }
+}
+
+function stopRecordingSpray() {
+  if (!isRecordingSpray) return;
+  isRecordingSpray = false;
+
+  document.getElementById('rec-indicator')?.classList.add('hidden');
+  const trigBadge = document.getElementById('trigger-status-badge');
+  if (trigBadge) {
+    trigBadge.innerText = '🟡 Trigger Listening';
+    trigBadge.className = 'badge badge-active';
+  }
+
+  const manualBtn = document.getElementById('manual-record-btn');
+  if (manualBtn) manualBtn.innerText = '⏺ Manual Spray';
+
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+}
+
+function addCapturedSample(blob: Blob, durationSec: number) {
+  const objectUrl = URL.createObjectURL(blob);
+  const sampleObj: RecordedSample = {
+    id: 'sample_' + Date.now(),
+    name: `Spray #${capturedSamples.length + 1}`,
+    blob,
+    objectUrl,
+    durationSec: Math.round(durationSec * 10) / 10,
+    timestamp: new Date()
+  };
+
+  if (reRecordSlotIndex !== null && reRecordSlotIndex >= 0 && reRecordSlotIndex < capturedSamples.length) {
+    URL.revokeObjectURL(capturedSamples[reRecordSlotIndex].objectUrl);
+    sampleObj.name = capturedSamples[reRecordSlotIndex].name;
+    capturedSamples[reRecordSlotIndex] = sampleObj;
+    reRecordSlotIndex = null;
+  } else {
+    capturedSamples.push(sampleObj);
+  }
+
+  renderSamplesList();
+}
+
+function discardSample(index: number) {
+  if (index < 0 || index >= capturedSamples.length) return;
+  URL.revokeObjectURL(capturedSamples[index].objectUrl);
+  capturedSamples.splice(index, 1);
+  capturedSamples.forEach((s, idx) => s.name = `Spray #${idx + 1}`);
+  if (reRecordSlotIndex === index) reRecordSlotIndex = null;
+  renderSamplesList();
+}
+
+function markReRecordSample(index: number) {
+  if (index < 0 || index >= capturedSamples.length) return;
+  reRecordSlotIndex = (reRecordSlotIndex === index) ? null : index;
+  renderSamplesList();
+}
+
+function clearAllSamples() {
+  capturedSamples.forEach(s => URL.revokeObjectURL(s.objectUrl));
+  capturedSamples.length = 0;
+  reRecordSlotIndex = null;
+  renderSamplesList();
+}
+
+function renderSamplesList() {
+  const listContainer = document.getElementById('samples-list');
+  const counterLabel = document.getElementById('samples-counter-label');
+  const processBtn = document.getElementById('process-session-btn') as HTMLButtonElement | null;
+
+  if (counterLabel) {
+    counterLabel.innerText = `Collected Samples (${capturedSamples.length})`;
+  }
+
+  if (processBtn) {
+    processBtn.disabled = capturedSamples.length === 0;
+  }
+
+  if (!listContainer) return;
+
+  if (capturedSamples.length === 0) {
+    listContainer.innerHTML = '<p class="empty-msg">No sprays recorded yet. Connect your game window and fire your weapon!</p>';
+    return;
+  }
+
+  listContainer.innerHTML = '';
+  capturedSamples.forEach((s, idx) => {
+    const isTarget = reRecordSlotIndex === idx;
+    const card = document.createElement('div');
+    card.className = `sample-card${isTarget ? ' slot-target' : ''}`;
+
+    const top = document.createElement('div');
+    top.className = 'sample-top';
+
+    const titleWrap = document.createElement('span');
+    titleWrap.innerHTML = `<strong>${s.name}</strong> <span class="sample-meta">(${s.durationSec}s)${isTarget ? ' [Next spray will replace]' : ''}</span>`;
+
+    const actions = document.createElement('div');
+    actions.className = 'sample-actions';
+
+    const rerecordBtn = document.createElement('button');
+    rerecordBtn.className = 'small-btn';
+    rerecordBtn.type = 'button';
+    rerecordBtn.innerText = isTarget ? 'Cancel Re-record' : '🔄 Re-record';
+    rerecordBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      markReRecordSample(idx);
+    });
+
+    const discardBtn = document.createElement('button');
+    discardBtn.className = 'small-btn danger-btn';
+    discardBtn.type = 'button';
+    discardBtn.innerText = '🗑 Discard';
+    discardBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      discardSample(idx);
+    });
+
+    actions.appendChild(rerecordBtn);
+    actions.appendChild(discardBtn);
+    top.appendChild(titleWrap);
+    top.appendChild(actions);
+
+    const video = document.createElement('video');
+    video.src = s.objectUrl;
+    video.controls = true;
+    video.preload = 'metadata';
+
+    card.appendChild(top);
+    card.appendChild(video);
+    listContainer.appendChild(card);
+  });
+}
+
+async function processSessionSprays() {
+  if (capturedSamples.length === 0) return;
+  const sel = document.getElementById('weapon-select') as HTMLSelectElement | null;
+  const weapon = sel?.value || 'r301';
+  const rpmInput = document.getElementById('weapon-rpm') as HTMLInputElement | null;
+  const multInput = document.getElementById('weapon-multiplier') as HTMLInputElement | null;
+  const statusBox = document.getElementById('session-process-status');
+  const procBtn = document.getElementById('process-session-btn') as HTMLButtonElement | null;
+
+  if (procBtn) procBtn.disabled = true;
+  if (statusBox) {
+    statusBox.className = 'info';
+    statusBox.innerText = `Preparing ${capturedSamples.length} spray video(s) for analysis...`;
+  }
+
+  try {
+    const samplesPayload = [];
+    for (let i = 0; i < capturedSamples.length; i++) {
+      const b = capturedSamples[i].blob;
+      const base64 = await blobToBase64(b);
+      samplesPayload.push({
+        name: `spray_${i + 1}.webm`,
+        data: base64
+      });
+    }
+
+    if (statusBox) {
+      statusBox.innerText = `Tracking bullet decals and calculating median pattern...`;
+    }
+
+    const res = await fetch('/api/discovery/process-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        weapon,
+        rpm: rpmInput && rpmInput.value ? Number(rpmInput.value) : undefined,
+        multiplier: multInput && multInput.value ? Number(multInput.value) : 0.73,
+        samples: samplesPayload
+      })
+    });
+
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Session processing failed');
+    }
+
+    const spec = data.spec;
+    const conv = data.convergence || {};
+    const measuredRpm = data.measured_rpm || spec.rpm;
+    const shotCount = spec.x ? spec.x.length : 0;
+    const convScore = conv.convergence_score !== undefined ? conv.convergence_score : 'N/A';
+
+    if (statusBox) {
+      statusBox.className = 'success';
+      statusBox.innerHTML = `
+        <strong>✅ Analysis Complete!</strong><br/>
+        • Sprays Analyzed: ${data.trials_count}<br/>
+        • Detected Shots: ${shotCount} shots<br/>
+        • Measured RPM: ${measuredRpm} RPM<br/>
+        • Convergence Score: ${convScore} / 100<br/>
+        <em>Pattern plotted on canvas. Click Save to commit!</em>
+      `;
+    }
+
+    if (rpmInput) rpmInput.value = String(measuredRpm);
+
+    const targetW = loadedSpecsList.find(s => s.name === weapon);
+    if (targetW) {
+      targetW.x = spec.x;
+      targetW.y = spec.y;
+      targetW.rpm = spec.rpm;
+      targetW.time_points = spec.time_points;
+      displayWeaponOnCanvas(targetW);
+    } else {
+      displayWeaponOnCanvas(spec);
+    }
+  } catch (err: any) {
+    if (statusBox) {
+      statusBox.className = 'error';
+      statusBox.innerText = `Error: ${err.message}`;
+    }
+  } finally {
+    if (procBtn) procBtn.disabled = false;
+  }
+}
