@@ -6,3 +6,7 @@ diff_*.png
 *_trial.json
 *_aggregated_spec.json
 *_test_spec.json
+*.json.bak
+*.bak
+captures/
+recordings/

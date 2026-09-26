@@ -91,6 +91,14 @@ diff_*.png
 *.json.bak
 *.bak
 
+# Video captures & recordings
+processing/captures/
+captures/
+recordings/
+
+# Knowledge graph outputs (graphify)
+graphify-out/
+
 # Operating System
 .DS_Store
 Thumbs.db

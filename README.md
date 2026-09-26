@@ -113,7 +113,8 @@ Copy the contents of `./static` to your web server directory (e.g. Nginx / Apach
 
 Contributions, balance patch updates, and recoil submissions are welcome!
 * [Contributing Guidelines](./docs/contributing.md)
-* [Code of Conduct](./docs/code-of-conduct.md)
+* [Implementation Plan & Roadmap](./docs/roadmap.md)
+* [AI Agent Guidelines](./AGENTS.md)
 * [Release Notes](./docs/release-notes.md)
 * [Recoil Discovery Guide](./docs/capture.md)
 
