@@ -30,6 +30,8 @@ app.use(express.json({ limit: '150mb' }));
 app.use(express.urlencoded({ extended: true, limit: '150mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/captures', express.static(path.join(__dirname, 'processing', 'captures')));
+var os = require('os');
 var fs = require('fs');
 var { spawn } = require('child_process');
 var specsPath = path.join(__dirname, 'client', 'specs.json');
@@ -91,14 +93,22 @@ app.post('/api/discovery/process-session', function(req, res) {
   var weapon = body.weapon;
   var samples = body.samples;
   var rpm = body.rpm;
+  var shots = body.shots;
+  var zoom = body.zoom || 1.0;
+  var distance = body.distance || 20.0;
   var multiplier = body.multiplier || 0.73;
 
   if (!weapon || !samples || !samples.length) {
     return res.status(400).json({ success: false, error: 'Weapon and at least one sample are required.' });
   }
 
+  var saveCapture = body.save_capture !== false;
+  var weaponTag = (weapon || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '');
+  var modeTag = (body.mode || 'auto').replace(/[^a-zA-Z0-9_-]/g, '');
   var capturesBase = path.join(__dirname, 'processing', 'captures');
-  var sessionDir = path.join(capturesBase, 'session_' + Date.now());
+  var sessionDir = saveCapture
+    ? path.join(capturesBase, 'session_' + weaponTag + '_' + modeTag + '_' + Date.now())
+    : fs.mkdtempSync(path.join(os.tmpdir(), 'apex_session_'));
 
   try {
     fs.mkdirSync(sessionDir, { recursive: true });
@@ -113,6 +123,13 @@ app.post('/api/discovery/process-session', function(req, res) {
     var buffer = Buffer.from(base64Data, 'base64');
     var filename = 'spray_' + (i + 1).toString().padStart(2, '0') + '.webm';
     fs.writeFileSync(path.join(sessionDir, filename), buffer);
+
+    if (s.screenshot) {
+      var shotData = s.screenshot.replace(/^data:image\/[a-zA-Z0-9.-]+;base64,/, '');
+      var shotBuffer = Buffer.from(shotData, 'base64');
+      var shotFilename = 'spray_' + (i + 1).toString().padStart(2, '0') + '_wall.jpg';
+      fs.writeFileSync(path.join(sessionDir, shotFilename), shotBuffer);
+    }
   }
 
   var cliArgs = [
@@ -123,6 +140,15 @@ app.post('/api/discovery/process-session', function(req, res) {
   ];
   if (rpm) {
     cliArgs.push('--rpm', String(rpm));
+  }
+  if (shots) {
+    cliArgs.push('--shots', String(shots));
+  }
+  if (zoom && Number(zoom) !== 1.0) {
+    cliArgs.push('--zoom', String(zoom));
+  }
+  if (distance) {
+    cliArgs.push('--distance', String(distance));
   }
 
   var proc = spawn('python', cliArgs, {
@@ -141,6 +167,9 @@ app.post('/api/discovery/process-session', function(req, res) {
   });
 
   proc.on('close', function(code) {
+    if (!saveCapture) {
+      try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch (e) {}
+    }
     if (code !== 0) {
       return res.status(500).json({
         success: false,
@@ -149,7 +178,11 @@ app.post('/api/discovery/process-session', function(req, res) {
     }
 
     try {
-      var result = JSON.parse(stdoutData.trim());
+      var raw = stdoutData.trim();
+      var jsonMatch = raw.match(/\{[\s\S]*\}$/);
+      var jsonStr = jsonMatch ? jsonMatch[0] : raw;
+      var result = JSON.parse(jsonStr);
+      result.saved_to_disk = saveCapture;
       res.json(result);
     } catch (parseErr) {
       res.status(500).json({
@@ -158,6 +191,209 @@ app.post('/api/discovery/process-session', function(req, res) {
         raw: stdoutData,
         stderr: stderrData
       });
+    }
+  });
+});
+
+app.get('/api/discovery/sessions', function(req, res) {
+  var capturesBase = path.join(__dirname, 'processing', 'captures');
+  try {
+    if (!fs.existsSync(capturesBase)) {
+      return res.json({ success: true, sessions: [] });
+    }
+    var entries = fs.readdirSync(capturesBase, { withFileTypes: true });
+    var sessions = [];
+    for (var i = 0; i < entries.length; i++) {
+      var ent = entries[i];
+      if (ent.isDirectory() && ent.name.startsWith('session_')) {
+        var dirPath = path.join(capturesBase, ent.name);
+        var parts = ent.name.split('_');
+        var weapon = parts[1] || 'unknown';
+        var mode = parts[2] || 'auto';
+        var timestamp = parseInt(parts[3], 10) || 0;
+        var dirFiles = fs.readdirSync(dirPath);
+
+        var videoFiles = dirFiles.filter(function(f) {
+          var ext = path.extname(f).toLowerCase();
+          return ext === '.webm' || ext === '.mp4';
+        }).sort();
+
+        var samples = [];
+        for (var v = 0; v < videoFiles.length; v++) {
+          var vFile = videoFiles[v];
+          var base = path.parse(vFile).name;
+          var companion = dirFiles.find(function(f) {
+            return f.startsWith(base) && (f.endsWith('_wall.jpg') || f.endsWith('_wall.png') || f.endsWith('.jpg') || f.endsWith('.png'));
+          });
+          samples.push({
+            video: vFile,
+            videoUrl: '/captures/' + ent.name + '/' + vFile,
+            screenshot: companion || null,
+            screenshotUrl: companion ? ('/captures/' + ent.name + '/' + companion) : null
+          });
+        }
+
+        var stat = fs.statSync(dirPath);
+        var dateObj = timestamp ? new Date(timestamp) : stat.mtime;
+        var dateFormatted = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        sessions.push({
+          id: ent.name,
+          weapon: weapon,
+          mode: mode,
+          timestamp: timestamp || stat.mtimeMs,
+          date: dateFormatted,
+          samplesCount: samples.length,
+          samples: samples,
+          label: weapon.toUpperCase() + ' (' + mode.toUpperCase() + ') • ' + samples.length + ' spray(s) • ' + dateFormatted
+        });
+      }
+    }
+    sessions.sort(function(a, b) { return b.timestamp - a.timestamp; });
+    res.json({ success: true, sessions: sessions });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to list sessions: ' + err.message });
+  }
+});
+
+app.get('/api/discovery/screenshots', function(req, res) {
+  var screenshotsDir = path.join(__dirname, 'processing', 'captures', 'screenshots');
+  var capturesDir = path.join(__dirname, 'processing', 'captures');
+  try {
+    var screenshots = [];
+    if (fs.existsSync(screenshotsDir)) {
+      var files = fs.readdirSync(screenshotsDir);
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        var ext = path.extname(f).toLowerCase();
+        if (ext === '.jpg' || ext === '.jpeg' || ext === '.png') {
+          var filePath = path.join(screenshotsDir, f);
+          var stat = fs.statSync(filePath);
+          screenshots.push({
+            filename: f,
+            url: '/captures/screenshots/' + f,
+            timestamp: stat.mtimeMs,
+            date: stat.mtime.toLocaleDateString() + ' ' + stat.mtime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            sizeBytes: stat.size,
+            source: 'library'
+          });
+        }
+      }
+    }
+
+    // Also include companion wall screenshots found in session directories
+    if (fs.existsSync(capturesDir)) {
+      var entries = fs.readdirSync(capturesDir, { withFileTypes: true });
+      for (var j = 0; j < entries.length; j++) {
+        var ent = entries[j];
+        if (ent.isDirectory() && ent.name.startsWith('session_')) {
+          var sPath = path.join(capturesDir, ent.name);
+          var sFiles = fs.readdirSync(sPath);
+          for (var k = 0; k < sFiles.length; k++) {
+            var sf = sFiles[k];
+            var sfExt = path.extname(sf).toLowerCase();
+            if ((sfExt === '.jpg' || sfExt === '.jpeg' || sfExt === '.png') && (sf.includes('wall') || sf.startsWith('spray_'))) {
+              var sfPath = path.join(sPath, sf);
+              var sfStat = fs.statSync(sfPath);
+              screenshots.push({
+                filename: ent.name + '/' + sf,
+                url: '/captures/' + ent.name + '/' + sf,
+                timestamp: sfStat.mtimeMs,
+                date: sfStat.mtime.toLocaleDateString() + ' ' + sfStat.mtime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                sizeBytes: sfStat.size,
+                source: ent.name
+              });
+            }
+          }
+        }
+      }
+    }
+
+    screenshots.sort(function(a, b) { return b.timestamp - a.timestamp; });
+    res.json({ success: true, screenshots: screenshots });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to list screenshots: ' + err.message });
+  }
+});
+
+app.post('/api/discovery/process-static-image', function(req, res) {
+  var body = req.body || {};
+  var weapon = body.weapon;
+  var images = body.images;
+  var singleImage = body.image_data;
+  var shots = body.shots;
+  var rpm = body.rpm;
+  var zoom = body.zoom || 1.0;
+  var distance = body.distance || 20.0;
+  var multiplier = body.multiplier || 0.73;
+  var saveCapture = body.save_capture === true;
+
+  if (!weapon || (!images && !singleImage)) {
+    return res.status(400).json({ success: false, error: 'Weapon and image data are required.' });
+  }
+
+  var imageList = images && images.length ? images : [{ name: 'spray_01_wall.jpg', data: singleImage }];
+  var screenshotsDir = path.join(__dirname, 'processing', 'captures', 'screenshots');
+  var weaponTag = (weapon || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '');
+  var modeTag = (body.mode || 'auto').replace(/[^a-zA-Z0-9_-]/g, '');
+
+  var targetDir;
+  if (saveCapture) {
+    targetDir = imageList.length > 1
+      ? path.join(__dirname, 'processing', 'captures', 'session_' + weaponTag + '_' + modeTag + '_' + Date.now())
+      : screenshotsDir;
+    try { fs.mkdirSync(targetDir, { recursive: true }); } catch (e) {}
+  } else {
+    targetDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apex_shots_'));
+  }
+
+  for (var i = 0; i < imageList.length; i++) {
+    var item = imageList[i];
+    var rawData = (item.data || '').replace(/^data:image\/[a-zA-Z0-9.-]+;base64,/, '');
+    var baseName = (item.name || ('spray_' + (i + 1).toString().padStart(2, '0') + '_wall.jpg')).replace(/[^a-zA-Z0-9_.-]/g, '_');
+    if (!baseName.toLowerCase().endsWith('.jpg') && !baseName.toLowerCase().endsWith('.png')) {
+      baseName += '.jpg';
+    }
+    if (saveCapture && imageList.length === 1 && targetDir === screenshotsDir && !baseName.includes(weaponTag)) {
+      baseName = weaponTag + '_' + modeTag + '_' + Date.now() + '_' + baseName;
+    }
+    var filePath = path.join(targetDir, baseName);
+    fs.writeFileSync(filePath, Buffer.from(rawData, 'base64'));
+  }
+
+  var cliArgs = [
+    '-m', 'recoil_discovery.cli', 'session',
+    '--dir', targetDir,
+    '--weapon', weapon,
+    '--multiplier', String(multiplier)
+  ];
+  if (rpm) cliArgs.push('--rpm', String(rpm));
+  if (shots) cliArgs.push('--shots', String(shots));
+  if (zoom && Number(zoom) !== 1.0) cliArgs.push('--zoom', String(zoom));
+  if (distance) cliArgs.push('--distance', String(distance));
+
+  var proc = spawn('python', cliArgs, { cwd: path.join(__dirname, 'processing') });
+  var stdoutData = '';
+  var stderrData = '';
+
+  proc.stdout.on('data', function(c) { stdoutData += c.toString(); });
+  proc.stderr.on('data', function(c) { stderrData += c.toString(); });
+
+  proc.on('close', function(code) {
+    if (!saveCapture) {
+      try { fs.rmSync(targetDir, { recursive: true, force: true }); } catch (e) {}
+    }
+    if (code !== 0) {
+      return res.status(500).json({ success: false, error: 'Analysis failed: ' + stderrData });
+    }
+    try {
+      var raw = stdoutData.trim();
+      var jsonMatch = raw.match(/\{[\s\S]*\}$/);
+      var result = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+      result.saved_to_disk = saveCapture;
+      res.json(result);
+    } catch (parseErr) {
+      res.status(500).json({ success: false, error: 'Failed to parse discovery output: ' + stdoutData, stderr: stderrData });
     }
   });
 });

@@ -69,7 +69,290 @@ const aFireSpeed = new NumericAttribute('speed', NS, 100);
 const aMods = new StringAttribute('mods', NS, '');
 const aScaleX = new NumericAttribute('scale-x', NS, 1);
 const aScaleY = new NumericAttribute('scale-y', NS, 1);
+const aCorruptedStock = new BooleanAttribute('corrupted-stock', NS, false);
 const aShowDevUpdate = new BooleanAttribute('dev-update-2024-1', NS, true);
+export const aFireMode = new StringAttribute('fire-mode', NS, 'default');
+
+export type FireMode = 'auto' | 'burst' | 'single';
+
+export interface WeaponModeConfig {
+  modes: FireMode[];
+  defaultMode: FireMode;
+  burstSize?: number;      // shots per burst
+  burstDelayMs?: number;   // pause between bursts (ms)
+  burstIntraMs?: number;   // time between shots within burst (ms)
+  refireDelayMs?: number;  // minimum time between clicks in single-fire (ms)
+  recoilResetMs?: number;  // time for recoil to return to 0 (ms)
+}
+
+export const WEAPON_FIRE_MODES: Record<string, WeaponModeConfig> = {
+  prowler: {
+    modes: ['burst', 'auto'],
+    defaultMode: 'burst',
+    burstSize: 5,
+    burstDelayMs: 200,
+    burstIntraMs: 50,
+    refireDelayMs: 200,
+    recoilResetMs: 150,
+  },
+  hemlok: {
+    modes: ['burst', 'single'],
+    defaultMode: 'burst',
+    burstSize: 3,
+    burstDelayMs: 215,
+    burstIntraMs: 98,
+    refireDelayMs: 160,
+    recoilResetMs: 160,
+  },
+  nemesis: {
+    modes: ['burst'],
+    defaultMode: 'burst',
+    burstSize: 4,
+    burstDelayMs: 142,
+    burstIntraMs: 64,
+    recoilResetMs: 110,
+  },
+  r301: {
+    modes: ['auto', 'single'],
+    defaultMode: 'auto',
+    refireDelayMs: 130,
+    recoilResetMs: 110,
+  },
+  flatline: {
+    modes: ['auto', 'single'],
+    defaultMode: 'auto',
+    refireDelayMs: 140,
+    recoilResetMs: 120,
+  },
+  peacekeeper: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 1176,
+    recoilResetMs: 400,
+  },
+  mastiff: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 760,
+    recoilResetMs: 300,
+  },
+  wingman: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 357,
+    recoilResetMs: 200,
+  },
+  p2020: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 140,
+    recoilResetMs: 100,
+  },
+  p2020_akimbo: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 100,
+    recoilResetMs: 80,
+  },
+  '3030_repeater': {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 428,
+    recoilResetMs: 250,
+  },
+  g7_scout: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 246,
+    recoilResetMs: 180,
+  },
+  triple_take: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 740,
+    recoilResetMs: 350,
+  },
+  bocek: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 800,
+    recoilResetMs: 350,
+  },
+  charge_rifle: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 1100,
+    recoilResetMs: 400,
+  },
+  longbow: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 698,
+    recoilResetMs: 350,
+  },
+  sentinel: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 1579,
+    recoilResetMs: 500,
+  },
+  kraber: {
+    modes: ['single'],
+    defaultMode: 'single',
+    refireDelayMs: 2400,
+    recoilResetMs: 700,
+  },
+};
+
+export function getWeaponModeConfig(weaponName: string): WeaponModeConfig {
+  return WEAPON_FIRE_MODES[weaponName] || {
+    modes: ['auto'],
+    defaultMode: 'auto',
+  };
+}
+
+export function currentFireMode(): FireMode {
+  const w = selectedWeapon();
+  const cfg = getWeaponModeConfig(w.name);
+  const val = aFireMode.get();
+  if (val && cfg.modes.includes(val as FireMode)) {
+    return val as FireMode;
+  }
+  return cfg.defaultMode;
+}
+
+export function toggleFireMode() {
+  const w = selectedWeapon();
+  const cfg = getWeaponModeConfig(w.name);
+  if (cfg.modes.length <= 1) return;
+  const cur = currentFireMode();
+  const idx = cfg.modes.indexOf(cur);
+  const nextMode = cfg.modes[(idx + 1) % cfg.modes.length];
+  aFireMode.set(nextMode);
+}
+
+export function updateFireModeUI() {
+  const w = selectedWeapon();
+  const cfg = getWeaponModeConfig(w.name);
+  const curMode = currentFireMode();
+
+  const row = document.getElementById('fire-mode-select');
+  if (!row) return;
+
+  const autoBtn = row.querySelector('.fire-mode-auto') as HTMLElement | null;
+  const burstBtn = row.querySelector('.fire-mode-burst') as HTMLElement | null;
+  const singleBtn = row.querySelector('.fire-mode-single') as HTMLElement | null;
+  const hintElem = row.querySelector('.fire-mode-hint') as HTMLElement | null;
+
+  if (autoBtn) {
+    setClass(autoBtn, 'hidden', !cfg.modes.includes('auto'));
+    setClass(autoBtn, 'selected', curMode === 'auto');
+  }
+  if (burstBtn) {
+    setClass(burstBtn, 'hidden', !cfg.modes.includes('burst'));
+    setClass(burstBtn, 'selected', curMode === 'burst');
+  }
+  if (singleBtn) {
+    setClass(singleBtn, 'hidden', !cfg.modes.includes('single'));
+    setClass(singleBtn, 'selected', curMode === 'single');
+  }
+  if (hintElem) {
+    setClass(hintElem, 'hidden', cfg.modes.length <= 1);
+  }
+}
+
+export function weaponUsesStock(name: string): boolean {
+  const noStockWeapons = new Set([
+    're45', 'p2020', 'p2020_akimbo', 'mozambique_akimbo', 'wingman', 'bocek', 'kraber'
+  ]);
+  return !noStockWeapons.has(name);
+}
+
+export function isSingleShellShotgun(name: string): boolean {
+  return name === 'peacekeeper' || name === 'mastiff' || name === 'eva8' || name === 'mozambique';
+}
+
+export function isSingleFireWeapon(name: string): boolean {
+  const cfg = getWeaponModeConfig(name);
+  return cfg.defaultMode === 'single';
+}
+
+export function updateMagTooltips() {
+  const w = selectedWeapon();
+  const usesStock = weaponUsesStock(w.name);
+  const stockActive = aCorruptedStock.get() && usesStock;
+  const isShotgun = isSingleShellShotgun(w.name);
+  const penalty = isShotgun ? 1 : 4;
+
+  const path = window.location.pathname;
+  const isRu = path.startsWith('/ru');
+  const isZh = path.startsWith('/zh-CN');
+
+  const unit = isShotgun ? (isRu ? 'патронов' : isZh ? '发' : 'shells') :
+               (w.name === 'bocek') ? (isRu ? 'стрел' : isZh ? '支箭' : 'arrows') :
+               (isRu ? 'патронов' : isZh ? '发' : 'rounds');
+
+  for (let i = 0; i <= 4; i++) {
+    const tooltipElem = document.querySelector(`#mag-select .mag-${i} .tooltiptext`) as HTMLElement | null;
+    if (tooltipElem && i < w.mags.length) {
+      const raw = w.mags[i].size;
+      const count = stockActive ? Math.max(1, raw - penalty) : raw;
+      const penaltyNote = stockActive ? ` (-${penalty})` : '';
+
+      let baseLabel = '';
+      if (isRu) {
+        if (i === 0) baseLabel = 'Без магазина';
+        else if (i === 4) baseLabel = 'Искаженный магазин';
+        else baseLabel = `Ур. ${i}`;
+      } else if (isZh) {
+        if (i === 0) baseLabel = '无扩容';
+        else if (i === 4) baseLabel = '异变弹匣';
+        else baseLabel = `等级${i}`;
+      } else {
+        if (i === 0) baseLabel = 'No magazine';
+        else if (i === 4) baseLabel = 'Corrupted Magazine';
+        else baseLabel = `Level ${i}`;
+      }
+      tooltipElem.innerText = `${baseLabel} (${count} ${unit}${penaltyNote})`;
+    }
+  }
+
+  const dropTooltipElem = document.querySelector(`#mag-select .mag-drop .tooltiptext`) as HTMLElement | null;
+  if (dropTooltipElem) {
+    const raw = w.mags[0]?.size || 1;
+    const count = stockActive ? Math.max(1, raw - penalty) : raw;
+    const penaltyNote = stockActive ? ` (-${penalty})` : '';
+    let label = isRu ? 'Фиксированный магазин' : isZh ? '固定弹容量' : 'Standard Capacity';
+    dropTooltipElem.innerText = `${label} (${count} ${unit}${penaltyNote})`;
+  }
+
+  const stockTooltipElem = document.querySelector('.mod-corrupted_stock .tooltiptext') as HTMLElement | null;
+  if (stockTooltipElem) {
+    if (isRu) {
+      stockTooltipElem.innerText = isShotgun
+        ? 'Искаженный приклад (-1 патрон для дробовиков)'
+        : 'Искаженный приклад (-4 патрона)';
+    } else if (isZh) {
+      stockTooltipElem.innerText = isShotgun
+        ? '异变枪托 (霰弹枪容量 -1发)'
+        : '异变枪托 (弹匣容量 -4发)';
+    } else {
+      stockTooltipElem.innerText = isShotgun
+        ? 'Corrupted Stock (-1 shell capacity)'
+        : 'Corrupted Stock (-4 ammo capacity)';
+    }
+  }
+}
+
+export function currentMagSize(): number {
+  const w = selectedWeapon();
+  const raw = w.mags[Math.min(aMag.get(), w.mags.length - 1)]?.size || 1;
+  if (!aCorruptedStock.get() || !weaponUsesStock(w.name)) {
+    return raw;
+  }
+  const reduction = isSingleShellShotgun(w.name) ? 1 : 4;
+  return Math.max(1, raw - reduction);
+}
 
 export interface MagInfo {
   size: number;
@@ -78,6 +361,7 @@ export interface MagInfo {
 
 export interface Weapon {
   name: string;
+  rpm?: number;
   mags: MagInfo[];
   time_points: number[];
   x: number[];
@@ -250,15 +534,28 @@ function selectedWeapon(): Weapon {
 function updateSound() {
   if (aMute.get()) return;
   const w = selectedWeapon();
-  const newPath = `./audio/${w.mags[Math.min(aMag.get(), w.mags.length - 1)].audio}.mp3`;
+  const mode = currentFireMode();
+  let audioName: string;
+  if (mode === 'single') {
+    audioName = isSingleShellShotgun(w.name) ? 'shotgun_shot' : 'single_shot';
+  } else {
+    const magIdx = Math.min(aMag.get(), w.mags.length - 1);
+    audioName = w.mags[magIdx]?.audio || 'spitfire_0';
+  }
+  const ext = audioName.endsWith('.wav') || audioName.endsWith('.mp3')
+    ? ''
+    : (audioName === 'shotgun_shot' || audioName === 'single_shot')
+      ? '.wav'
+      : '.mp3';
+  const newPath = `./audio/${audioName}${ext}`;
   if (soundPath != newPath) {
     soundPath = newPath;
-    sound = new Howl({ src: soundPath });
+    sound = new Howl({ src: [soundPath] });
   }
 }
 
 function soundControls() {
-  watch([aWeapon, aMag, aMute, aMods], updateSound);
+  watch([aWeapon, aMag, aMute, aMods, aFireMode], updateSound);
   const mute = (document.getElementById('muted') as HTMLImageElement);
   const unmute = (document.getElementById('unmuted') as HTMLImageElement);
   if (mute != null || unmute != null) {
@@ -301,36 +598,146 @@ function box(pattern: Point[]): [Point, Point] {
   return [a, b];
 }
 
-function drawPattern(pattern: Point[], mag: number, start: Point, sc: number) {
-  const hintLinePoints: number[] = [];
+function drawPattern(pattern: Point[], mag: number, start: Point, sc: number): [Konva.Group, Konva.Circle[], Konva.Text[]] {
+  const mode = currentFireMode();
+  const w = selectedWeapon();
+  const cfg = getWeaponModeConfig(w.name);
+  const group = new Konva.Group();
   const circles: Konva.Circle[] = [];
   const texts: Konva.Text[] = [];
-  pattern.forEach((p, i) => {
-    if (i >= mag) return;
-    const xy = start.clone().sub(p);
-    hintLinePoints.push(xy.x, xy.y);
-    if (sc > 0.3) {
-      const c = new Konva.Circle({
-        radius: 1.5,
+
+  if (mode === 'single') {
+    // Single-fire: each shot kicks up from center and recovers back to center
+    for (let i = 0; i < mag; i++) {
+      let kick: Point;
+      if (i === 0) {
+        kick = (pattern.length > 1) ? pattern[1].clone().sub(pattern[0]) : (pattern[0]?.clone() || new Point());
+      } else {
+        kick = pattern[i].clone().sub(pattern[i - 1]);
+      }
+      if (kick.length() < 1 && pattern.length > 1) {
+        kick = pattern[1].clone();
+      }
+      const xy = start.clone().sub(kick);
+      const ln = new Konva.Line({
+        points: [start.x, start.y, xy.x, xy.y],
         stroke: colorHintPath,
-        strokeWidth: 1,
-        position: xy,
+        strokeWidth: 1.5,
       });
-      circles.push(c);
-      texts.push(new Konva.Text({
-        text: `${i}`,
-        fontSize: 10,
-        fill: 'white',
-        position: xy,
-      }))
+      group.add(ln);
+
+      const resetLn = new Konva.Line({
+        points: [xy.x, xy.y, start.x, start.y],
+        stroke: 'rgba(255, 255, 255, 0.3)',
+        strokeWidth: 1,
+        dash: [3, 3],
+      });
+      group.add(resetLn);
+
+      if (sc > 0.3) {
+        const c = new Konva.Circle({
+          radius: 2,
+          stroke: colorHintPath,
+          strokeWidth: 1.5,
+          position: xy,
+        });
+        circles.push(c);
+        texts.push(new Konva.Text({
+          text: `${i + 1}`,
+          fontSize: 10,
+          fill: 'white',
+          position: xy.clone().add(new Point(3, -6)),
+        }));
+      }
     }
-  });
-  const hintLine = new Konva.Line({
-    points: hintLinePoints,
-    stroke: colorHintPath,
-    strokeWidth: 1,
-  });
-  return [hintLine, circles, texts];
+  } else if (mode === 'burst') {
+    // Burst mode: segmented burst curves with recovery lines between bursts
+    const B = cfg.burstSize || 3;
+    const numBursts = Math.ceil(mag / B);
+
+    for (let b = 0; b < numBursts; b++) {
+      const burstStartIdx = b * B;
+      const burstEndIdx = Math.min((b + 1) * B - 1, mag - 1);
+      if (burstStartIdx > burstEndIdx) break;
+
+      const basePoint = pattern[burstStartIdx];
+      const burstPoints: number[] = [];
+      let lastXy: Point = start.clone();
+
+      for (let i = burstStartIdx; i <= burstEndIdx; i++) {
+        const relKick = pattern[i].clone().sub(basePoint);
+        const xy = start.clone().sub(relKick);
+        burstPoints.push(xy.x, xy.y);
+        lastXy = xy;
+
+        if (sc > 0.3) {
+          const c = new Konva.Circle({
+            radius: 1.5,
+            stroke: colorHintPath,
+            strokeWidth: 1,
+            position: xy,
+          });
+          circles.push(c);
+          texts.push(new Konva.Text({
+            text: `${i}`,
+            fontSize: 10,
+            fill: 'white',
+            position: xy.clone().add(new Point(2, -5)),
+          }));
+        }
+      }
+
+      if (burstPoints.length >= 4) {
+        const burstLine = new Konva.Line({
+          points: burstPoints,
+          stroke: colorHintPath,
+          strokeWidth: 1.5,
+        });
+        group.add(burstLine);
+      }
+
+      if (lastXy.distance(start) > 2) {
+        const resetLine = new Konva.Line({
+          points: [lastXy.x, lastXy.y, start.x, start.y],
+          stroke: 'rgba(255, 255, 255, 0.25)',
+          strokeWidth: 1,
+          dash: [3, 3],
+        });
+        group.add(resetLine);
+      }
+    }
+  } else {
+    // Full auto: single continuous polyline
+    const hintLinePoints: number[] = [];
+    pattern.forEach((p, i) => {
+      if (i >= mag) return;
+      const xy = start.clone().sub(p);
+      hintLinePoints.push(xy.x, xy.y);
+      if (sc > 0.3) {
+        const c = new Konva.Circle({
+          radius: 1.5,
+          stroke: colorHintPath,
+          strokeWidth: 1,
+          position: xy,
+        });
+        circles.push(c);
+        texts.push(new Konva.Text({
+          text: `${i}`,
+          fontSize: 10,
+          fill: 'white',
+          position: xy,
+        }));
+      }
+    });
+    const hintLine = new Konva.Line({
+      points: hintLinePoints,
+      stroke: colorHintPath,
+      strokeWidth: 1,
+    });
+    group.add(hintLine);
+  }
+
+  return [group, circles, texts];
 }
 
 function screen(p: Point): Point {
@@ -340,7 +747,7 @@ function screen(p: Point): Point {
 function scaledPattern(): Point[] {
   const w = selectedWeapon();
   const sc = scale();
-  const n = w.mags[Math.min(aMag.get(), w.mags.length - 1)].size;
+  const n = currentMagSize();
   const pattern = [];
   const my = aInvertY.get() ? -1 : 1;
   for (let i = 0; i < n; i++) pattern.push(screen(new Point(w.x[i], my * w.y[i]).s(sc)));
@@ -350,7 +757,7 @@ function scaledPattern(): Point[] {
 function unscaledPattern(): Point[] {
   const w = selectedWeapon();
   const sc = scale();
-  const n = w.mags[Math.min(aMag.get(), w.mags.length - 1)].size;
+  const n = currentMagSize();
   const pattern = [];
   const my = aInvertY.get() ? -1 : 1;
   for (let i = 0; i < n; i++) pattern.push(new Point(w.x[i], my * w.y[i]).s(sc));
@@ -358,26 +765,26 @@ function unscaledPattern(): Point[] {
 }
 
 class TracePreview {
-  shapes: Konva.Shape[] = [];
+  shapes: (Konva.Shape | Konva.Group)[] = [];
   constructor() {
     const w = selectedWeapon();
     const sc = scale();
-    const n = w.mags[Math.min(aMag.get(), w.mags.length - 1)].size;
+    const n = currentMagSize();
     pattern = scaledPattern();
     patternBox = box(pattern);
     // TODO: do we need to pass all args?
     const [line, circles, texts] = drawPattern(pattern, n, patternBox[0].clone().s(-1).add(new Point(50, 50)), sc);
-    this.addShape(line as Konva.Line);
+    this.addShape(line);
     if (dev) (texts as Konva.Text[]).forEach(t => this.addShape(t));
     (circles as Konva.Circle[]).forEach(c => this.addShape(c));
     redraw();
   }
-  addShape(s: Konva.Shape) {
+  addShape(s: Konva.Shape | Konva.Group) {
     layer.add(s);
     this.shapes.push(s);
   }
   clear() {
-    this.shapes.forEach(s => s.remove());
+    this.shapes.forEach(s => s.destroy());
     this.shapes = [];
   }
 }
@@ -419,6 +826,7 @@ function weaponControls() {
   specs.forEach(s => {
     weapons.set(s.name, {
       name: s.name,
+      rpm: s.rpm,
       mags: s.mags.map(m => {
         var z: MagInfo = { size: m.size, audio: m.audio };
         return z;
@@ -429,14 +837,16 @@ function weaponControls() {
       mods: s.mods,
       ping_points: s.ping_points,
     });
-    const d = document.querySelector(`#weapon-select .${s.name}`) as HTMLDivElement;
+    const d = (document.querySelector(`#weapon-select [data-weapon="${s.name}"]`) ||
+               document.querySelector(`#weapon-select .${CSS.escape(s.name)}`)) as HTMLDivElement;
     if (d != null) d.addEventListener('click', () => aWeapon.set(s.name));
   });
 
   aWeapon.watch((v: string) => {
     const s = document.querySelector(`#weapon-select .selected`) as HTMLDivElement;
     if (s != null) s.classList.remove('selected');
-    const d = document.querySelector(`#weapon-select .${v}`) as HTMLDivElement;
+    const d = (document.querySelector(`#weapon-select [data-weapon="${v}"]`) ||
+               document.querySelector(`#weapon-select .${CSS.escape(v)}`)) as HTMLDivElement;
     if (d == null) return;
     d.classList.add('selected');
     const w = selectedWeapon();
@@ -456,6 +866,32 @@ function weaponControls() {
       console.log('show mod', v)
       setClass(document.querySelector(`.mod-${v}`), 'hidden', false);
     }
+    const stockElem = document.querySelector('.mod-corrupted_stock') as HTMLElement | null;
+    if (stockElem != null) {
+      setClass(stockElem, 'hidden', !weaponUsesStock(w.name));
+    }
+    const cfg = getWeaponModeConfig(v);
+    const curVal = aFireMode.get();
+    if (!curVal || !cfg.modes.includes(curVal as FireMode)) {
+      aFireMode.set(cfg.defaultMode);
+    }
+    updateFireModeUI();
+    updateMagTooltips();
+  });
+  {
+    const row = document.getElementById('fire-mode-select');
+    if (row != null) {
+      row.querySelectorAll('.fire-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const m = btn.getAttribute('data-mode');
+          if (m) aFireMode.set(m);
+        });
+      });
+    }
+  }
+  aFireMode.watch(() => {
+    updateFireModeUI();
+    updateSound();
   });
   for (let i = 0; i <= 4; i++) {
     const d = document.querySelector(`#mag-select .mag-${i}`) as HTMLDivElement;
@@ -479,6 +915,21 @@ function weaponControls() {
       });
     }
   }
+  {
+    const stockElem = document.querySelector('.mod-corrupted_stock') as HTMLElement | null;
+    if (stockElem != null) {
+      stockElem.addEventListener('click', () => {
+        aCorruptedStock.set(!aCorruptedStock.get());
+      });
+    }
+  }
+  aCorruptedStock.watch((active: boolean) => {
+    const stockElem = document.querySelector('.mod-corrupted_stock') as HTMLElement | null;
+    if (stockElem != null) {
+      setClass(stockElem, 'selected', active);
+    }
+    updateMagTooltips();
+  });
   aMods.watch(() => {
     document.querySelectorAll(".mod").forEach(e => {
       setClass(e as HTMLElement, 'selected', false);
@@ -487,6 +938,7 @@ function weaponControls() {
       setClass(document.querySelector(`.mod-${s}`), 'selected', true);
     });
   });
+  updateMagTooltips();
 }
 
 function setMod(name: string, on: boolean) {
@@ -640,7 +1092,7 @@ class Shooting {
   showHint = true;
   start_t = 0;
   weapon: Weapon = { name: '', mags: [], x: [], y: [], time_points: [], mods: new Map(), ping_points: [] };
-  hitIndex = -1; // Position in the patter we already passed.
+  hitIndex = -1; // Position in the pattern we already passed.
   pingIndex = -1; // Position in weapon pings.
   hitMarkers: Konva.Circle[] = [];
   crossHair?: Konva.Group;
@@ -652,6 +1104,21 @@ class Shooting {
   running: boolean = false;
   shapes: (Konva.Shape | Konva.Group)[] = [];
   movingTarget: boolean = false;
+
+  // Firing mode mechanics
+  mode: FireMode = 'auto';
+  mouseDown: boolean = false;
+  burstSize: number = 1;
+  burstDelayMs: number = 200;
+  burstIntraMs: number = 100;
+  refireDelayMs: number = 200;
+  recoilResetMs: number = 150;
+  lastShotTime: number = 0;
+  burstStartTime: number = 0;
+  burstEndTime: number = 0;
+  shotsInCurrentBurst: number = 0;
+  inBurstCooldown: boolean = false;
+  lastBurstPeak: Point = new Point();
 
   constructor() {
     this.startPos = new Point();
@@ -673,18 +1140,37 @@ class Shooting {
     this.startPos = cursor();
     const sc = scale();
     this.speed = clamp(aFireSpeed.get() / 100, 0.1, 1);
-    this.mag = this.weapon.mags[Math.min(aMag.get(), this.weapon.mags.length - 1)]?.size || 1;
-    if (!aMute.get() && sound != null) {
-      sound.volume(aVolume.get() / 100);
-      pings.forEach(p => {
-        p.volume(sound!.volume());
-        p.mute(false);
-      });
-      sound.rate(this.speed);
-      sound.play();
+    this.mag = currentMagSize();
+
+    this.mode = currentFireMode();
+    const cfg = getWeaponModeConfig(this.weapon.name);
+    this.burstSize = cfg.burstSize || 1;
+    this.burstDelayMs = cfg.burstDelayMs || 200;
+    this.burstIntraMs = cfg.burstIntraMs || 100;
+    this.refireDelayMs = cfg.refireDelayMs || (this.weapon.rpm ? 60000 / this.weapon.rpm : 200);
+    this.recoilResetMs = cfg.recoilResetMs || 150;
+    this.mouseDown = true;
+    this.inBurstCooldown = false;
+    this.lastBurstPeak = new Point();
+
+    if (this.mode === 'auto') {
+      if (!aMute.get() && sound != null) {
+        sound.volume(aVolume.get() / 100);
+        pings.forEach(p => {
+          p.volume(sound!.volume());
+          p.mute(false);
+        });
+        sound.rate(this.speed);
+        sound.play();
+      } else {
+        pings.forEach(p => p.mute(true));
+      }
     } else {
-      pings.forEach(p => p.mute(true));
+      if (!aMute.get() && sound != null) {
+        sound.volume(aVolume.get() / 100);
+      }
     }
+
     for (let i = 0; i < traceShapeTypes; i++) this.traceShapes.push([]);
     this.showHint = aHint.get() && !this.movingTarget;
     this.hintGroup.visible(this.showHint);
@@ -696,8 +1182,8 @@ class Shooting {
     this.displayPattern = scaledPattern();
     this.pattern = unscaledPattern();
     {
-      const [ln, circles, texts] = drawPattern(this.displayPattern, this.mag, this.startPos.clone(), sc);
-      this.hintGroup.add(ln as Konva.Line);
+      const [group, circles, texts] = drawPattern(this.displayPattern, this.mag, this.startPos.clone(), sc);
+      this.hintGroup.add(group);
       (circles as Konva.Circle[]).forEach(c => this.hintGroup.add(c));
     }
     // Replace cursor with a fixed point.
@@ -708,28 +1194,102 @@ class Shooting {
       position: sp,
       radius: 2,
     }));
-    /*
-    this.crossHair.add(new Konva.Line({
-      points: [sp.x-10, sp.y, sp.x - 2, sp.y],
-      stroke: 'yellow',
-      strokeWidth: 2,
-    }));
-    this.crossHair.add(new Konva.Line({
-      points: [sp.x+2, sp.y, sp.x + 10, sp.y],
-      stroke: 'yellow',
-      strokeWidth: 2,
-    }));
-    this.crossHair.add(new Konva.Line({
-      points: [sp.x, sp.y+2, sp.x, sp.y+10],
-      stroke: 'yellow',
-      strokeWidth: 2,
-    }));
-    */
     this.addShape(this.crossHair);
     stage.container().classList.add('no-cursor');
+
+    if (this.mode === 'single') {
+      this.lastShotTime = this.start_t;
+      this.recordHit(0);
+    } else if (this.mode === 'burst') {
+      this.burstStartTime = this.start_t;
+      this.shotsInCurrentBurst = 1;
+      this.lastShotTime = this.start_t;
+      this.recordHit(0);
+    }
+
     this.frame();
     stage.batchDraw();
     stage.listening(false);
+  }
+
+  recordHit(idx: number) {
+    this.hitIndex = idx;
+    const sc = scale();
+    const cur = cursor();
+    const isSingleOrBurst = (this.mode === 'single' || this.mode === 'burst');
+
+    if (isSingleOrBurst && !aMute.get() && sound != null) {
+      sound.stop();
+      sound.play();
+    }
+
+    const p = this.pattern[this.hitIndex];
+    this.hitVectors.push(cur.clone().sub(target.position()));
+    let hit = cur.clone().add(p);
+    const rawDistance = hit.distance(target.position()) / sc;
+    let s = distanceScore(rawDistance);
+    this.hitScores.push(s);
+    this.score += s;
+    this.hitMarker.radius(2);
+    let hitScreen: Point;
+    if (this.recoilTarget) {
+      hitScreen = this.startPos.clone().add(new Point(this.wallGroup.offset()));
+    } else {
+      const dCur = cursor().clone().sub(this.startPos);
+      const dCurScaled = screen(dCur);
+      hitScreen = this.startPos.clone().add(dCurScaled).add(screen(p));
+    }
+    this.hitMarker = new Konva.Circle({
+      radius: Math.max(4 * sc, 2),
+      fill: gradientColor(this.hitScores[this.hitScores.length - 1]),
+      position: hitScreen,
+    });
+    this.hitMarkers.push(this.hitMarker);
+    if (this.recoilTarget) {
+      this.wallGroup.add(this.hitMarker);
+    } else {
+      this.addShape(this.hitMarker);
+    }
+    this.traceShapes[0].push(this.hitMarker);
+    this.hitMarker.zIndex(0); // To put behind the scope.
+  }
+
+  onSingleFireClick() {
+    if (!this.running || this.mode !== 'single') return;
+    this.mouseDown = true;
+    const now = Date.now();
+    if (now - this.lastShotTime < this.refireDelayMs) return; // Refire cooldown in effect
+    if (this.hitIndex + 1 < this.mag) {
+      this.lastShotTime = now;
+      this.recordHit(this.hitIndex + 1);
+      if (this.hitIndex + 1 >= this.mag) {
+        window.setTimeout(() => {
+          if (this.running) this.finish();
+        }, Math.min(this.recoilResetMs, 400));
+      }
+    }
+  }
+
+  onBurstFireClick() {
+    if (!this.running || this.mode !== 'burst') return;
+    this.mouseDown = true;
+    if (this.inBurstCooldown) {
+      const now = Date.now();
+      if ((now - this.burstEndTime) * this.speed >= this.burstDelayMs && this.hitIndex + 1 < this.mag) {
+        this.inBurstCooldown = false;
+        this.burstStartTime = now;
+        this.shotsInCurrentBurst = 1;
+        this.lastShotTime = now;
+        this.recordHit(this.hitIndex + 1);
+        if (this.hitIndex + 1 >= this.mag) {
+          this.inBurstCooldown = true;
+          this.burstEndTime = now;
+          window.setTimeout(() => {
+            if (this.running) this.finish();
+          }, Math.min(this.recoilResetMs, 300));
+        }
+      }
+    }
   }
 
   recoilVector(t: number, i: number): [Point, number] {
@@ -748,10 +1308,144 @@ class Shooting {
     const sc = scale();
     const dCur = cursor().clone().sub(this.startPos);
     const dCurScaled = screen(dCur);
-    const cur = cursor();
-    const frame_t = (Date.now() - this.start_t) * this.speed + 8; // Add half frame.
-    let [vRecoil, i] = this.recoilVector(frame_t, this.hitIndex);
-    let [vRecoilNextFrame, _] = this.recoilVector(frame_t + 24, i);
+    const now = Date.now();
+    let vRecoil = new Point();
+    let vRecoilNextFrame = new Point();
+
+    if (this.mode === 'single') {
+      // Check idle timeout
+      if (now - this.lastShotTime > Math.max(2500, this.refireDelayMs + 1500)) {
+        this.finish();
+        return false;
+      }
+      const dt = (now - this.lastShotTime) * this.speed;
+      let pKick: Point;
+      if (this.hitIndex >= 0 && this.hitIndex < this.pattern.length) {
+        if (this.hitIndex === 0) {
+          pKick = (this.pattern.length > 1) ? this.pattern[1].clone().sub(this.pattern[0]) : this.pattern[0].clone();
+          if (pKick.length() < 1 && this.pattern.length > 1) pKick = this.pattern[1].clone();
+        } else {
+          pKick = this.pattern[this.hitIndex].clone().sub(this.pattern[this.hitIndex - 1]);
+        }
+      } else {
+        pKick = this.pattern[0]?.clone() || new Point();
+      }
+
+      const kickDuration = 35;
+      if (dt <= kickDuration) {
+        vRecoil = pKick.clone().s(dt / kickDuration);
+        const dtNext = dt + 24;
+        vRecoilNextFrame = (dtNext <= kickDuration)
+          ? pKick.clone().s(dtNext / kickDuration)
+          : pKick.clone().s(0.5 * (1 + Math.cos(((dtNext - kickDuration) / (this.recoilResetMs - kickDuration)) * Math.PI)));
+      } else if (dt <= this.recoilResetMs) {
+        const prog = (dt - kickDuration) / (this.recoilResetMs - kickDuration);
+        const factor = 0.5 * (1 + Math.cos(prog * Math.PI));
+        vRecoil = pKick.clone().s(factor);
+
+        const dtNext = dt + 24;
+        if (dtNext <= this.recoilResetMs) {
+          const progNext = (dtNext - kickDuration) / (this.recoilResetMs - kickDuration);
+          vRecoilNextFrame = pKick.clone().s(0.5 * (1 + Math.cos(progNext * Math.PI)));
+        } else {
+          vRecoilNextFrame = new Point();
+        }
+      } else {
+        vRecoil = new Point();
+        vRecoilNextFrame = new Point();
+      }
+    } else if (this.mode === 'burst') {
+      // Check idle timeout if trigger not held
+      if (!this.mouseDown && this.inBurstCooldown && (now - this.burstEndTime > 2000)) {
+        this.finish();
+        return false;
+      }
+
+      if (this.inBurstCooldown) {
+        const dt = (now - this.burstEndTime) * this.speed;
+        // Recoil smoothly resets back toward 0
+        if (dt <= this.recoilResetMs) {
+          const prog = dt / this.recoilResetMs;
+          const factor = 0.5 * (1 + Math.cos(prog * Math.PI));
+          vRecoil = this.lastBurstPeak.clone().s(factor);
+          const dtNext = dt + 24;
+          if (dtNext <= this.recoilResetMs) {
+            const progNext = dtNext / this.recoilResetMs;
+            vRecoilNextFrame = this.lastBurstPeak.clone().s(0.5 * (1 + Math.cos(progNext * Math.PI)));
+          } else {
+            vRecoilNextFrame = new Point();
+          }
+        } else {
+          vRecoil = new Point();
+          vRecoilNextFrame = new Point();
+        }
+
+        // Automatic refire of next burst if trigger held
+        if (dt >= this.burstDelayMs && this.mouseDown && this.hitIndex + 1 < this.mag) {
+          this.inBurstCooldown = false;
+          this.burstStartTime = now;
+          this.shotsInCurrentBurst = 1;
+          this.lastShotTime = now;
+          this.recordHit(this.hitIndex + 1);
+          vRecoil = new Point();
+          vRecoilNextFrame = new Point();
+        }
+      } else {
+        // Firing within current burst
+        const dtSinceShot = (now - this.lastShotTime) * this.speed;
+        if (dtSinceShot >= this.burstIntraMs && this.shotsInCurrentBurst < this.burstSize && this.hitIndex + 1 < this.mag) {
+          this.shotsInCurrentBurst++;
+          this.lastShotTime = now;
+          this.recordHit(this.hitIndex + 1);
+        }
+
+        const b = Math.floor(this.hitIndex / this.burstSize);
+        const baseIdx = b * this.burstSize;
+        const pBase = this.pattern[baseIdx];
+        const pCurrent = this.pattern[this.hitIndex].clone().sub(pBase);
+
+        if (this.shotsInCurrentBurst < this.burstSize && this.hitIndex + 1 < this.mag) {
+          const pNext = this.pattern[this.hitIndex + 1].clone().sub(pBase);
+          const intraProg = Math.min(1, Math.max(0, ((now - this.lastShotTime) * this.speed) / this.burstIntraMs));
+          vRecoil = pNext.clone().sub(pCurrent).s(intraProg).add(pCurrent);
+          vRecoilNextFrame = pNext;
+        } else {
+          vRecoil = pCurrent.clone();
+          vRecoilNextFrame = pCurrent.clone();
+        }
+
+        if (this.shotsInCurrentBurst >= this.burstSize || this.hitIndex + 1 >= this.mag) {
+          this.inBurstCooldown = true;
+          this.burstEndTime = now;
+          this.lastBurstPeak = vRecoil.clone();
+          if (this.hitIndex + 1 >= this.mag) {
+            window.setTimeout(() => {
+              if (this.running) this.finish();
+            }, Math.min(this.recoilResetMs, 300));
+          }
+        }
+      }
+    } else {
+      // Auto mode: original continuous timeline
+      const frame_t = (now - this.start_t) * this.speed + 8;
+      let [v, i] = this.recoilVector(frame_t, this.hitIndex);
+      let [vNext, _] = this.recoilVector(frame_t + 24, i);
+      vRecoil = v;
+      vRecoilNextFrame = vNext;
+
+      while (this.hitIndex < i) {
+        this.recordHit(this.hitIndex + 1);
+      }
+      if (dev) {
+        while (this.pingIndex + 1 < this.weapon.ping_points.length &&
+          frame_t + pingOffset >= this.weapon.ping_points[this.pingIndex + 1]) {
+            this.pingIndex += 1;
+            pings[this.pingIndex % 2].play();
+        }
+      }
+      if (this.hitIndex + 1 >= this.mag) this.finish();
+    }
+
     this.recoilGroup.offset(screen(vRecoilNextFrame));
     const vRecoilCompensated = vRecoil.clone().add(dCur);
     if (this.recoilTarget) {
@@ -767,50 +1461,11 @@ class Shooting {
     if (this.recoilTarget) {
       target.offset(vRecoilCompensated);
     } else {
-      // target.offset()
       if (this.showHint && !this.movingTarget) {
         target.offset(vRecoilNextFrame);
       }
     }
-    // Register new shots.
-    while (this.hitIndex < i) {
-      this.hitIndex++;
-      const p = this.pattern[this.hitIndex];
-      this.hitVectors.push(cur.clone().sub(target.position()));
-      let hit = cur.clone().add(p);
-      const rawDistance = hit.distance(target.position()) / sc;
-      let s = distanceScore(rawDistance);
-      this.hitScores.push(s);
-      this.score += s;
-      this.hitMarker.radius(2);
-      var hitScreen: Point;
-      if (this.recoilTarget) {
-        hitScreen = this.startPos.clone().add(new Point(this.wallGroup.offset()));
-      } else {
-        hitScreen = this.startPos.clone().add(dCurScaled).add(screen(p));
-      }
-      this.hitMarker = new Konva.Circle({
-        radius: Math.max(4 * sc, 2),
-        fill: gradientColor(this.hitScores[this.hitScores.length - 1]),
-        position: hitScreen,
-      });
-      this.hitMarkers.push(this.hitMarker);
-      if (this.recoilTarget) {
-        this.wallGroup.add(this.hitMarker);
-      } else {
-        this.addShape(this.hitMarker);
-      }
-      this.traceShapes[0].push(this.hitMarker);
-      this.hitMarker.zIndex(0); // To put behind the scope.
-    }
-    if (dev) {
-      while (this.pingIndex + 1 < this.weapon.ping_points.length &&
-        frame_t + pingOffset >= this.weapon.ping_points[this.pingIndex + 1]) {
-          this.pingIndex += 1;
-        pings[this.pingIndex % 2].play();
-      }
-    }
-    if (this.hitIndex + 1 >= this.mag) this.finish();
+
     return true;
   }
 
@@ -934,7 +1589,7 @@ export function initGame() {
       aInvertY.watch((v: boolean) => setClass(d, 'selected', v));
     }
   }
-  watch([aWeapon, aMag, aSens, aInvertY, aMods, aScaleX, aScaleY], () => {
+  watch([aWeapon, aMag, aSens, aInvertY, aMods, aScaleX, aScaleY, aCorruptedStock, aFireMode], () => {
     if (shooting.running) return;
     shooting.clear();
     tracePreview?.clear();
@@ -952,7 +1607,7 @@ export function initGame() {
   });
   aShowDetailedStats.watch(redrawStartRectangle);
   aShowInstructions.watch(redrawStartRectangle);
-  watch([aStats, aMag, aWeapon, aHint, aMods], showStats);
+  watch([aStats, aMag, aWeapon, aHint, aMods, aCorruptedStock], showStats);
   aMovingTarget.watch(showStats); // TODO add watching of multiple obj attributes.
   {
     const b = document.getElementById('speed-value');
@@ -983,6 +1638,12 @@ export function initGame() {
           tracePreview?.clear();
           tracePreview = null;
           shooting.start();
+        } else {
+          if (shooting.mode === 'single') {
+            shooting.onSingleFireClick();
+          } else if (shooting.mode === 'burst') {
+            shooting.onBurstFireClick();
+          }
         }
         break;
       case 1:
@@ -993,7 +1654,15 @@ export function initGame() {
     }
   });
   stage.on('mouseup', function (e: Konva.KonvaEventObject<MouseEvent>) {
-    if (e.evt.button == 0 && shooting.running) shooting.finish();
+    if (e.evt.button == 0 && shooting.running) {
+      shooting.mouseDown = false;
+      if (shooting.mode === 'auto') {
+        shooting.finish();
+      }
+    }
+  });
+  hotkeys('b', () => {
+    toggleFireMode();
   });
   aMovingTarget.watch((v: boolean) => {
     target.onSettingsUpdated();

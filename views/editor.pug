@@ -23,9 +23,14 @@ block content
       
       .manager-section
         h3 Weapon Specs Manager
-        .form-group
-          label(for="weapon-select") Select Weapon:
-          select#weapon-select
+        .form-row
+          .form-group(style="flex: 2;")
+            label(for="weapon-select") Select Weapon:
+            select#weapon-select
+          .form-group(style="flex: 1;")
+            label(for="weapon-mode-select") Fire Mode:
+            select#weapon-mode-select
+              option(value="auto") AUTO
         
         .form-row
           .form-group
@@ -71,91 +76,233 @@ block content
 
       hr.divider
 
-      .capture-studio-section
-        h3 🎥 In-Game Auto-Capture Studio
-        p.section-desc Hands-free spray capture: auto-records when you shoot in Apex Firing Range.
-        
-        .capture-controls
+      .recording-methods-container
+        .recording-method-tabs
+          button#tab-live.method-tab-btn.active(type="button" data-method="live") 🎥 In-Game Live Studio
+          button#tab-offline.method-tab-btn(type="button" data-method="offline") 🖼️ Offline Screenshot
+          button#tab-legacy.method-tab-btn(type="button" data-method="legacy") 🎯 Manual / Legacy
+
+        #method-panel-live.method-panel.capture-studio-section
+          h3 🎥 In-Game Auto-Capture Studio
+          p.section-desc Stand <strong>20 meters</strong> from the target board with a <strong>2x Bruiser</strong> scope. Fire the full spray, allow reload to finish, then re-enter <strong>ADS</strong> and aim at the bullet decals. The studio auto-snaps the decal screenshot when the buffer ends (or click <strong>📸 Snap Wall & Finish</strong>).
+          
+          .capture-controls
+            .action-row
+              button#start-capture-btn.primary-btn(type="button") 🔴 Connect Game Window
+              button#stop-capture-btn.danger-btn.hidden(type="button") ⏹ Disconnect
+              button#snap-wall-btn.success-btn.hidden(type="button" title="Capture high-res wall screenshot immediately once aimed in ADS [Spacebar]") 📸 Snap Wall & Finish (Space)
+              button#manual-record-btn.secondary-btn.hidden(type="button") ⏺ Manual Spray
+          
+          #capture-status-bar.status-bar
+            span#capture-status-badge.badge.badge-off Not Connected
+            span#trigger-status-badge.badge.badge-off Trigger Idle
+            span#reaim-status-badge.badge.badge-off.hidden Re-Aim: 4.5s
+
+          .calibration-row
+            .calib-item
+              label(for="capture-distance-input") 🎯 Distance:
+              input(type="number" id="capture-distance-input" value="20" min="5" max="100" step="1")
+              span.unit-label meters
+            .calib-item
+              label(for="capture-optic-select") 🔭 Optic:
+              select#capture-optic-select
+                option(value="1.0") 1x (Iron Sights / 1x HCOG / 1x Holo)
+                option(value="2.0" selected) 2x (2x HCOG Bruiser) - Standard @ 20m
+                option(value="3.0") 3x (3x HCOG Ranger)
+                option(value="4.0") 4x (2x-4x Variable / Sniper Scope)
+
+          .monitor-panel#monitor-panel.hidden
+            .video-container
+              video#capture-preview-video(autoplay muted playsinline)
+              #rec-indicator.rec-indicator.hidden ● REC (FIRING)
+              #reaim-indicator.reaim-indicator.hidden 🔄 Reload finishing... Re-enter ADS at wall! (4.5s)
+            .audio-meter-wrap
+              .meter-header
+                span Gunfire Audio Sensor:
+                span#audio-level-text 0%
+              .meter-bar
+                #audio-level-fill.meter-fill
+                #trigger-threshold-line.meter-threshold-line
+              .threshold-control
+                label(for="trigger-threshold-slider") Trigger Sensitivity:
+                input(type="range" id="trigger-threshold-slider" min="5" max="80" value="25")
+              
+              .threshold-control
+                label(for="reaim-buffer-slider")
+                  | Reload / Re-Aim Buffer: 
+                  strong#reaim-buffer-val 4.5
+                  | s
+                input(type="range" id="reaim-buffer-slider" min="1.5" max="8.0" step="0.5" value="4.5")
+              
+              .audio-source-control
+                .source-row
+                  label(for="audio-source-select") Audio Input:
+                  select#audio-source-select
+                    option(value="display") 🖥️ System Audio (Screen Share)
+                    option(value="mic-default") 🎤 Default Microphone / Line-In
+                  button#reconnect-audio-btn.small-btn(type="button" title="Reconnect or refresh audio device") 🔄 Reconnect
+              
+              #audio-device-alert.audio-device-alert.hidden
+                span#audio-device-alert-text ⚠️ Audio device changed in Windows. Click Reconnect if quiet.
+                button#dismiss-audio-alert-btn.alert-close-btn(type="button") ✕
+          
+          .samples-manager
+            .samples-header
+              span#samples-counter-label Collected Samples (0)
+              button#clear-samples-btn.small-btn(type="button") 🗑 Clear All
+            
+            .past-sessions-box
+              .box-title-row
+                span 📂 Past Saved Sessions
+                button#refresh-past-sessions-btn.small-btn(type="button" title="Refresh session list") 🔄 Refresh
+              .box-controls-row
+                select#past-session-select
+                  option(value="") -- Select a saved session to load --
+                button#load-past-session-btn.secondary-btn(type="button" disabled title="Load video clips & wall screenshots into sample cards") 📥 Load Session
+              .box-import-row
+                label.file-import-label(for="import-clips-input" title="Import local .webm/.mp4 recordings and companion wall images")
+                  | 📁 Import Local Video(s)
+                  input#import-clips-input.hidden(type="file" accept="video/webm,video/mp4,image/jpeg,image/png" multiple)
+                span.hint-text Load past clips into cards to review & re-analyze
+
+            #samples-list.samples-list
+              p#no-samples-msg.empty-msg No sprays loaded. Fire in-game or load a previous session above!
+            
+            .session-actions
+              button#process-session-btn.primary-btn(type="button" disabled) ⚡ Analyze Sprays & Calculate Recoil
+              #session-process-status
+
+        #method-panel-offline.method-panel.hidden
+          h3 🖼️ Saved Wall Screenshot Analysis
+          p.section-desc Upload or choose saved recoil wall screenshots. Multi-selection is supported so you can batch analyze and easily cycle through images on canvas.
+          .calibration-row(style="margin-bottom: 8px;")
+            .calib-item
+              label(for="static-distance-input") 🎯 Distance:
+              input(type="number" id="static-distance-input" value="20" min="5" max="100" step="1")
+              span.unit-label meters
+            .calib-item
+              label(for="static-optic-select") 🔭 Optic:
+              select#static-optic-select
+                option(value="1.0") 1x (Iron Sights / 1x HCOG)
+                option(value="2.0" selected) 2x (2x HCOG Bruiser) - Standard @ 20m
+                option(value="3.0") 3x (3x HCOG Ranger)
+                option(value="4.0") 4x (4x / Sniper)
+
+          .server-library-box
+            .box-title-row
+              span 📂 Server Screenshots Library
+              button#refresh-saved-screenshots-btn.small-btn(type="button" title="Refresh server screenshots") 🔄 Refresh
+            .box-controls-row
+              select#saved-screenshot-select
+                option(value="") -- Select saved screenshot from server --
+              button#load-saved-screenshot-btn.secondary-btn(type="button" disabled) 📥 Add to Batch
+
+          .form-row(style="align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;")
+            label.file-import-label(for="wall-screenshot-file-input" title="Select one or multiple screenshots from disk")
+              | 📁 Choose Image(s) (Multi-Select)
+              input#wall-screenshot-file-input.hidden(type="file" accept="image/png,image/jpeg" multiple)
+            button#analyze-wall-file-btn.primary-btn(type="button" disabled) ⚡ Analyze Screenshot(s)
+            button#clear-batch-screenshots-btn.small-btn(type="button" title="Clear all loaded screenshots") 🗑 Clear
+
+          #batch-screenshots-container.batch-screenshots-container.hidden
+            .batch-header
+              span#batch-counter-label Loaded Screenshots (0)
+              span.batch-hint Click any card or use Prev/Next on stage
+            #batch-screenshots-list.batch-screenshots-list
+
+          #wall-file-status
+
+        #method-panel-legacy.method-panel.hidden
+          h3 Image Pattern Extraction (Legacy / Fine-tune)
+          .form-row(style="align-items: center; gap: 8px;")
+            input(type="file" id="file-selector" multiple)
+            button#clear-bg-img-btn.small-btn(type="button" title="Remove background image from canvas") 🗑 Clear Image
+          p#filename
+          .form-row
+            .form-group
+              label Threshold:
+              input(type='text' id='threshold')
+            .form-group
+              label Distance:
+              input(type='text' id='distance')
+          .form-row
+            label
+              input(type='checkbox' id='auto-targets')
+              | auto targets
+            label
+              input(type='checkbox' id='enable-threshold')
+              | threshold
+            label
+              input(type='checkbox' id='connect-hover')
+              | connect hover
+          .form-row
+            .form-group
+              label Target From:
+              input(type='text' id='target-from')
+            .form-group
+              label Target To:
+              input(type='text' id='target-to')
           .action-row
-            button#start-capture-btn.primary-btn(type="button") 🔴 Connect Game Window
-            button#stop-capture-btn.danger-btn.hidden(type="button") ⏹ Disconnect
-            button#manual-record-btn.secondary-btn.hidden(type="button") ⏺ Manual Spray
-        
-        #capture-status-bar.status-bar
-          span#capture-status-badge.badge.badge-off Not Connected
-          span#trigger-status-badge.badge.badge-off Trigger Idle
-
-        .monitor-panel#monitor-panel.hidden
-          .video-container
-            video#capture-preview-video(autoplay muted playsinline)
-            #rec-indicator.rec-indicator.hidden ● REC
-          .audio-meter-wrap
-            .meter-header
-              span Gunfire Audio Sensor:
-              span#audio-level-text 0%
-            .meter-bar
-              #audio-level-fill.meter-fill
-              #trigger-threshold-line.meter-threshold-line
-            .threshold-control
-              label(for="trigger-threshold-slider") Trigger Sensitivity:
-              input(type="range" id="trigger-threshold-slider" min="5" max="80" value="25")
-        
-        .samples-manager
-          .samples-header
-            span#samples-counter-label Collected Samples (0)
-            button#clear-samples-btn.small-btn(type="button") 🗑 Clear All
+            button#accept-auto.small-btn convert auto
+            button#clear.small-btn clear
           
-          #samples-list.samples-list
-            p#no-samples-msg.empty-msg No sprays recorded yet. Connect your game window and fire your weapon!
+          .form-row
+            .form-group
+              label Barrel (0..3):
+              input(type='text' id='barrel')
+            .form-group
+              label Stock (0..3):
+              input(type='text' id='stock')
           
-          .session-actions
-            button#process-session-btn.primary-btn(type="button" disabled) ⚡ Analyze Sprays & Calculate Recoil
-            #session-process-status
+          p Comment:
+            textarea#comment(cols="30", rows="2")
+          p#count
+          #text
+    #stage-container
+      #stage-toolbar.stage-toolbar
+        .toolbar-group
+          button#toggle-sidebar-btn.small-btn(type="button" title="Toggle Sidebar Menu [M]") ◀ Sidebar
+          span.toolbar-title 🎯 Pattern & Wall Overlay
+          label.toolbar-toggle(title="Toggle background wall image on/off")
+            input(type="checkbox" id="toggle-bg-img" checked)
+            span 🖼️ Wall Image
+          .toolbar-slider-group(title="Adjust background image opacity")
+            label(for="bg-opacity-slider") Opacity:
+            input(type="range" id="bg-opacity-slider" min="10" max="100" value="80")
+            span#bg-opacity-val 80%
+        .toolbar-group
+          label(for="stage-preview-select") View:
+          select#stage-preview-select
+            option(value="spec") 📐 Median Calculated Spec
+        .toolbar-group#batch-nav-group.hidden
+          button#prev-stage-img-btn.small-btn(type="button" title="Previous image [ [ ]") ◀ Prev
+          span#stage-img-indicator.stage-img-indicator 🖼️ 1/1
+          button#next-stage-img-btn.small-btn(type="button" title="Next image [ ] ]") Next ▶
+        .toolbar-group
+          button#pan-mode-toggle-btn.small-btn(type="button" title="Pan canvas [Drag with Right-Click, Middle-Click, or Spacebar]") ✋ Pan Canvas
+          button#move-all-toggle-btn.small-btn(type="button" title="When active, dragging any point shifts all points together to align with wall decals") ✥ Move All (Align)
+          button#recenter-stage-btn.small-btn(type="button" title="Fit & center background and pattern in view") 🎯 Fit & Center
+          button#clear-stage-bg-btn.small-btn(type="button" title="Remove background image from canvas") 🗑 Clear BG
+      #stage
 
-      hr.divider
-
-      .trace-section
-        h3 Image Pattern Extraction (Legacy / Fine-tune)
-        input(type="file" id="file-selector" multiple)
-        p#filename
-        .form-row
-          .form-group
-            label Threshold:
-            input(type='text' id='threshold')
-          .form-group
-            label Distance:
-            input(type='text' id='distance')
-        .form-row
-          label
-            input(type='checkbox' id='auto-targets')
-            | auto targets
-          label
-            input(type='checkbox' id='enable-threshold')
-            | threshold
-          label
-            input(type='checkbox' id='connect-hover')
-            | connect hover
-        .form-row
-          .form-group
-            label Target From:
-            input(type='text' id='target-from')
-          .form-group
-            label Target To:
-            input(type='text' id='target-to')
-        .action-row
-          button#accept-auto.small-btn convert auto
-          button#clear.small-btn clear
-        
-        .form-row
-          .form-group
-            label Barrel (0..3):
-            input(type='text' id='barrel')
-          .form-group
-            label Stock (0..3):
-            input(type='text' id='stock')
-        
-        p Comment:
-          textarea#comment(cols="30", rows="2")
-        p#count
-        #text
-    #stage
+    #analysis-confirm-modal.modal-overlay.hidden
+      .modal-dialog
+        .modal-header
+          h3 🎯 Confirm Weapon & Analysis Options
+          button#close-confirm-modal-btn.alert-close-btn(type="button") ✕
+        .modal-body
+          p.modal-desc Confirm the weapon, fire mode, and storage preference before running discovery:
+          .form-group(style="margin-bottom: 12px;")
+            label(for="modal-weapon-select") 🔫 Target Weapon:
+            select#modal-weapon-select.modal-select
+          .form-group(style="margin-bottom: 12px;")
+            label(for="modal-mode-select") ⚙️ Fire Mode:
+            select#modal-mode-select.modal-select
+          .modal-checkbox-row
+            label
+              input(type="checkbox" id="modal-save-capture" checked)
+              span 💾 Save capture files to <code>processing/captures/</code>
+            p.modal-help-text Uncheck this if you are analyzing an existing capture or testing, to prevent duplicating files.
+        .modal-footer
+          button#cancel-analysis-btn.secondary-btn(type="button") ✕ Cancel
+          button#proceed-analysis-btn.primary-btn(type="button") ⚡ Confirm & Run Analysis

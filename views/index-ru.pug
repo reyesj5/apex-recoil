@@ -25,6 +25,8 @@ block content
       #top-links
         p#show-instructions-btn.action
           | Инструкции
+        a(href="/editor")
+          | Студия отдачи 🛠️
         a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank")
           | FAQ (англ.)
         a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank")
@@ -36,42 +38,115 @@ block content
         div#stats-wrap
           p#score-stats
       #weapon-select.grid
-        div.havoc_tc.btn
-          img(src="/images/havoc.png", alt="havoc")
-          p.name HAVOC
-        div.flatline.btn
+        div.flatline.btn(data-weapon="flatline")
           img(src="/images/flatline.png", alt="flatline")
-          p.name Flatline
-        div.r301.btn
+          p.name Флэтлайн
+        div.r301.btn(data-weapon="r301")
           img(src="/images/r301.png", alt="r-301")
           p.name R-301
-        div.alternator.btn
-            img(src="/images/alternator.png", alt="alternator")
-            p.name Alternator
-        div.r99.btn
+        div.havoc_tc.btn(data-weapon="havoc_tc")
+          img(src="/images/havoc.png", alt="havoc")
+          p.name ХАОС
+        div.hemlok.btn(data-weapon="hemlok")
+          img(src="/images/hemlok.png", alt="hemlok")
+          p.name Хемлок
+        div.nemesis.btn(data-weapon="nemesis")
+          img(src="/images/nemesis.svg", alt="nemesis")
+          p.name Немезида
+        div.alternator.btn(data-weapon="alternator")
+          img(src="/images/alternator.png", alt="alternator")
+          p.name Сменщик
+        div.prowler.btn(data-weapon="prowler")
+          img(src="/images/prowler.png", alt="prowler")
+          p.name Ищейка
+        div.r99.btn(data-weapon="r99")
           img(src="/images/r99.png", alt="r-99")
           p.name R-99
-        div.volt.btn
+        div.volt.btn(data-weapon="volt")
           img(src="/images/volt.png", alt="volt")
-          p.name Volt
-        div.car.btn
+          p.name Вольт
+        div.car.btn(data-weapon="car")
           img(src="/images/car.png", alt="car")
           p.name C.A.R.
-        div.devotion_tc.btn
+        div.devotion_tc.btn(data-weapon="devotion_tc")
           img(src="/images/devotion.png", alt="devotion")
-          p.name Devotion
-        div.lstar.btn
+          p.name Преданность
+        div.lstar.btn(data-weapon="lstar")
           img(src="/images/lstar.png", alt="lstar")
           p.name L-STAR
-        div.spitfire.btn
+        div.spitfire.btn(data-weapon="spitfire")
           img(src="/images/spitfire.png", alt="spitfire")
-          p.name Spitfire
-        div.rampage.btn
+          p.name Спитфайр
+        div.rampage.btn(data-weapon="rampage")
           img(src="/images/rampage.png", alt="rampage")
-          p.name Rampage
-        div.re45.btn
+          p.name Неистовство
+        div.g7_scout.btn(data-weapon="g7_scout")
+          img(src="/images/g7_scout.svg", alt="g7 scout")
+          p.name G7 Скаут
+        div.triple_take.btn(data-weapon="triple_take")
+          img(src="/images/triple_take.svg", alt="triple take")
+          p.name Тройной эффект
+        div.btn(data-weapon="3030_repeater" class="w-3030_repeater")
+          img(src="/images/3030_repeater.svg", alt="30-30 repeater")
+          p.name 30-30
+        div.bocek.btn(data-weapon="bocek")
+          img(src="/images/bocek.svg", alt="bocek")
+          p.name Лук Босек
+        div.charge_rifle.btn(data-weapon="charge_rifle")
+          img(src="/images/charge_rifle.svg", alt="charge rifle")
+          p.name Энерговинтовка
+        div.longbow.btn(data-weapon="longbow")
+          img(src="/images/longbow.svg", alt="longbow")
+          p.name Длинный лук
+        div.sentinel.btn(data-weapon="sentinel")
+          img(src="/images/sentinel.svg", alt="sentinel")
+          p.name Страж
+        div.kraber.btn(data-weapon="kraber")
+          img(src="/images/kraber.svg", alt="kraber")
+          p.name Крабер
+        div.eva8.btn(data-weapon="eva8")
+          img(src="/images/eva8.svg", alt="eva8")
+          p.name EVA-8
+        div.mastiff.btn(data-weapon="mastiff")
+          img(src="/images/mastiff.svg", alt="mastiff")
+          p.name Мастиф
+        div.mozambique.btn(data-weapon="mozambique")
+          img(src="/images/mozambique.svg", alt="mozambique")
+          p.name Мозамбик
+        div.mozambique_akimbo.btn(data-weapon="mozambique_akimbo")
+          img(src="/images/mozambique_akimbo.svg", alt="mozambique akimbo")
+          p.name Мозамбик (Акимбо)
+        div.peacekeeper.btn(data-weapon="peacekeeper")
+          img(src="/images/peacekeeper.svg", alt="peacekeeper")
+          p.name Миротворец
+        div.re45.btn(data-weapon="re45")
           img(src="/images/re45.png", alt="re45")
           p.name RE-45
+        div.p2020.btn(data-weapon="p2020")
+          img(src="/images/p2020.svg", alt="p2020")
+          p.name P2020
+        div.p2020_akimbo.btn(data-weapon="p2020_akimbo")
+          img(src="/images/p2020_akimbo.svg", alt="p2020 akimbo")
+          p.name P2020 (Акимбо)
+        div.wingman.btn(data-weapon="wingman")
+          img(src="/images/wingman.svg", alt="wingman")
+          p.name Ведомый
+      #fire-mode-select.button-row
+        div.fire-mode-btn.fire-mode-auto.tooltip(data-mode="auto")
+          span.fire-mode-icon ⮓⮓⮓
+          span.fire-mode-text Авто
+          span.tooltiptext Автоматический огонь
+        div.fire-mode-btn.fire-mode-burst.tooltip(data-mode="burst")
+          span.fire-mode-icon ⮓⮓
+          span.fire-mode-text Очередь
+          span.tooltiptext Стрельба очередями
+        div.fire-mode-btn.fire-mode-single.tooltip(data-mode="single")
+          span.fire-mode-icon ⮓
+          span.fire-mode-text Одиночный
+          span.tooltiptext Одиночные выстрелы
+        div.fire-mode-hint.tooltip
+          span.fire-mode-key [B]
+          span.tooltiptext Переключить режим огня [B]
       #mag-select.button-row
         div.mag-0.tooltip
           img(src="/images/magi.png" alt="no magazine")
@@ -88,11 +163,15 @@ block content
         div.mag-4.tooltip
           img(src="/images/magi.png" alt="corrupted magazine")
           span.tooltiptext Искаженный магазин
-        div.mag-drop.hidden
+        div.mag-drop.tooltip.hidden
           img(src="/images/magi.png" alt="drop magazine")
+          span.tooltiptext Фиксированный магазин
         div.mod-revved_up.mod.hidden.tooltip
           img(src="/images/thermite_grenade.png" alt="thermite grenade")
           span.tooltiptext Загрузить зажигательную гранату
+        div.mod-corrupted_stock.mod.tooltip
+          img(src="/images/barrel_stocki.png" alt="corrupted stock")
+          span.tooltiptext Искаженный приклад (-4 патрона, -1 для дробовиков)
       #settings
           #mouse-settings.row
             div

@@ -107,18 +107,26 @@ def cmd_process(args):
     pipeline = RecoilPipeline()
     path = Path(args.input)
     if not path.exists():
+        if getattr(args, "json", False):
+            print(json.dumps({"success": False, "error": f"File not found: {path}"}))
+            sys.exit(1)
         print(f"[!] File not found: {path}")
         sys.exit(1)
 
     shots, rpm = resolve_weapon_params(pipeline.spec_manager, args.weapon, args.shots, args.rpm)
-    print(f"[+] Processing '{path.name}' for weapon '{args.weapon}' (Shots: {shots}, RPM: {rpm})...")
+    multiplier = getattr(args, "multiplier", 0.73) or 0.73
+    zoom = getattr(args, "zoom", 1.0) or 1.0
+    distance = getattr(args, "distance", 20.0) or 20.0
+    anchor_dist = getattr(args, "anchor_distance", None)
+
     if path.suffix.lower() in [".mp4", ".mkv", ".avi", ".mov", ".webm"]:
         trial = pipeline.process_video_clip(
             path,
             weapon_name=args.weapon,
             expected_shots=shots,
             rpm=rpm,
-            anchor_distance_override=args.distance
+            anchor_distance_override=anchor_dist,
+            zoom=zoom
         )
     else:
         trial = pipeline.process_static_image(
@@ -126,8 +134,57 @@ def cmd_process(args):
             weapon_name=args.weapon,
             expected_shots=shots,
             rpm=rpm,
-            anchor_distance=args.distance
+            anchor_distance=anchor_dist,
+            zoom=zoom
         )
+
+    if getattr(args, "json", False):
+        raw_x = trial.get("raw_x", trial.get("x", []))
+        raw_y = trial.get("raw_y", trial.get("y", []))
+        mult_x = [round(float(x * multiplier), 2) for x in trial.get("x", [])]
+        mult_y = [round(float(y * multiplier), 2) for y in trial.get("y", [])]
+        spec = {
+            "name": args.weapon,
+            "multiplier": multiplier,
+            "x": mult_x,
+            "y": mult_y,
+            "raw_1x_x": trial.get("x", []),
+            "raw_1x_y": trial.get("y", []),
+            "rpm": trial.get("rpm", rpm),
+            "time_points": trial.get("time_points", [])
+        }
+        res = {
+            "success": True,
+            "weapon": args.weapon,
+            "spec": spec,
+            "distance": distance,
+            "zoom": zoom,
+            "trials_count": 1,
+            "measured_rpm": trial.get("rpm", rpm),
+            "preview_image": trial.get("frame_image"),
+            "preview_points": trial.get("frame_points", []),
+            "preview_origin": trial.get("origin", [0, 0]),
+            "frame_width": trial.get("frame_width", 0),
+            "frame_height": trial.get("frame_height", 0),
+            "individual_trials": [
+                {
+                    "source": Path(trial.get("source_file", "")).name,
+                    "shots": len(trial.get("x", [])),
+                    "x": mult_x,
+                    "y": mult_y,
+                    "raw_x": raw_x,
+                    "raw_y": raw_y,
+                    "frame_points": trial.get("frame_points", []),
+                    "origin": trial.get("origin", [0, 0]),
+                    "frame_image": trial.get("frame_image"),
+                    "frame_width": trial.get("frame_width", 0),
+                    "frame_height": trial.get("frame_height", 0),
+                    "rpm": trial.get("rpm", rpm)
+                }
+            ]
+        }
+        print(json.dumps(res))
+        return
 
     out_file = Path(args.output or f"{args.weapon}_trial.json")
     with open(out_file, "w", encoding="utf-8") as f:
@@ -144,24 +201,46 @@ def cmd_session(args):
         print(json.dumps({"success": False, "error": f"Directory not found: {directory}"}))
         sys.exit(1)
 
-    supported_exts = [".mp4", ".webm", ".mkv", ".avi"]
-    files = sorted([f for f in directory.iterdir() if f.suffix.lower() in supported_exts])
-    if not files:
-        print(json.dumps({"success": False, "error": f"No video clips found in {directory}"}))
+    video_exts = [".mp4", ".webm", ".mkv", ".avi"]
+    image_exts = [".png", ".jpg", ".jpeg"]
+    video_files = sorted([f for f in directory.iterdir() if f.suffix.lower() in video_exts])
+    image_files = sorted([f for f in directory.iterdir() if f.suffix.lower() in image_exts and not f.stem.endswith("_wall")])
+    if not image_files:
+        image_files = sorted([f for f in directory.iterdir() if f.suffix.lower() in image_exts])
+
+    if not video_files and not image_files:
+        print(json.dumps({"success": False, "error": f"No video clips or images found in {directory}"}))
         sys.exit(1)
 
     shots, rpm = resolve_weapon_params(pipeline.spec_manager, args.weapon, args.shots, args.rpm)
     multiplier = args.multiplier if getattr(args, "multiplier", None) is not None else 0.73
+    zoom = getattr(args, "zoom", 1.0) or 1.0
+    distance = getattr(args, "distance", 20.0) or 20.0
 
     try:
-        result = pipeline.process_clips_session(
-            clip_paths=files,
-            weapon_name=args.weapon,
-            rpm=rpm,
-            multiplier=multiplier
-        )
+        if video_files:
+            result = pipeline.process_clips_session(
+                clip_paths=video_files,
+                weapon_name=args.weapon,
+                expected_shots=shots,
+                rpm=rpm,
+                multiplier=multiplier,
+                zoom=zoom
+            )
+        else:
+            result = pipeline.process_images_session(
+                image_paths=image_files,
+                weapon_name=args.weapon,
+                expected_shots=shots,
+                rpm=rpm,
+                multiplier=multiplier,
+                zoom=zoom,
+                distance=distance
+            )
         diff_report = pipeline.spec_manager.diff_weapon_spec(result["spec"])
         result["diff_report"] = diff_report
+        result["distance"] = distance
+        result["zoom"] = zoom
         result["success"] = True
         print(json.dumps(result))
     except Exception as e:
@@ -188,12 +267,13 @@ def cmd_batch(args):
 
     print(f"[+] Found {len(files)} files in {directory}. Processing...")
     trials = []
+    zoom = getattr(args, "zoom", 1.0) or 1.0
     for f in files:
         try:
             if f.suffix.lower() in [".mp4", ".mkv", ".avi", ".webm"]:
-                t = pipeline.process_video_clip(f, args.weapon, shots, rpm, args.distance)
+                t = pipeline.process_video_clip(f, args.weapon, shots, rpm, args.distance, zoom=zoom)
             else:
-                t = pipeline.process_static_image(f, args.weapon, shots, rpm, args.distance)
+                t = pipeline.process_static_image(f, args.weapon, shots, rpm, args.distance, zoom=zoom)
             trials.append(t)
             print(f"    - Processed {f.name}: {len(t['x'])} shots")
         except Exception as e:
@@ -267,7 +347,11 @@ def main():
     p_proc.add_argument("--weapon", "-w", required=True, help="Weapon name (e.g. r301, flatline)")
     p_proc.add_argument("--shots", "-s", type=int, default=None, help="Expected number of shots / mag size (default: auto from specs.json)")
     p_proc.add_argument("--rpm", "-r", type=float, default=None, help="Weapon rounds per minute / RPM (default: auto from specs.json)")
-    p_proc.add_argument("--distance", "-d", type=float, default=None, help="In-game anchor distance")
+    p_proc.add_argument("--distance", "-d", type=float, default=20.0, help="Shooting distance in meters (default: 20m)")
+    p_proc.add_argument("--anchor-distance", type=float, default=None, help="In-game anchor distance in mouse units")
+    p_proc.add_argument("--zoom", "-z", type=float, default=1.0, help="Optic zoom multiplier (e.g. 2.0 for 2x Bruiser, 3.0 for 3x)")
+    p_proc.add_argument("--multiplier", "-m", type=float, default=0.73, help="Recoil multiplier")
+    p_proc.add_argument("--json", action="store_true", help="Output Web UI compatible JSON to stdout")
     p_proc.add_argument("--output", "-o", help="Output JSON path")
 
     # batch
@@ -276,7 +360,8 @@ def main():
     p_batch.add_argument("--weapon", "-w", required=True, help="Weapon name")
     p_batch.add_argument("--shots", "-s", type=int, default=None, help="Expected number of shots (default: auto from specs.json)")
     p_batch.add_argument("--rpm", "-r", type=float, default=None, help="Weapon rounds per minute (default: auto from specs.json)")
-    p_batch.add_argument("--distance", "-d", type=float, default=None, help="In-game anchor distance")
+    p_batch.add_argument("--distance", "-d", type=float, default=20.0, help="Shooting distance in meters (default: 20m)")
+    p_batch.add_argument("--zoom", "-z", type=float, default=1.0, help="Optic zoom multiplier (e.g. 2.0 for 2x Bruiser, 3.0 for 3x)")
     p_batch.add_argument("--plot", "-p", action="store_true", help="Generate visual diff plot")
     p_batch.add_argument("--update", "-u", action="store_true", help="Update client/specs.json directly")
     p_batch.add_argument("--output", "-o", help="Output JSON path")
@@ -287,7 +372,9 @@ def main():
     p_session.add_argument("--weapon", "-w", required=True, help="Weapon name")
     p_session.add_argument("--shots", "-s", type=int, default=None, help="Expected shots")
     p_session.add_argument("--rpm", "-r", type=float, default=None, help="Weapon RPM")
+    p_session.add_argument("--distance", "-d", type=float, default=20.0, help="Shooting distance in meters (default: 20m)")
     p_session.add_argument("--multiplier", "-m", type=float, default=0.73, help="Recoil multiplier")
+    p_session.add_argument("--zoom", "-z", type=float, default=1.0, help="Optic zoom multiplier (e.g. 2.0 for 2x Bruiser, 3.0 for 3x)")
 
     # export-arduino
     subparsers.add_parser("export-arduino", help="Export client/specs.json to arduino_mouse/src/recoil.inc")

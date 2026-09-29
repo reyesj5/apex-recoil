@@ -10,8 +10,14 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
 
 1. **Interactive Recoil Trainer (`/`)**:
    - Practice full spray recoil control against animated targets with live scoring and hit rate analytics.
-   - Complete weapon arsenal with attachment options:
-     - **Magazines**: Base (L0), White (L1), Blue (L2), Purple/Gold (L3), and the new **Corrupted Magazine (Tier 4 / Red)**.
+   - Complete **31-weapon arsenal** covering all weapon classes (Assault Rifles, SMGs, LMGs, Marksman, Snipers, Shotguns, and Pistols/Akimbos).
+   - **Realistic Shooting Styles & Trigger Mechanics**:
+     - **Semi-Automatic & Shotguns**: Click-per-shot mechanics for Peacekeeper, Mastiff, Wingman, P2020, G7 Scout, 30-30, Triple Take, Bocek, Charge Rifle, Longbow, Sentinel, Kraber with refire cooldown and smooth recoil recentering.
+     - **Burst Weapons**: Multi-shot bursts (Prowler: 5, Hemlok: 3, Nemesis: 4) with intra-burst cadence and inter-burst recoil reset.
+     - **Select-Fire Toggle**: Switch modes on select-fire weapons like Prowler (Burst / Auto) and Hemlok (Burst / Single) using the UI buttons or keyboard shortcut `[B]`.
+   - Comprehensive attachment options:
+     - **Magazines**: Base (L0), White (L1), Blue (L2), Purple/Gold (L3), and the new **Corrupted Magazine (Tier 4 / Red)** with real-time ammo tooltips.
+     - **Stocks**: Standard stocks and the new **Corrupted Stock** attachment (-4 capacity penalty across stock-equipped weapons, -1 shell for single-shell shotguns).
      - **Weapon Mods**: Rampage *Revved Up* thermite grenade mod, turbocharger variants, and drop weapon configs.
    - Multi-language support: English, Russian (`/ru`), and Simplified Chinese (`/zh-CN`).
    - Sensitivity matching: exact Source Engine sensitivity and ADS multiplier scaling.
@@ -26,20 +32,23 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
 3. **Hands-Free In-Game Auto-Capture Studio (`/editor`)**:
    - Eliminates manual OBS/Shadowplay recording and video file chopping.
    - Connects directly to the running **Apex Legends** game window via browser screen capture.
-   - **Acoustic Gunfire Sensor**: Real-time decibel monitor automatically triggers recording when you pull the trigger in the Firing Range, and automatically stops when your magazine empties.
+   - **Acoustic Gunfire Sensor**: Real-time decibel monitor automatically triggers recording when you pull the trigger in the Firing Range, and automatically stops when your magazine empties. Sensor mutes during playback with a 1.5s echo-safety cooldown to prevent feedback loops.
+   - **Decoupled Architecture**: High-cadence video captures audio/RPM, while post-reload ADS high-res screenshot captures clean bullet decals.
    - **Sample Management**:
-     - Embedded video preview player for every captured spray.
-     - **🗑 Discard** flubbed sprays or accidental mouse movements.
-     - **🔄 Re-record** any specific sample slot.
-     - Collect unlimited samples (3 to 5 recommended for statistical convergence).
-   - **⚡ 1-Click Discovery**: Uploads clips to the backend pipeline, extracts bullet decals, measures RPM, and renders the updated recoil trajectory on the canvas.
+     - Embedded side-by-side player: spray video (cadence/audio) and wall screenshot preview.
+     - **📷 Re-snap Wall**: 3-second countdown with audible beeps gives you time to tab into Apex and hold ADS before snapping.
+     - **💾 Save Image**: Download high-resolution wall screenshots for your library.
+     - **🗑 Discard**: 1-click sample discard to maintain high batch quality.
+   - **Interactive Canvas Navigation**: Full panning (right-click drag, middle-click drag, spacebar drag, pan tool toggle) and smooth mouse-wheel zoom centered on cursor.
+   - **🖼️ Offline / Redo Analysis Drawer**: Analyze saved wall screenshots directly to calibrate patterns without being in-game.
+   - **⚡ 1-Click Discovery**: Uploads clips to the backend pipeline, extracts bullet decals with Black Top-Hat filtering, measures RPM, and overlays the trajectory on the canvas.
 
 4. **Automated Computer Vision Engine (`processing/recoil_discovery`)**:
-   - Python-based pipeline for zero-guesswork recoil discovery from video clips.
+   - Python-based pipeline for zero-guesswork recoil discovery.
+   - **Dynamic Target Board Isolation & Morphological Black Top-Hat Filtering**: isolates bullet decals on the white target board while completely rejecting dark frame pillars, vertical seams, and weapon sights.
    - Automatic acoustic and visual rate of fire (RPM) measurement ($\text{RPM} = 60000 / \text{median}(\Delta t_{\text{ms}})$).
-   - Camera homography stabilization and chronological bullet decal tracking.
    - Multi-spray median-delta integration and convergence scoring ($rc\_score$).
-   - Comprehensive test suite with 19 automated unit tests.
+   - Comprehensive test suite with 22 automated unit tests.
 
 ---
 
@@ -90,10 +99,13 @@ python -m recoil_discovery.cli session --help
 ## In-Game Recording & Calibration Rules
 
 When recording sprays in the Apex Legends Firing Range for discovery:
-* **Optics:** Use **Iron Sights** or standard **1x (HCOG Classic / 1x Holo) ONLY**. Never equip 2x, 3x, or 4x scopes (magnification alters FOV, ADS scaling, and decal spacing).
+* **Optics:** Use **2x Bruiser (Recommended for 20m)** or standard **1x (Iron Sights / 1x HCOG)**. The studio automatically scales 2x Bruiser captures by $1 / 2.0$ to produce native 1x training specs.
 * **Attachments:** **NO barrel stabilizer** (stabilizers reduce recoil spread), **NO stock**. Equip maximum magazine (Level 3 or Corrupted L4) to capture the complete continuous spray.
-* **Distance:** Stand **10 to 15 meters** away, facing perpendicular ($90^\circ$) to a flat, clean wall.
+* **Distance:** Stand **20 meters** away from the white target board, facing perpendicular ($90^\circ$).
 * **Firing:** Fire the full magazine **without moving your mouse**.
+* **Post-Spray ADS:** Allow the reload animation to finish, then re-enter ADS and aim steadily at the bullet decals. The studio captures the high-res screenshot automatically when the buffer ends.
+
+Detailed documentation is available in [docs/capture.md](./docs/capture.md).
 
 Detailed documentation is available in [docs/capture.md](./docs/capture.md).
 
@@ -114,6 +126,7 @@ Copy the contents of `./static` to your web server directory (e.g. Nginx / Apach
 Contributions, balance patch updates, and recoil submissions are welcome!
 * [Contributing Guidelines](./docs/contributing.md)
 * [Implementation Plan & Roadmap](./docs/roadmap.md)
+* [Live Weapons Wiki & Patch Reference](./docs/weapons-wiki-stats.md)
 * [AI Agent Guidelines](./AGENTS.md)
 * [Release Notes](./docs/release-notes.md)
 * [Recoil Discovery Guide](./docs/capture.md)

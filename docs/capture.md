@@ -34,6 +34,10 @@ When a gun gets a balance update (e.g. mag size changed, RPM tweaked) or you wan
   * The backend API automatically recalculates the firing `time_points`, saves the updated data to `client/specs.json`, and creates a backup (`client/specs.json.bak`).
 * **Paste / Import Discovery JSON:**
   * Expand the *Paste / Import Discovery JSON* drawer, paste output from the automated discovery CLI, and click **Apply to Selected Weapon**.
+* **Analysis Confirmation & Tagging:**
+  * Before analyzing any recording session or uploaded wall screenshot, the studio prompts an **Analysis Confirmation** dialog.
+  * You can confirm or change the target **Weapon** and **Fire Mode** (preventing unintentional overwrites to the default R-99).
+  * Choose whether to **Save capture to library** (`processing/captures/`). If loading a screenshot extracted from an existing video capture session, leave this unchecked to prevent duplicating files on disk while still performing full analysis and canvas overlay alignment.
 
 ---
 
@@ -42,20 +46,29 @@ When a gun gets a balance update (e.g. mag size changed, RPM tweaked) or you wan
 To ensure pixel-accurate recoil extraction that aligns with Source Engine geometry:
 
 ### Sights & Optics
-* **Iron Sights or standard 1x (HCOG Classic / 1x Holo) ONLY.**
-* **Do NOT equip 2x, 3x, 4x, or higher magnification optics.**
-  * *Why:* Scopes zoom the Field of View (FOV) and scale your mouse input by the game's per-optic ADS sensitivity slider. Magnification also visually stretches the decal pattern on screen. The recoil trainer is calibrated for base 1x / iron sights.
+* **2x Bruiser (Recommended for 20m):** Select `2x` from the Optic dropdown in `/editor`. The system automatically scales the pattern by `1 / 2.0` so it converts cleanly to native 1x training coordinates.
+* **1x (Iron Sights / 1x HCOG / 1x Holo):** Supported if shooting at closer distances (5–8m).
+* *Note:* Higher magnification (3x, 4x) is also selectable in the studio if desired.
 
 ### Attachments
 * **NO Barrel Stabilizer:** Stabilizers compress the recoil pitch/yaw cone and alter weapon kick patterns.
 * **NO Stock:** Stocks alter weapon handling and aim drift.
 * **Max Magazine (Purple L3 or Corrupted L4):** Equip the highest capacity magazine available so you capture the full spray trajectory in a single burst.
 
-### Distance & Angle
-* **Stand 10 to 15 meters away** from a clean, flat wall in the Firing Range.
-  * *Why:* If you are too close (< 5m), high-climb weapons (Havoc, Flatline) will climb off the top of your screen. If you are too far (> 25m), random spread cone, bullet drop, and tiny decals introduce measurement error. At 10–15m, the entire spray fits squarely in view, bullet drop is zero, and decals are crisp.
-* Face the wall directly perpendicular ($90^\circ$) without angling your camera.
-* Fire the full magazine **without moving your mouse**.
+### Distance & Calibration
+* **Stand 20 meters away** from the white target board in the Firing Range with a **2x Bruiser** scope.
+  * *Why:* At closer ranges (<15m), high fire-rate bullet decals land nearly on top of each other and blend into single overlapping clusters. At 20m with a 2x optic, every individual bullet impact is clearly separated, sharp, and easy for the computer vision detector to isolate and sequence.
+* Face the target board directly perpendicular ($90^\circ$) without angling your camera.
+* Fire the full magazine **uncompensated without moving your mouse**.
+* **Allow Reload to Finish, Then Re-enter ADS:** When the magazine empties, the gun auto-reloads and drops out of ADS. Let the reload animation finish (~2.5–3.5s), then right-click back into ADS and center your scope on the bullet decals. The studio's **Re-Aim Buffer** gives you 4.5s post-firing to do this, then snaps the crystal-clear wall screenshot automatically.
+
+### 1:1 Recoil Game Scale Calibration & Muscle Memory
+* In Apex Legends (Source engine), mouse input is measured in mickeys (counts) where 1 count $= 0.022^\circ \times \text{sensitivity}$.
+* To cancel recoil, the counter-movement in mouse counts is:
+  $$\text{mouse\_counts} = \text{pixels\_1x} \times \text{multiplier} = \left(\frac{\text{raw\_pixels}}{Z}\right) \times \text{multiplier}$$
+* When viewing a saved spec on top of a screenshot captured with optic magnification $Z$:
+  $$\text{screen\_pixels} = \left(\frac{\text{spec}}{\text{multiplier}}\right) \times Z$$
+* This mathematical identity ensures that the spec overlay on canvas matches the detected bullet decals 1:1, and that training in the web simulator develops exact 1:1 mouse muscle memory for the live game.
 
 ---
 
@@ -65,23 +78,52 @@ Instead of manually recording clips with OBS or Shadowplay, chopping files, and 
 
 1. **Connect Apex Window:**
    * Open `/editor` in Chrome or Edge.
+   * Use the **Recording Method Tabs** (`🎥 In-Game Live Studio`, `🖼️ Offline Screenshot`, `🎯 Manual / Legacy`) to select your preferred workflow. Unused methods are hidden to keep your workspace clean.
+   * You can collapse the 380px sidebar at any time by clicking **`◀ Sidebar`** in the toolbar or pressing **`[M]`** on your keyboard to give the canvas full screen width.
    * Under **🎥 In-Game Auto-Capture Studio**, click **🔴 Connect Game Window**.
    * In the browser share dialog, select the **Apex Legends** window. Make sure to check **"Share system audio"** so gunfire can be detected acoustically!
-   * A live video monitor and decibel meter will appear.
-2. **Hands-Free Spray Recording:**
-   * Tab into Apex Legends and aim at the wall.
-   * Fire your weapon! The studio detects the audio transient of gunfire, begins recording, and stops automatically ~450ms after the magazine finishes.
-   * Each spray is immediately added to your **Collected Samples** list.
-3. **Preview, Discard & Re-record:**
-   * **Preview Playback:** Each sample card has a mini video player so you can inspect the spray and check if you accidentally nudged your mouse.
-   * **🗑 Discard:** If a spray was flubbed or hit an edge, click *Discard* to delete it from the batch.
-   * **🔄 Re-record:** Click *Re-record* on any sample to mark that specific slot to be replaced on your next spray.
-   * **Unlimited Samples:** Collect as many sprays as you want (recommend 3 to 5 for statistical convergence).
-4. **One-Click Analysis & Spec Update:**
+   * Select your optic (e.g. **2x Bruiser**) and stand at **20 meters**.
+2. **Hands-Free Spray Recording & Decoupled Capture:**
+   * Tab into Apex Legends and aim at the center of the white target board.
+   * Fire your weapon! The studio detects gunfire, records the audio/video to calculate RPM and weapon sound.
+   * When firing stops, the **Re-Aim Buffer** countdown begins (default 4.5s).
+   * Once your reload animation finishes, right-click to re-enter ADS and steady your crosshair on the bullet decals.
+   * Tap **`[Spacebar]`** or click **`📸 Snap Wall & Finish`** to lock in the screenshot immediately, or simply hold still until the timer reaches zero!
+3. **Inspect Samples Side-by-Side:**
+   * Each sample card displays:
+     * **Spray Video:** Left column showing the recorded clip and allowing you to check RPM or listen to the sound.
+     * **Wall Screenshot:** Right column showing the high-res ADS decal screenshot used to extract the pattern.
+   * **👁️ Canvas:** Project the wall screenshot directly onto the editor canvas to inspect how detected points align with decals.
+   * **📷 Re-snap Wall:** If you weren't fully in ADS or want to re-aim, click *Re-snap Wall*. The studio starts a **3-second countdown with audio beeps** so you have ample time to tab back into the game and hold ADS before the shot is snapped.
+   * **💾 Save Image:** Download and save the high-resolution wall screenshot to disk for your library or offline re-analysis.
+   * **🔊 Audio:** Play the recorded gunfire sound (gunfire audio sensor automatically mutes during playback with a 1.5s echo-safety cooldown to prevent false recording triggers).
+   * **🗑 Discard:** Discard bad sprays with a single click.
+4. **Canvas Navigation & Dynamic Auto-Resize:**
+   * **Dynamic Auto-Resize:** The canvas automatically computes available viewport space and scales the background wall screenshot and recoil pattern points smoothly to fit smaller laptop screens.
+   * **Pan Canvas:** Right-click & drag, Middle-click & drag, Spacebar + drag, or toggle **✋ Pan Canvas** in the toolbar.
+   * **Zoom Canvas:** Mouse wheel zooms in and out centered on your cursor.
+   * **Fit & Center:** Click **🎯 Fit & Center** to reset canvas pan and zoom.
+   * **Move All:** Toggle **✥ Move All (Align)** to shift all points simultaneously if you want to micro-align with the target board.
+5. **One-Click Analysis & Spec Update:**
    * Click **⚡ Analyze Sprays & Calculate Recoil**.
-   * The clips are sent to the Python pipeline, which stabilizes camera motion, tracks bullet decals frame-by-frame, measures RPM, and computes the median-delta recoil curve.
-   * The discovered curve is instantly plotted on the Konva canvas, and RPM / stats are pre-filled in the editor.
+   * Captures are organized under `processing/captures/session_<weapon>_<mode>_<timestamp>/` containing companion video clips and high-res wall screenshots.
+   * The backend runs **Target Board Isolation** and **Morphological Black Top-Hat Filtering** to isolate dark bullet decals while completely ignoring dark target frame pillars, vertical seams, and weapon sights.
+   * Old patterns on the canvas are automatically cleared before plotting new sprays.
    * Click **💾 Save to specs.json** to commit the new pattern directly to the trainer!
+6. **Loading Past Sessions & Importing Local Clips:**
+   * Under **Past Recording Sessions** in the Live Studio, choose any past session from the dropdown and click **📥 Load Session**.
+   * The studio fetches the session's recorded `.webm` videos, audio, and companion wall screenshots directly into the sample cards.
+   * You can inspect, re-snap, or click **⚡ Analyze Sprays & Calculate Recoil** to re-analyze historical sessions at any time!
+   * To import local video files from your disk, click **📁 Import Local Video(s)**. You can select multiple `.webm` or `.mp4` recordings along with companion wall `.jpg` / `.png` screenshots.
+7. **Batch Wall Screenshot Analysis & Stage Carousel Navigation:**
+   * Switch to the **🖼️ Offline Screenshot** tab to analyze saved wall screenshots in batches.
+   * **Choose Image(s) (Multi-Select):** Select multiple screenshots from disk at once.
+   * **Server Screenshots Library:** Choose any saved screenshot from `processing/captures/` and click **📥 Add to Batch**.
+   * Each loaded image appears as a card in the **Loaded Screenshots** tray with a live status badge (`Ready`, `Analyzing...`, `N shots`) and remove button.
+   * Click **⚡ Analyze Screenshot(s)** to run the batch discovery pipeline (`process_images_session`).
+   * **Fast Stage Carousel Navigation:**
+     * Use the **`◀ Prev`** and **`Next ▶`** buttons in the stage toolbar or press **`[`** / **`]`** on your keyboard to instantly flip through screenshots on the canvas.
+     * Use the **View** dropdown to inspect individual spray decal detections, view the median aggregated spec across the batch, or overlay the saved canonical spec from `specs.json`.
 
 ---
 

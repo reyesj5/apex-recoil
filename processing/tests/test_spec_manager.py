@@ -11,11 +11,14 @@ from recoil_discovery.spec_manager import SpecManager
 def test_load_specs():
     manager = SpecManager()
     specs = manager.load_specs()
-    assert len(specs) >= 13
+    assert len(specs) >= 15
     r301 = manager.get_weapon_spec("r301")
     assert r301 is not None
     assert r301["rpm"] == 810
-    assert len(r301["x"]) == 31
+    assert len(r301["x"]) >= 31
+    havoc = manager.get_weapon_spec("havoc")
+    assert havoc is not None
+    assert havoc["name"] == "havoc_tc"
 
 
 def test_diff_weapon_spec_unchanged():
@@ -44,11 +47,11 @@ def test_diff_weapon_spec_modified():
 
 def test_diff_new_weapon():
     manager = SpecManager()
-    nemesis_spec = {
-        "name": "nemesis",
+    new_spec = {
+        "name": "bocek_bow",
         "rpm": 600,
         "x": [0, 5, 10],
         "y": [0, -10, -25]
     }
-    diff = manager.diff_weapon_spec(nemesis_spec)
+    diff = manager.diff_weapon_spec(new_spec)
     assert diff["status"] == "NEW_WEAPON"

@@ -95,6 +95,8 @@ diff_*.png
 processing/captures/
 captures/
 recordings/
+processing/data/
+data/
 
 # Knowledge graph outputs (graphify)
 graphify-out/

@@ -85,3 +85,95 @@ def test_extract_from_static_image():
     assert y[0] == 0.0
     # Y should move negatively (upward in specs convention)
     assert y[-1] < 0
+
+
+def test_extract_from_settled_frames():
+    tracker = DecalTracker()
+    h, w = 400, 400
+
+    # Create synthetic series of frames where the last frames contain settled bullet holes
+    blank_frame = np.full((h, w), 220, dtype=np.uint8)
+    settled_frame = blank_frame.copy()
+
+    # 5 bullet holes
+    positions = [(200, 320), (205, 270), (212, 220), (220, 170), (228, 120)]
+    for pos in positions:
+        cv2.circle(settled_frame, pos, 6, 20, -1)
+
+    frames = [blank_frame.copy() for _ in range(10)] + [settled_frame.copy() for _ in range(10)]
+
+    x, y = tracker.extract_from_settled_frames(frames, expected_points=5)
+    assert len(x) == 5
+    assert len(y) == 5
+    assert x[0] == 0.0
+    assert y[0] == 0.0
+    assert y[-1] < 0
+
+
+def test_extract_gameplay_target_board_with_dark_pillars():
+    """Verify that gameplay target board isolation and Black Top-Hat ignore dark pillars and gun models."""
+    tracker = DecalTracker()
+    h, w = 720, 1280
+    frame = np.full((h, w), 50, dtype=np.uint8) # Dark scene / pillars
+
+    # Bright target board in center
+    frame[150:520, 480:800] = 190
+
+    # Bullet decals on the target board
+    true_positions = [
+        (640, 460),
+        (638, 420),
+        (642, 380),
+        (645, 340),
+        (641, 300),
+    ]
+    for pos in true_positions:
+        cv2.circle(frame, pos, 5, 25, -1)
+
+    x, y, meta = tracker.extract_from_static_image(frame, expected_points=5, return_metadata=True)
+    assert len(x) == 5
+    assert len(y) == 5
+    # First point near (640, 460)
+    origin = meta["origin"]
+    assert np.isclose(origin[0], 640, atol=2.0)
+    assert np.isclose(origin[1], 460, atol=2.0)
+    assert y[-1] < 0
+
+
+def test_extract_target_board_20m_with_pillar_seam_noise():
+    """Verify that 20m target board isolation rejects pillar seam artifacts and distant noise."""
+    tracker = DecalTracker()
+    h, w = 1080, 1920
+    frame = np.full((h, w), 50, dtype=np.uint8)
+
+    # Wide target board in center at 20m
+    frame[160:800, 600:1320] = 185
+
+    # Bullet pattern in center of board
+    true_positions = [
+        (960, 650),
+        (958, 610),
+        (962, 570),
+        (965, 530),
+        (960, 490),
+    ]
+    for pos in true_positions:
+        cv2.circle(frame, pos, 6, 25, -1)
+
+    # Artificial shadow / screw artifact right at the pillar boundary seam
+    cv2.circle(frame, (605, 500), 10, 20, -1)
+    cv2.circle(frame, (1315, 480), 8, 20, -1)
+
+    x, y, meta = tracker.extract_from_static_image(frame, expected_points=5, return_metadata=True)
+    assert len(x) == 5
+    assert len(y) == 5
+    # Origin should be the first shot at (960, 650)
+    origin = meta["origin"]
+    assert np.isclose(origin[0], 960, atol=3.0)
+    assert np.isclose(origin[1], 650, atol=3.0)
+    # Ensure neither pillar seam artifact at x=605 or x=1315 was included in the path
+    frame_points = meta["frame_points"]
+    for pt in frame_points:
+        assert pt[0] > 700 and pt[0] < 1200
+
+

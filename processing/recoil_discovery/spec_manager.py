@@ -31,11 +31,25 @@ class SpecManager:
             json.dump(specs, f, indent=4)
 
     def get_weapon_spec(self, weapon_name: str) -> Optional[Dict[str, Any]]:
-        """Retrieve spec for a specific weapon name."""
+        """Retrieve spec for a specific weapon name with alias normalization."""
         specs = self.load_specs()
         for w in specs:
             if w.get('name') == weapon_name:
                 return w
+        aliases = {
+            'havoc': 'havoc_tc',
+            'devotion': 'devotion_tc',
+            '3030': '3030_repeater',
+            'repeater': '3030_repeater',
+            'g7': 'g7_scout',
+            'scout': 'g7_scout',
+            'pk': 'peacekeeper',
+        }
+        target = aliases.get(weapon_name.lower().strip())
+        if target:
+            for w in specs:
+                if w.get('name') == target:
+                    return w
         return None
 
     def diff_weapon_spec(

@@ -10,3 +10,6 @@ diff_*.png
 *.bak
 captures/
 recordings/
+debug_*.jpg
+debug_*.png
+debug_*.*

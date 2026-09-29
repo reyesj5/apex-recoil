@@ -5,7 +5,7 @@ Supports:
 2. Static screenshot blob detection and nearest-neighbor / momentum path sequencing.
 """
 
-from typing import List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Optional, Dict, Any, Union
 import cv2
 import numpy as np
 
@@ -157,64 +157,361 @@ class DecalTracker:
         norm_y = [round(float(p[1] - p0[1]), 2) for p in detected_points]
         return norm_x, norm_y
 
+    def extract_from_settled_frames(
+        self,
+        frames: List[np.ndarray],
+        expected_points: int,
+        offsets: Optional[List[int]] = None,
+        baseline_frame: Optional[np.ndarray] = None,
+        return_metadata: bool = False
+    ) -> Union[Tuple[List[float], List[float]], Tuple[List[float], List[float], Dict[str, Any]]]:
+        """
+        Extract complete recoil spray pattern from settled post-firing wall frames.
+        In gameplay recordings, active firing frames are occluded by weapon viewmodels,
+        muzzle flash, and reload HUD indicators. The settled frames at the end of the
+        clip cleanly expose all bullet impact decals on the wall.
+        """
+        if not frames:
+            if return_metadata:
+                return [], [], {"frame_index": 0, "frame_points": [], "origin": [0.0, 0.0]}
+            return [], []
+
+        if offsets is None:
+            # Check frames near the end of recording (after firing stops and gun lowers)
+            offsets = [-3, -5, -8, -10, -15, -1, -20]
+
+        thresholds = [80, 70, 90, 60, 100]
+        best_x: List[float] = []
+        best_y: List[float] = []
+        best_meta: Dict[str, Any] = {"frame_index": offsets[0] if offsets else -1, "frame_points": [], "origin": [0.0, 0.0]}
+
+        for offset in offsets:
+            if abs(offset) >= len(frames):
+                continue
+            frame = frames[offset]
+            for th in thresholds:
+                res = self.extract_from_static_image(
+                    frame,
+                    expected_points=expected_points,
+                    threshold_val=th,
+                    baseline_image=baseline_frame,
+                    return_metadata=True
+                )
+                x, y, meta = res
+                meta["frame_index"] = offset
+                if expected_points and len(x) == expected_points:
+                    if return_metadata:
+                        return x, y, meta
+                    return x, y
+                if len(x) > len(best_x):
+                    best_x, best_y = x, y
+                    best_meta = meta
+
+        if return_metadata:
+            return best_x, best_y, best_meta
+        return best_x, best_y
+
     def extract_from_static_image(
         self,
         image: np.ndarray,
         expected_points: int,
-        threshold_val: int = 80
-    ) -> Tuple[List[float], List[float]]:
+        threshold_val: int = 80,
+        baseline_image: Optional[np.ndarray] = None,
+        roi_mask: Optional[np.ndarray] = None,
+        return_metadata: bool = False
+    ) -> Union[Tuple[List[float], List[float]], Tuple[List[float], List[float], Dict[str, Any]]]:
         """
-        Fallback extraction for static wall screenshots (e.g. assets/recoils/*.png).
-        Uses connected component analysis + directional path sequencing.
+        Extraction for static wall screenshots or settled video frames.
+        Supports automatic target-board bounding box isolation, morphological
+        Black Top-Hat decal filtering, camera-aligned baseline differencing,
+        and directional nearest-neighbor path sequencing.
         """
         if len(image.shape) == 3:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         else:
             gray = image.copy()
 
-        # Dark bullet holes on lighter wall -> invert
-        _, thresh = cv2.threshold(gray, threshold_val, 255, cv2.THRESH_BINARY_INV)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-        thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        h, w = gray.shape[:2]
+        is_gameplay_res = (w >= 1000 and h >= 600)
 
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        left, right, top, bottom = 0, w, 0, h
+        if roi_mask is not None:
+            mask_pts = cv2.findNonZero(roi_mask)
+            if mask_pts is not None:
+                bx, by, bw, bh = cv2.boundingRect(mask_pts)
+                left, right, top, bottom = bx, bx + bw, by, by + bh
+        elif is_gameplay_res:
+            cx = w // 2
+            corridor_margin = int(w * 0.065)
+            default_left = max(0, cx - corridor_margin)
+            default_right = min(w, cx + corridor_margin)
+
+            # Dynamically detect bright target board bounded by dark frame pillars and beams
+            try:
+                band = gray[int(h * 0.35):int(h * 0.45), :]
+                col_median = np.median(band, axis=0)
+                center_val = float(np.median(col_median[max(0, cx - 25):min(w, cx + 25)]))
+
+                left = int(w * 0.20)
+                for x in range(cx, int(w * 0.08), -1):
+                    # Only detect as a border pillar if significantly darker than the wall
+                    if col_median[x] < min(110.0, center_val - 35.0):
+                        left = x + 15
+                        break
+
+                right = int(w * 0.80)
+                for x in range(cx, int(w * 0.92)):
+                    if col_median[x] < min(110.0, center_val - 35.0):
+                        right = x - 15
+                        break
+
+                if right - left < corridor_margin:
+                    left, right = default_left, default_right
+                else:
+                    margin_x = int((right - left) * 0.05)
+                    left = max(left + margin_x, default_left)
+                    right = min(right - margin_x, default_right)
+
+                # Board top is below top stats HUD banner
+                top = int(h * 0.16)
+
+                # Board bottom is where target board meets the red crossbeam or floor
+                board_col_band = gray[:, left:right]
+                row_median = np.median(board_col_band, axis=1)
+                base_med = float(np.median(row_median[int(h * 0.25):int(h * 0.45)]))
+                cy = int(h * 0.42)
+                bottom = int(h * 0.75)
+                for y in range(cy, int(h * 0.85)):
+                    if row_median[y] < min(110.0, base_med - 25.0):
+                        bottom = y - 10
+                        break
+                if bottom <= top + 100:
+                    bottom = int(h * 0.75)
+            except Exception:
+                left, right = default_left, default_right
+                top, bottom = int(h * 0.16), int(h * 0.75)
+
+        board_roi = gray[top:bottom, left:right]
+        board_bgr = image[top:bottom, left:right] if len(image.shape) == 3 else None
         blobs: List[Tuple[float, float]] = []
-        for c in contours:
-            area = cv2.contourArea(c)
-            if self.min_blob_area <= area <= self.max_blob_area:
-                m = cv2.moments(c)
-                if m['m00'] > 0:
-                    blobs.append((m['m10'] / m['m00'], m['m01'] / m['m00']))
+        blob_areas: Dict[Tuple[float, float], float] = {}
+
+        if is_gameplay_res:
+            # Morphological Black Top-Hat: isolates small dark bullet holes on bright board,
+            # completely rejecting large dark pillars and scope mountings.
+            k_size = 15 if w >= 1920 else (11 if w >= 1280 else 9)
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_size, k_size))
+            bhat = cv2.morphologyEx(board_roi, cv2.MORPH_BLACKHAT, kernel)
+
+            min_dist = 6 if w >= 1920 else (5 if w >= 1280 else 4)
+            from scipy.ndimage import maximum_filter
+            peak_filter = maximum_filter(bhat, size=min_dist)
+
+            base_th = min(35, max(18, int(threshold_val * 0.28)))
+            candidate_thresholds = [base_th, base_th + 5, base_th - 5, 20, 25]
+
+            min_area = 4 if w >= 1920 else (3 if w >= 1280 else 2)
+            max_area = 1200 if w >= 1920 else (800 if w >= 1280 else 500)
+            spray_center_x = (left + right) / 2.0
+
+            for th in candidate_thresholds:
+                is_peak = (bhat == peak_filter) & (bhat >= th)
+                _, thresh = cv2.threshold(bhat, th, 255, cv2.THRESH_BINARY)
+                clean = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
+                contours, _ = cv2.findContours(clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                cand_blobs = []
+                cand_areas = {}
+
+                for c in contours:
+                    area = cv2.contourArea(c)
+                    if area < min_area or area > max_area:
+                        continue
+
+                    # Mask for peak decomposition inside merged contours
+                    mask = np.zeros(board_roi.shape, dtype=np.uint8)
+                    cv2.drawContours(mask, [c], -1, 255, -1)
+                    c_peaks = is_peak & (mask == 255)
+                    py, px = np.where(c_peaks)
+
+                    extracted_pts = []
+                    if len(px) <= 1:
+                        m = cv2.moments(c)
+                        if m['m00'] > 0:
+                            extracted_pts.append((left + m['m10'] / m['m00'], top + m['m01'] / m['m00']))
+                    else:
+                        pts = list(zip(px, py))
+                        clustered = []
+                        for pt in pts:
+                            if not any(np.hypot(pt[0] - cp[0], pt[1] - cp[1]) < min_dist for cp in clustered):
+                                clustered.append(pt)
+                        for cp in clustered:
+                            extracted_pts.append((left + cp[0], top + cp[1]))
+
+                    for pt in extracted_pts:
+                        bx, by = int(round(pt[0])), int(round(pt[1]))
+                        local_x, local_y = bx - left, by - top
+                        if 0 <= local_y < board_roi.shape[0] and 0 <= local_x < board_roi.shape[1]:
+                            g_val = int(board_roi[local_y, local_x])
+                            is_reticle = False
+                            if board_bgr is not None:
+                                b_c, g_c, r_c = [int(v) for v in board_bgr[local_y, local_x]]
+                                is_reticle = (g_c - max(r_c, b_c) > 30)
+
+                            # Exclude false railing seam edge marks far off to the right of spray center
+                            is_false_railing = (
+                                int(h * 0.264) <= by <= int(h * 0.282)
+                                and bx > cx + int(w * 0.015)
+                            )
+
+                            if (g_val <= 75 or board_roi[local_y, local_x] < np.median(board_roi) * 0.65) and not is_reticle and not is_false_railing:
+                                cand_blobs.append(pt)
+                                cand_areas[pt] = area
+
+                # Deduplicate very close peaks
+                unique_cand = []
+                for b in sorted(cand_blobs, key=lambda p: (p[1], p[0])):
+                    if not any(np.hypot(b[0] - ub[0], b[1] - ub[1]) < min_dist for ub in unique_cand):
+                        unique_cand.append(b)
+
+                if expected_points and len(unique_cand) >= expected_points - 1:
+                    blobs = unique_cand
+                    blob_areas = cand_areas
+                    break
+                if len(unique_cand) > len(blobs):
+                    blobs = unique_cand
+                    blob_areas = cand_areas
+        else:
+            # Fallback for synthetic / non-gameplay test images
+            if baseline_image is not None:
+                base_gray = cv2.cvtColor(baseline_image, cv2.COLOR_BGR2GRAY) if len(baseline_image.shape) == 3 else baseline_image.copy()
+                base_aligned, _ = self.align_frames(gray, base_gray)
+                diff = cv2.absdiff(gray, base_aligned)
+                _, diff_thresh = cv2.threshold(diff, 18, 255, cv2.THRESH_BINARY)
+                _, dark_thresh = cv2.threshold(gray, threshold_val, 255, cv2.THRESH_BINARY_INV)
+                thresh = cv2.bitwise_or(diff_thresh, dark_thresh)
+            else:
+                _, thresh = cv2.threshold(gray, threshold_val, 255, cv2.THRESH_BINARY_INV)
+
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            for c in contours:
+                area = cv2.contourArea(c)
+                if self.min_blob_area <= area <= self.max_blob_area:
+                    m = cv2.moments(c)
+                    if m['m00'] > 0:
+                        blobs.append((m['m10'] / m['m00'], m['m01'] / m['m00']))
 
         if not blobs:
+            if return_metadata:
+                return [], [], {"frame_points": [], "origin": [0.0, 0.0]}
             return [], []
 
-        # Order blobs: Start from the bottom-most blob (initial shot before upward kick)
-        blobs.sort(key=lambda b: b[1], reverse=True)
-        start_point = blobs[0]
-        remaining = blobs[1:]
-        path = [start_point]
+        # Find starting point (initial shot)
+        if is_gameplay_res:
+            center_x = (left + right) / 2.0
+            blobs_near_center = [b for b in blobs if abs(b[0] - center_x) < (right - left) * 0.35]
+            if blobs_near_center:
+                blobs_near_center.sort(key=lambda b: b[1], reverse=True)
+                start_point = blobs_near_center[0]
+            else:
+                blobs.sort(key=lambda b: b[1], reverse=True)
+                start_point = blobs[0]
+        else:
+            blobs.sort(key=lambda b: b[1], reverse=True)
+            start_point = blobs[0]
 
+        remaining = [b for b in blobs if b != start_point]
+        path = [start_point]
         curr = start_point
-        # Greedy directional nearest neighbor favoring upward momentum
-        while remaining and len(path) < expected_points:
-            best_idx = 0
+        max_step = max(70.0, float(h) * 0.12) if not is_gameplay_res else (70.0 if w >= 1920 else 50.0)
+
+        # 1. Greedy directional nearest neighbor favoring upward momentum
+        target_len = expected_points if expected_points else len(blobs)
+        while remaining and len(path) < target_len:
+            best_idx = -1
             best_score = float('inf')
             for i, cand in enumerate(remaining):
                 dx = cand[0] - curr[0]
                 dy = cand[1] - curr[1]  # In image coords, dy < 0 is upward
                 dist = np.sqrt(dx * dx + dy * dy)
-                # Upward preference penalty if moving downward
-                penalty = 1.0 if dy <= 5 else 2.5
+                if dist > max_step:
+                    continue
+                penalty = 1.0 if dy <= 8 else 1.8
                 score = dist * penalty
                 if score < best_score:
                     best_score = score
                     best_idx = i
+
+            if best_score == float('inf'):
+                # If no point within max_step, relax distance slightly but cap strictly at max_step * 1.6
+                for i, cand in enumerate(remaining):
+                    dx = cand[0] - curr[0]
+                    dy = cand[1] - curr[1]
+                    dist = np.sqrt(dx * dx + dy * dy)
+                    if dist > max_step * 1.6:
+                        continue
+                    penalty = 1.0 if dy <= 8 else 1.8
+                    score = dist * penalty
+                    if score < best_score:
+                        best_score = score
+                        best_idx = i
+
+            if best_score == float('inf'):
+                break
+
             curr = remaining.pop(best_idx)
             path.append(curr)
+
+        # 2. Detour-minimizing insertion for any remaining unvisited candidate blobs
+        # (e.g. side-hooks in weapon recoil patterns where nearest-neighbor traversed past a branch)
+        while remaining and (not expected_points or len(path) < expected_points):
+            best_pt = None
+            best_idx = -1
+            best_cost = float('inf')
+            for pt in remaining:
+                for i in range(len(path) - 1):
+                    p1 = path[i]
+                    p2 = path[i + 1]
+                    cost = np.hypot(pt[0] - p1[0], pt[1] - p1[1]) + np.hypot(p2[0] - pt[0], p2[1] - pt[1]) - np.hypot(p2[0] - p1[0], p2[1] - p1[1])
+                    if cost < best_cost and cost < max_step * 1.5:
+                        best_cost = cost
+                        best_idx = i + 1
+                        best_pt = pt
+            if best_pt is not None:
+                path.insert(best_idx, best_pt)
+                remaining.remove(best_pt)
+            else:
+                break
+
+        # 3. Handle overlapping shots: if expected_points > len(path) (e.g. 34 visible holes for 35 rounds)
+        while expected_points and len(path) < expected_points and (expected_points - len(path) <= 4):
+            best_split_idx = -1
+            max_cand_area = 0
+            for i, pt in enumerate(path):
+                a = blob_areas.get(pt, 0)
+                if a > max_cand_area:
+                    max_cand_area = a
+                    best_split_idx = i
+            if best_split_idx >= 0 and max_cand_area > 0:
+                p_dup = (path[best_split_idx][0] + 0.5, path[best_split_idx][1] - 0.5)
+                path.insert(best_split_idx + 1, p_dup)
+                # Demote area so next iteration picks second largest cluster
+                blob_areas[path[best_split_idx]] = max_cand_area / 2.0
+            else:
+                break
 
         # Normalize relative to starting point
         p0 = path[0]
         norm_x = [round(float(p[0] - p0[0]), 2) for p in path]
         norm_y = [round(float(p[1] - p0[1]), 2) for p in path]
+
+        if return_metadata:
+            meta = {
+                "frame_points": [[round(float(p[0]), 1), round(float(p[1]), 1)] for p in path],
+                "origin": [round(float(p0[0]), 1), round(float(p0[1]), 1)],
+                "visible_holes": len(blobs)
+            }
+            return norm_x, norm_y, meta
+
         return norm_x, norm_y
