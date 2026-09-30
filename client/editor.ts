@@ -2344,6 +2344,21 @@ function updateSpec(_?: string) {
   console.log('points', points, anchors, anchorIndexes);
   idx = Array.from(anchors.values())
   // TODO: warn about anchors length != 2.
+  if (pp.length === 0) {
+    const spec = {
+      version: 2,
+      weapon: aWeapon.get(),
+      barrel: aBarrel.get(),
+      stock: aStock.get(),
+      comment: aComment.get(),
+      x: [],
+      y: [],
+      anchor_indexes: [],
+      anchor_in_game_distance: aDistance.get(),
+    };
+    setText(JSON.stringify(spec));
+    return;
+  }
   const ort = pp[0];
   pp = pp.map(p => p.clone().sub(ort));
   const spec = {
@@ -2981,6 +2996,15 @@ function blobToBase64(blob: Blob): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 function showAudioDeviceAlert(message: string) {
@@ -3733,7 +3757,7 @@ function renderSamplesList() {
     top.className = 'sample-top';
 
     const titleWrap = document.createElement('span');
-    titleWrap.innerHTML = `<strong>${s.name}</strong> <span class="sample-meta">(${s.durationSec}s)${isTarget ? ' [Next spray will replace]' : ''}</span>`;
+    titleWrap.innerHTML = `<strong>${escapeHtml(s.name)}</strong> <span class="sample-meta">(${s.durationSec}s)${isTarget ? ' [Next spray will replace]' : ''}</span>`;
 
     const actions = document.createElement('div');
     actions.className = 'sample-actions';
@@ -4101,6 +4125,18 @@ async function executeProcessSessionSprays(weapon: string, mode: string, saveCap
       })
     });
 
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      let errMsg = `Server error (${res.status})`;
+      try {
+        const errJson = JSON.parse(errText);
+        if (errJson.error) errMsg = errJson.error;
+      } catch {
+        if (errText) errMsg += `: ${errText.slice(0, 100)}`;
+      }
+      throw new Error(errMsg);
+    }
+
     const data = await res.json();
     if (!data.success) {
       throw new Error(data.error || 'Session processing failed');
@@ -4141,12 +4177,12 @@ async function executeProcessSessionSprays(weapon: string, mode: string, saveCap
       statusBox.className = 'success';
       statusBox.innerHTML = `
         <strong>✅ Analysis Complete!</strong><br/>
-        • Target Weapon: <strong>${weapon.toUpperCase()}</strong> (${mode.toUpperCase()})<br/>
+        • Target Weapon: <strong>${escapeHtml(weapon.toUpperCase())}</strong> (${escapeHtml(mode.toUpperCase())})<br/>
         • Sprays Analyzed: ${data.trials_count}<br/>
         • Detected Shots: ${shotCount} shots<br/>
         • Measured RPM: ${measuredRpm} RPM<br/>
-        • Convergence Score: ${convScore} / 100<br/>
-        • Spec Integration: <strong>${integrationModeText}</strong><br/>
+        • Convergence Score: ${escapeHtml(String(convScore))} / 100<br/>
+        • Spec Integration: <strong>${escapeHtml(integrationModeText)}</strong><br/>
         • Discrepancy Check: <span class="status-badge ${discReport.status}">${discReport.status === 'safe' ? '🟢 Consistent' : (discReport.status === 'warning' ? '🟡 Moderate Deviation' : '🔴 Major Discrepancy Alert')} (${discReport.meanDeviationPx.toFixed(1)}px avg delta${discReport.shotCountMatches ? '' : `, ${Math.abs(discReport.shotCountDelta)} shot mismatch`})</span><br/>
         • Saved to Captures: ${data.saved_to_disk ? 'Yes (processing/captures/)' : 'No (Analyzed in-memory)'}<br/>
         <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
@@ -4297,10 +4333,10 @@ function renderBatchScreenshotsList() {
     }
 
     card.innerHTML = `
-      <img src="${item.dataUrl}" alt="${item.name}" class="batch-thumb" />
+      <img src="${item.dataUrl}" alt="${escapeHtml(item.name)}" class="batch-thumb" />
       <div class="batch-info">
-        <span class="batch-title" title="${item.name}">#${idx + 1}: ${item.name}</span>
-        <span class="batch-meta">${item.source}</span>
+        <span class="batch-title" title="${escapeHtml(item.name)}">#${idx + 1}: ${escapeHtml(item.name)}</span>
+        <span class="batch-meta">${escapeHtml(item.source)}</span>
       </div>
       <div class="batch-badge-wrap">${badgeHtml}</div>
       <button type="button" class="batch-remove-btn" title="Remove screenshot">✕</button>
@@ -4451,7 +4487,7 @@ function setupOfflineScreenshotAnalysis() {
     if (batchScreenshots.some(b => b.name === filename || (b.sourceUrl && b.sourceUrl === url))) {
       if (statusBox) {
         statusBox.className = 'error';
-        statusBox.innerHTML = `⚠️ <strong>Duplicate:</strong> Screenshot "<em>${filename}</em>" is already in the batch list.`;
+        statusBox.innerHTML = `⚠️ <strong>Duplicate:</strong> Screenshot "<em>${escapeHtml(filename)}</em>" is already in the batch list.`;
       } else {
         alert(`Screenshot "${filename}" is already loaded in the batch.`);
       }
@@ -4486,7 +4522,7 @@ function setupOfflineScreenshotAnalysis() {
       }
       if (statusBox) {
         statusBox.className = 'success';
-        statusBox.innerHTML = `✅ Added "<em>${filename}</em>" to batch.`;
+        statusBox.innerHTML = `✅ Added "<em>${escapeHtml(filename)}</em>" to batch.`;
       }
     } catch (err: any) {
       alert(`Failed to load screenshot from server: ${err.message}`);
@@ -4582,6 +4618,18 @@ async function executeBatchScreenshotAnalysis(weapon: string, mode: string, save
       })
     });
 
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      let errMsg = `Server error (${res.status})`;
+      try {
+        const errJson = JSON.parse(errText);
+        if (errJson.error) errMsg = errJson.error;
+      } catch {
+        if (errText) errMsg += `: ${errText.slice(0, 100)}`;
+      }
+      throw new Error(errMsg);
+    }
+
     const data = await res.json();
     if (!data.success) {
       throw new Error(data.error || 'Static image analysis failed');
@@ -4642,11 +4690,11 @@ async function executeBatchScreenshotAnalysis(weapon: string, mode: string, save
       statusBox.className = mismatchTrials.length > 0 ? 'warning' : 'success';
       statusBox.innerHTML = `
         <strong>${mismatchTrials.length > 0 ? '⚠️' : '✅'} Batch Screenshot Analysis Complete!</strong><br/>
-        • Target Weapon: <strong>${weapon.toUpperCase()}</strong> (${mode.toUpperCase()})<br/>
+        • Target Weapon: <strong>${escapeHtml(weapon.toUpperCase())}</strong> (${escapeHtml(mode.toUpperCase())})<br/>
         • Screenshots Analyzed: ${data.trials_count || batchScreenshots.length}<br/>
         • Spec Shots (Median Aggregated): ${shotCount} shots<br/>
         • Expected Mag Size: ${expectedMag} shots<br/>
-        • Spec Integration: <strong>${integrationModeText}</strong><br/>
+        • Spec Integration: <strong>${escapeHtml(integrationModeText)}</strong><br/>
         • Discrepancy Check: <span class="status-badge ${discReport.status}">${discReport.status === 'safe' ? '🟢 Consistent' : (discReport.status === 'warning' ? '🟡 Moderate Deviation' : '🔴 Major Discrepancy Alert')} (${discReport.meanDeviationPx.toFixed(1)}px avg delta${discReport.shotCountMatches ? '' : `, ${Math.abs(discReport.shotCountDelta)} shot mismatch`})</span><br/>
         • Storage: ${data.saved_to_disk ? 'Saved to captures library' : 'Analyzed in-memory (no duplicates)'}<br/>
         • <em>Use the stage toolbar ◀ Prev / Next ▶ (or [ and ]) to cycle through screenshots!</em>
@@ -4779,8 +4827,7 @@ function setupPastSessionsManager() {
       capturedSamples.forEach(s => URL.revokeObjectURL(s.objectUrl));
       capturedSamples.length = 0;
 
-      for (let i = 0; i < session.samples.length; i++) {
-        const item = session.samples[i];
+      const loadedSamples = await Promise.all(session.samples.map(async (item: any, i: number) => {
         let blob: Blob;
         try {
           const vidRes = await fetch(item.videoUrl);
@@ -4801,7 +4848,7 @@ function setupPastSessionsManager() {
           }
         }
 
-        capturedSamples.push({
+        return {
           id: `sample_${Date.now()}_${i}`,
           blob,
           objectUrl,
@@ -4810,8 +4857,10 @@ function setupPastSessionsManager() {
           timestamp: new Date(),
           screenshotData: screenshotDataUrl,
           screenshotUrl: item.screenshotUrl || screenshotDataUrl
-        });
-      }
+        };
+      }));
+
+      capturedSamples.push(...loadedSamples);
 
       renderSamplesList();
 
@@ -4826,7 +4875,7 @@ function setupPastSessionsManager() {
         statusBox.className = 'success';
         statusBox.innerHTML = `
           <strong>✅ Session Loaded!</strong><br/>
-          • Weapon: <strong>${session.weapon.toUpperCase()}</strong> (${session.mode.toUpperCase()})<br/>
+          • Weapon: <strong>${escapeHtml(session.weapon.toUpperCase())}</strong> (${escapeHtml(session.mode.toUpperCase())})<br/>
           • Loaded ${capturedSamples.length} spray(s) with companion wall screenshots.<br/>
           • Click <strong>⚡ Analyze Sprays & Calculate Recoil</strong> to re-run discovery!
         `;

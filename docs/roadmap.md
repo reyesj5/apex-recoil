@@ -12,10 +12,11 @@ This document outlines the architectural milestones, completed implementations, 
 | **M2: Moving Target & Localization** | ✅ Completed | Moving target mode, Russian (`/ru`) and Chinese (`/zh-CN`) translations. |
 | **M3: Corrupted Magazine (Tier 4 / Red)** | ✅ Completed | Full Tier 4 magazine support across UI, specs, CSS theming, and translations. |
 | **M4: Auto-Capture Studio (`/editor`)** | ✅ Completed | Hands-free WebRTC window capture with acoustic gunfire trigger, sample manager, and REST API. |
-| **M5: Python Recoil Discovery Engine** | ✅ Completed | Zero-guesswork computer vision and signal processing engine with 19 passing unit tests. |
+| **M5: Python Recoil Discovery Engine** | ✅ Completed | Zero-guesswork computer vision and signal processing engine with 30 passing unit tests. |
 | **M6: Weapon Arsenal & Attachments** | ✅ Completed | All 31 Apex weapons supported with official SVGs, 5-tier specs, and Corrupted Stock attachment. |
-| **M7: UI/Asset Polish** | 🟡 Next Priority | Dedicated artwork for Corrupted Mag, cleanup of remaining codebase TODOs. |
-| **M8: CI/CD Pipeline Automation** | ⚪ Planned | GitHub Actions workflow running both Python pytest and TypeScript typecheck on push. |
+| **M7: Full-Stack Hardening & Robustness** | ✅ Completed | Comprehensive senior review covering 25 fixes across security, correctness, error handling, and performance. |
+| **M8: UI/Asset Polish** | 🟡 Next Priority | Dedicated artwork for Corrupted Mag, cleanup of remaining legacy UI items. |
+| **M9: CI/CD Pipeline Automation** | ⚪ Planned | GitHub Actions workflow running both Python pytest and TypeScript typecheck on push. |
 
 ---
 
@@ -118,7 +119,36 @@ All 31 weapons in [client/specs.json](file:///c:/Users/micro.VADER/Documents/Pro
 
 ---
 
-### Milestone 7: UI & Asset Polish
+### Milestone 7: Full-Stack Hardening & Robustness (Completed)
+- [x] **Server Process Safety & Validation ([app.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js))**:
+  - Attached `proc.on('error')` failure listeners to Python `spawn()` processes preventing server crashes on missing binaries.
+  - Fixed multi-part weapon name splitting in `/api/discovery/sessions` (`havoc_tc`, `p2020_akimbo`, `mozambique_akimbo`).
+  - Switched synchronous `writeFileSync` to non-blocking async `fs.promises.writeFile`.
+  - Added input sanitization for CLI parameters (`weaponTag`, `cleanHdr`, `cleanStrategy`, positive numeric validation).
+  - Added `isValidWeaponSpec` JSON schema validation for spec updates with automatic backup preservation.
+- [x] **Python Discovery Engine Robustness ([processing/recoil_discovery/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/))**:
+  - `tracker.py`: Unconditionally initialized `cx = w // 2` to eliminate `UnboundLocalError` risk; hoisted `maximum_filter` to module top level.
+  - `spec_manager.py`: Added in-memory caching to `load_specs`; handled `common_len == 0` in `diff_weapon_spec` returning `EMPTY_PATTERN` status without crashing.
+  - `aggregator.py`: Guarded `mean_recoil` against empty trials; synchronized `time_points` array length to `max_len` in `weighted_merge_recoil`.
+  - `cli.py`: Enforced strict 55-element bounds in `cmd_export_arduino` to match Arduino firmware memory alignment.
+  - `pipeline.py`: Removed unreachable dead branch and hoisted `tone_map_hdr_image` to module top level.
+  - `shot_detector.py`: Added `min_rpm` sanity validation.
+  - Expanded automated test suite from 19 to 30 unit tests with 100% pass rate.
+- [x] **Client Math & State Engine ([client/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/))**:
+  - `point.ts`: Corrected `Point.atan2()` argument order to standard `Math.atan2(this.y, this.x)`; added docstrings and aliases `scale`, `scaleX`, `scaleY`.
+  - `storage.ts`: Activated attribute updates before invoking `poke()` in `resumeAttrUpdates()` to prevent dropped updates.
+  - `stats.ts`: Wrapped persistence in `try/catch` and resolved duplicate array push on legacy migration.
+  - `main.ts`: Upgraded migration origin redirect to HTTPS.
+  - `game.ts`: Fixed `0 / 0 = NaN` stat calculation in `Shooting.finish()`; guarded trail rendering; renamed `displayTace()` typo to `displayTrace()`.
+- [x] **UI Robustness & Security ([client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts))**:
+  - Guarded `update()` against empty point graphs (`pp.length === 0`).
+  - Added HTTP status verification (`!res.ok`) before calling `res.json()`.
+  - Added `escapeHtml()` utility to sanitize dynamic variables before setting `innerHTML`.
+  - Parallelized past session fetching with `Promise.all`.
+
+---
+
+### Milestone 8: UI & Asset Polish
 - [x] **Remove Legacy Development Hiatus & End-of-Support Splash**: Removed outdated September 2024 notice dialog and associated attributes (`#notify-splash`, `aShowDevUpdate`) from [`views/index.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index.pug) and [`client/game.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts).
 - [ ] **Custom Corrupted Magazine Graphic**: Create a distinctive Tier 4 / Red magazine icon in `assets/images/` to replace the CSS-tinted `magi.png`.
 - [ ] **Codebase Cleanup**:
@@ -128,7 +158,7 @@ All 31 weapons in [client/specs.json](file:///c:/Users/micro.VADER/Documents/Pro
 
 ---
 
-### Milestone 8: CI/CD Pipeline Automation
+### Milestone 9: CI/CD Pipeline Automation
 - [ ] **GitHub Actions Workflow**:
   - Run `python -m pytest tests` on pull requests modifying `processing/`.
   - Run `python -m recoil_discovery.cli verify` on changes to `client/specs.json`.
@@ -144,7 +174,7 @@ Every code change in this repository MUST satisfy the following quality gates be
    ```bash
    cd processing && python -m pytest tests
    ```
-   *Requirement: 19/19 tests passing.*
+   *Requirement: 30/30 tests passing.*
 
 2. **Schema Verification**:
    ```bash
@@ -154,7 +184,7 @@ Every code change in this repository MUST satisfy the following quality gates be
 
 3. **TypeScript Typecheck**:
    ```bash
-   npm run tsc
+   cmd /c npm run tsc
    ```
    *Requirement: 0 type errors.*
 
@@ -163,3 +193,4 @@ Every code change in this repository MUST satisfy the following quality gates be
    npx gulp public
    ```
    *Requirement: Successful compilation of styles and client bundle.*
+

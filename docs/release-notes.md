@@ -1,5 +1,32 @@
 # v260922
 
+- **Full-Stack Codebase Hardening, Correctness & Error Resilience**:
+  - **Server & Process Safety ([app.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js))**:
+    - Added `proc.on('error')` failure listeners to `spawn()` calls in `/api/discovery/process-session` and `/api/discovery/process-static-image`, guarding against uncaught Node.js server crashes if Python or virtual environment binaries are missing or misconfigured.
+    - Fixed weapon name extraction regex/split in `/api/discovery/sessions` (`parts.slice(1, -2).join('_')`) to properly support multi-part weapon tags (e.g. `havoc_tc`, `p2020_akimbo`, `mozambique_akimbo`).
+    - Converted synchronous blocking `fs.writeFileSync` in `POST /api/specs` to non-blocking async `await fs.promises.writeFile`.
+    - Added strict parameter sanitization for CLI command-line arguments (`weaponTag`, `cleanHdr`, `cleanStrategy`, and positive numeric validation for `shots`, `rpm`, `multiplier`, `distance`, `zoom`, `fov`).
+    - Added `isValidWeaponSpec` JSON schema validation for spec payloads with error logging and backup protection on save failures.
+  - **Python Discovery Engine Robustness ([processing/recoil_discovery/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/))**:
+    - [`tracker.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/tracker.py): Initialized `cx = w // 2` unconditionally before `roi_mask` check to prevent `UnboundLocalError`; moved `maximum_filter` to module top-level imports.
+    - [`spec_manager.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/spec_manager.py): Added memory caching in `load_specs`; handled `common_len == 0` in `diff_weapon_spec` returning an `EMPTY_PATTERN` status without crashing.
+    - [`aggregator.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/aggregator.py): Fixed `mean_recoil` returning `([0.0], [0.0])` on empty trials; synchronized `time_points` length to `max_len` in `weighted_merge_recoil`.
+    - [`cli.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/cli.py): Enforced `MAX_LENGTH = 55` and sliced/padded coordinates strictly to 55 elements in `cmd_export_arduino` to match Arduino firmware memory layout.
+    - [`pipeline.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py): Removed unreachable duplicate `elif in_game_dist and len(raw_x) >= 2:` branch; hoisted `tone_map_hdr_image` to module top level.
+    - [`shot_detector.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/shot_detector.py): Added `min_rpm` sanity validation.
+    - Added unit test coverage in `test_spec_manager.py` and `test_aggregator.py`, bringing suite to 30/30 passing tests.
+  - **Client Math & State Engine ([client/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/))**:
+    - [`point.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/point.ts): Swapped arguments in `Point.atan2()` to `Math.atan2(this.y, this.x)` conforming to standard mathematical convention; added docstrings and aliases `scale`, `scaleX`, `scaleY`.
+    - [`storage.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/storage.ts): Set `attrUpdatesActive = true` before invoking `poke()` in `resumeAttrUpdates()` to prevent dropping initial updates.
+    - [`stats.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/stats.ts): Wrapped `loadStats()` in `try/catch` to guard against JSON corruption in `localStorage`; eliminated duplicate push bug during legacy migration.
+    - [`main.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/main.ts): Upgraded legacy origin migration redirect to HTTPS.
+    - [`game.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts): Fixed `0 / 0 = NaN` stat corruption in `Shooting.finish()` when `hitIndex == -1`; guarded trail rendering when index out of bounds; renamed `displayTace()` typo to `displayTrace()`.
+  - **UI Robustness & Security ([client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts))**:
+    - Guarded `update()` against empty point graphs (`pp.length === 0`), returning safe empty spec without throwing `TypeError: Cannot read properties of undefined (reading 'clone')`.
+    - Added HTTP status verification (`!res.ok`) before calling `res.json()` on `/api/discovery/process-session` and `/api/discovery/process-static-image`, surfacing human-readable server error messages.
+    - Added `escapeHtml()` utility to sanitize all dynamic weapon, mode, and filename variables before injecting into `innerHTML`.
+    - Parallelized past session video and screenshot fetching with `Promise.all` over `session.samples`.
+
 - **Removed Legacy Development Hiatus & End-of-Support Splash Notice**:
   - Removed outdated September 2024 development update notice (`#notify-splash`) and its associated state/watcher (`aShowDevUpdate`, `maybeShowDevUpdate`) from [`views/index.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index.pug) and [`client/game.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts).
   - Cleaned up obsolete splash styling rules in [`style.scss`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss).

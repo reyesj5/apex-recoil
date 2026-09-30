@@ -1473,10 +1473,10 @@ class Shooting {
     stage.listening(true);
     sound?.stop();
     resumeAttrUpdates();
-    this.score /= this.hitIndex + 1;
-    this.score = Math.max(0, Math.min(1, this.score));
+    const shotsCount = this.hitIndex + 1;
+    this.score = shotsCount > 0 ? Math.max(0, Math.min(1, this.score / shotsCount)) : 0;
     const x = Math.round(100 * this.score);
-    if ((this.speed == 1) && (this.hitIndex + 1 >= this.mag)) addStat(x, trialSetup());
+    if ((this.speed == 1) && (shotsCount >= this.mag) && shotsCount > 0) addStat(x, trialSetup());
     this.hintGroup.visible(true);
     this.hitMarkers.forEach(m => m.radius(2));
     const txt = new Konva.Text({
@@ -1492,18 +1492,20 @@ class Shooting {
     this.addShape(txt);
     // Display trail.
     this.hitVectors.forEach((v, idx) => {
-      const p = this.displayPattern[idx];
+      const p = this.displayPattern[idx] || new Point();
       const vd = screen(v);
       const hit = this.startPos.clone().add(vd);
       let traceTarget = this.startPos.clone().sub(p);
-      const clr = gradientColor(this.hitScores[idx]);
+      const clr = gradientColor(this.hitScores[idx] || 0);
       const b = new Konva.Circle({
         radius: 2,
         fill: clr,
         position: this.startPos.clone().add(vd),
         visible: false,
       });
-      (this.traceShapes[0][idx] as Konva.Circle).position(vd.clone().add(p).add(this.startPos));
+      if (this.traceShapes[0] && this.traceShapes[0][idx]) {
+        (this.traceShapes[0][idx] as Konva.Circle).position(vd.clone().add(p).add(this.startPos));
+      }
       this.hintGroup.add(b);
       this.traceShapes[1].push(b);
       const ln = new Konva.Line({
@@ -1515,7 +1517,7 @@ class Shooting {
       this.traceShapes[2].push(ln);
       this.hintGroup.add(ln);
     });
-    this.displayTace();
+    this.displayTrace();
     this.hintGroup.offset(new Point());
     this.wallGroup.offset(new Point());
     this.recoilGroup.offset(new Point());
@@ -1524,7 +1526,7 @@ class Shooting {
     stage.container().classList.remove('no-cursor');
     redraw();
   }
-  displayTace() {
+  displayTrace() {
     const d = aTraceMode.get() % traceShapeTypes;
     this.traceShapes.forEach((sh, i) => sh.forEach(s => s.visible(i == d)));
   }
@@ -1590,7 +1592,7 @@ export function initGame() {
     });
   }
   aTraceMode.watch(() => {
-    shooting.displayTace();
+    shooting.displayTrace();
     redraw();
   });
   aShowSensitivityWarn.watch((v: boolean) => {

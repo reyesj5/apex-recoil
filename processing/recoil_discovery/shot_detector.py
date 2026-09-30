@@ -107,6 +107,8 @@ def auto_measure_shots_and_rpm(
     median_frame_interval = float(np.median(frame_intervals))
     median_sec = median_frame_interval / fps
     measured_rpm = round(60.0 / median_sec, 1) if median_sec > 0 else 0.0
+    if min_rpm > 0 and measured_rpm > 0 and measured_rpm < min_rpm * 0.4:
+        measured_rpm = 0.0
 
     first_peak = best_peaks[0]
     time_points_ms = [int(round((p - first_peak) / fps * 1000.0)) for p in best_peaks]

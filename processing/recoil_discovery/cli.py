@@ -335,21 +335,21 @@ def cmd_export_arduino(args):
     specs = manager.load_specs()
     out_path = Path(__file__).resolve().parent.parent.parent / "arduino_mouse" / "src" / "recoil.inc"
 
-    msize = max([o["mags"][-1]["size"] for o in specs])
+    MAX_LENGTH = 55
     rcount = len(specs)
 
     lines = [
         f"const int RECOILS_LENGTH = {rcount};",
         'const String names[] = {"' + '","'.join(x["name"] for x in specs) + '"};',
         "const int sizes[] = {" + ",".join(str(x["mags"][-1]["size"]) for x in specs) + "};",
-        "const PROGMEM float XDATA[] = {" + ",".join(",".join(str(x) for x in extend_array(o["x"], msize, 0)) for o in specs) + "};",
-        "const PROGMEM float YDATA[] = {" + ",".join(",".join(str(x) for x in extend_array(o["y"], msize, 0)) for o in specs) + "};",
-        "const PROGMEM float TDATA[] = {" + ",".join(",".join(str(x) for x in extend_array(o["time_points"], msize, 0)) for o in specs) + "};",
+        "const PROGMEM float XDATA[] = {" + ",".join(",".join(str(x) for x in extend_array(o["x"][:MAX_LENGTH], MAX_LENGTH, 0)) for o in specs) + "};",
+        "const PROGMEM float YDATA[] = {" + ",".join(",".join(str(x) for x in extend_array(o["y"][:MAX_LENGTH], MAX_LENGTH, 0)) for o in specs) + "};",
+        "const PROGMEM float TDATA[] = {" + ",".join(",".join(str(x) for x in extend_array(o["time_points"][:MAX_LENGTH], MAX_LENGTH, 0)) for o in specs) + "};",
     ]
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
-    print(f"[+] Successfully generated Arduino table: {out_path} ({rcount} recoils, max length {msize})")
+    print(f"[+] Successfully generated Arduino table: {out_path} ({rcount} recoils, max length {MAX_LENGTH})")
 
 
 def main():

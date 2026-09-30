@@ -86,3 +86,36 @@ def test_weighted_merge_recoil_proportional_weight():
     assert merged["y"][0] == 0.0
     assert merged["y"][1] == -99.0
 
+
+def test_mean_recoil_empty():
+    mx, my = RecoilAggregator.mean_recoil([])
+    assert mx == []
+    assert my == []
+    mx2, my2 = RecoilAggregator.mean_recoil([{"x": [], "y": []}])
+    assert mx2 == []
+    assert my2 == []
+
+
+def test_weighted_merge_recoil_syncs_time_points():
+    existing_spec = {
+        "name": "flatline",
+        "rpm": 600,
+        "x": [0, 5, 10, 15, 20],
+        "y": [0, -10, -20, -30, -40],
+        "time_points": [0, 100, 200, 300, 400],
+        "sample_count": 5
+    }
+    new_spec = {
+        "name": "flatline",
+        "rpm": 600,
+        "x": [0, 6, 12],
+        "y": [0, -9, -21],
+        "time_points": [0, 100, 200]
+    }
+    merged = RecoilAggregator.weighted_merge_recoil(existing_spec, new_spec, existing_weight=5, new_weight=1)
+    assert len(merged["x"]) == 5
+    assert len(merged["y"]) == 5
+    assert len(merged["time_points"]) == 5
+    assert merged["time_points"] == [0, 100, 200, 300, 400]
+
+

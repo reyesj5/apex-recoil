@@ -55,3 +55,17 @@ def test_diff_new_weapon():
     }
     diff = manager.diff_weapon_spec(new_spec)
     assert diff["status"] == "NEW_WEAPON"
+
+
+def test_diff_weapon_spec_empty():
+    manager = SpecManager()
+    empty_spec = {
+        "name": "r301",
+        "rpm": 810,
+        "x": [],
+        "y": []
+    }
+    diff = manager.diff_weapon_spec(empty_spec)
+    assert diff["status"] == "EMPTY_PATTERN"
+    assert diff["mean_deviation"] == 0.0
+

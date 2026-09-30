@@ -44,7 +44,7 @@ export function cursor(): Point {
 if (window.location.hostname.includes('.online')) {
   alert('Apex Legends Recoils is moving to a new domain and .ONLINE will not be available from 10 of April.\n'+
   'Please update your bookmark to apexlegendsrecoils.NET.\nYou will now be redirected.');
-  window.location.href = 'http://apexlegendsrecoils.net' + window.location.pathname;
+  window.location.href = 'https://apexlegendsrecoils.net' + window.location.pathname;
 }
 
 if (window.location.pathname.startsWith('/editor')) {

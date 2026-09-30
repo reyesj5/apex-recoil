@@ -8,6 +8,7 @@ Supports:
 from typing import List, Tuple, Optional, Dict, Any, Union
 import cv2
 import numpy as np
+from scipy.ndimage import maximum_filter
 
 
 def tone_map_hdr_image(
@@ -284,6 +285,7 @@ class DecalTracker:
             gray = working_img.copy()
 
         h, w = gray.shape[:2]
+        cx = w // 2
         is_gameplay_res = (w >= 1000 and h >= 600)
 
         left, right, top, bottom = 0, w, 0, h
@@ -293,7 +295,6 @@ class DecalTracker:
                 bx, by, bw, bh = cv2.boundingRect(mask_pts)
                 left, right, top, bottom = bx, bx + bw, by, by + bh
         elif is_gameplay_res:
-            cx = w // 2
             corridor_margin = int(w * 0.065)
             default_left = max(0, cx - corridor_margin)
             default_right = min(w, cx + corridor_margin)
@@ -356,7 +357,6 @@ class DecalTracker:
             bhat = cv2.morphologyEx(board_roi, cv2.MORPH_BLACKHAT, kernel)
 
             min_dist = 6 if w >= 1920 else (5 if w >= 1280 else 4)
-            from scipy.ndimage import maximum_filter
             peak_filter = maximum_filter(bhat, size=min_dist)
 
             base_th = min(35, max(18, int(threshold_val * 0.28)))

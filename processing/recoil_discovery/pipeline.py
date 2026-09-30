@@ -17,7 +17,7 @@ from .shot_detector import (
     auto_measure_shots_and_rpm,
     generate_ideal_time_points,
 )
-from .tracker import DecalTracker
+from .tracker import DecalTracker, tone_map_hdr_image
 from .math_utils import scale_to_game_distances, angular_pixel_distance
 from .aggregator import RecoilAggregator
 from .spec_manager import SpecManager
@@ -114,10 +114,8 @@ class RecoilPipeline:
                     if len(wall_img.shape) == 3:
                         hsv = cv2.cvtColor(wall_img, cv2.COLOR_BGR2HSV)
                         if float(hsv[:, :, 2].mean()) > 155.0:
-                            from .tracker import tone_map_hdr_image
                             wall_img = tone_map_hdr_image(wall_img, "natural")
                 elif hdr in ["natural", "vibrant", "hdr-standard", "hdr-vibrant"]:
-                    from .tracker import tone_map_hdr_image
                     wall_img = tone_map_hdr_image(wall_img, "natural" if "standard" in hdr else hdr)
 
                 thresholds = [80, 70, 90, 60, 100, 50, 110] if target_points else [80]
@@ -176,10 +174,8 @@ class RecoilPipeline:
                 if len(settled_bgr.shape) == 3:
                     hsv = cv2.cvtColor(settled_bgr, cv2.COLOR_BGR2HSV)
                     if float(hsv[:, :, 2].mean()) > 155.0:
-                        from .tracker import tone_map_hdr_image
                         settled_bgr = tone_map_hdr_image(settled_bgr, "natural")
             elif hdr in ["natural", "vibrant", "hdr-standard", "hdr-vibrant"]:
-                from .tracker import tone_map_hdr_image
                 settled_bgr = tone_map_hdr_image(settled_bgr, "natural" if "standard" in hdr else hdr)
 
             orig_h, orig_w = settled_bgr.shape[:2]
@@ -220,8 +216,6 @@ class RecoilPipeline:
                 scaled_x, scaled_y = scale_to_game_distances(raw_x, raw_y, [ia, ib], in_game_dist)
             else:
                 scaled_x, scaled_y = raw_x, raw_y
-        elif in_game_dist and len(raw_x) >= 2:
-            scaled_x, scaled_y = raw_x, raw_y
         else:
             # Convert screenshot decal pixels to canonical in-game mouse units (at 1080p reference)
             # Reference calibration at FOV 90: 1 1080p 1x decal pixel = ~3.36 in-game mouse counts (mickeys)
@@ -275,10 +269,8 @@ class RecoilPipeline:
             if len(img.shape) == 3:
                 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
                 if float(hsv[:, :, 2].mean()) > 155.0:
-                    from .tracker import tone_map_hdr_image
                     img = tone_map_hdr_image(img, "natural")
         elif hdr in ["natural", "vibrant", "hdr-standard", "hdr-vibrant"]:
-            from .tracker import tone_map_hdr_image
             img = tone_map_hdr_image(img, "natural" if "standard" in hdr else hdr)
 
         raw_x, raw_y, meta = self.tracker.extract_from_static_image(

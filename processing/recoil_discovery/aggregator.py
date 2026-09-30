@@ -68,6 +68,8 @@ class RecoilAggregator:
         if not trials:
             return [], []
         min_len = min(len(t['x']) for t in trials)
+        if min_len == 0:
+            return [], []
         mx = [0.0]
         my = [0.0]
         for i in range(1, min_len):
@@ -163,6 +165,11 @@ class RecoilAggregator:
         merged['x'] = merged_x
         merged['y'] = merged_y
         merged['sample_count'] = int(w_total)
+
+        if 'time_points' in new_spec or 'time_points' in existing_spec:
+            from .shot_detector import generate_ideal_time_points
+            eff_rpm = float(new_spec.get('rpm') or existing_spec.get('rpm') or 600.0)
+            merged['time_points'] = generate_ideal_time_points(max_len, eff_rpm)
 
         # Merge raw_1x coordinates if present
         if 'raw_1x_x' in existing_spec and 'raw_1x_x' in new_spec:

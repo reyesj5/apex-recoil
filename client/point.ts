@@ -55,18 +55,30 @@ export class Point implements Konva.Vector2d {
   clone(): this {
     return new (this.constructor as any)(this.x, this.y);
   }
+  /** Multiply both coordinates by scalar v. */
   s(v: number): this {
     this.x = this.x * v;
     this.y = this.y * v;
     return this;
   }
+  scale(v: number): this {
+    return this.s(v);
+  }
+  /** Multiply X coordinate by scalar v. */
   sx(v: number): this {
     this.x = this.x * v;
     return this;
   }
+  scaleX(v: number): this {
+    return this.sx(v);
+  }
+  /** Multiply Y coordinate by scalar v. */
   sy(v: number): this {
     this.y = this.y * v;
     return this;
+  }
+  scaleY(v: number): this {
+    return this.sy(v);
   }
   sub(other: this): this {
     this.x = this.x - other.x;
@@ -94,7 +106,7 @@ export class Point implements Konva.Vector2d {
     return this.distance(other) < 0.1;
   }
   atan2(): number {
-    return Math.atan2(this.x, this.y);
+    return Math.atan2(this.y, this.x);
   }
   dot(o: this): number {
     return this.x * o.x + this.y * o.y;

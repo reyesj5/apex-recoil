@@ -19,14 +19,18 @@ class SpecManager:
         base_dir = Path(__file__).resolve().parent.parent.parent
         self.specs_path = specs_path or (base_dir / "client" / "specs.json")
         self.raw_recoils_path = raw_recoils_path or (base_dir / "client" / "raw_recoils.json")
+        self._cached_specs: Optional[List[Dict[str, Any]]] = None
 
-    def load_specs(self) -> List[Dict[str, Any]]:
+    def load_specs(self, reload: bool = False) -> List[Dict[str, Any]]:
         """Load all weapon specifications from client/specs.json."""
-        with open(self.specs_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        if self._cached_specs is None or reload:
+            with open(self.specs_path, 'r', encoding='utf-8') as f:
+                self._cached_specs = json.load(f)
+        return self._cached_specs
 
     def save_specs(self, specs: List[Dict[str, Any]]) -> None:
         """Write weapon specifications back to client/specs.json formatted cleanly."""
+        self._cached_specs = specs
         with open(self.specs_path, 'w', encoding='utf-8') as f:
             json.dump(specs, f, indent=4)
 
@@ -77,6 +81,21 @@ class SpecManager:
 
         len_old, len_new = len(old_x), len(new_x)
         common_len = min(len_old, len_new)
+
+        if common_len == 0:
+            return {
+                "status": "EMPTY_PATTERN",
+                "weapon": name,
+                "summary": "No matching shot coordinates found to diff.",
+                "mean_deviation": 0.0,
+                "max_deviation": 0.0,
+                "max_dev_shot": 0,
+                "old_shots": len_old,
+                "new_shots": len_new,
+                "per_shot_distance_delta": [],
+                "per_shot_dx": [],
+                "per_shot_dy": []
+            }
 
         dx = new_x[:common_len] - old_x[:common_len]
         dy = new_y[:common_len] - old_y[:common_len]
