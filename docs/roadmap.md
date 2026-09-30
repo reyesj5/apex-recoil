@@ -15,8 +15,8 @@ This document outlines the architectural milestones, completed implementations, 
 | **M5: Python Recoil Discovery Engine** | ✅ Completed | Zero-guesswork computer vision and signal processing engine with 30 passing unit tests. |
 | **M6: Weapon Arsenal & Attachments** | ✅ Completed | All 31 Apex weapons supported with official SVGs, 5-tier specs, and Corrupted Stock attachment. |
 | **M7: Full-Stack Hardening & Robustness** | ✅ Completed | Comprehensive senior review covering 25 fixes across security, correctness, error handling, and performance. |
-| **M8: UI/Asset Polish** | 🟡 Next Priority | Dedicated artwork for Corrupted Mag, cleanup of remaining legacy UI items. |
-| **M9: CI/CD Pipeline Automation** | ⚪ Planned | GitHub Actions workflow running both Python pytest and TypeScript typecheck on push. |
+| **M8: UI/UX Modernization & Polish** | ✅ Completed | Google Fonts, instant weapon search & category pills, live mag capacities, toolbar ergonomics, corrupted mag SVG. |
+| **M9: CI/CD Pipeline Automation** | 🟡 Next Priority | GitHub Actions workflow running both Python pytest and TypeScript typecheck on push. |
 
 ---
 
@@ -148,10 +148,15 @@ All 31 weapons in [client/specs.json](file:///c:/Users/micro.VADER/Documents/Pro
 
 ---
 
-### Milestone 8: UI & Asset Polish
+### Milestone 8: UI/UX Modernization & Polish
 - [x] **Remove Legacy Development Hiatus & End-of-Support Splash**: Removed outdated September 2024 notice dialog and associated attributes (`#notify-splash`, `aShowDevUpdate`) from [`views/index.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index.pug) and [`client/game.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts).
-- [ ] **Custom Corrupted Magazine Graphic**: Create a distinctive Tier 4 / Red magazine icon in `assets/images/` to replace the CSS-tinted `magi.png`.
-- [ ] **Codebase Cleanup**:
+- [x] **Custom Corrupted Magazine Graphic**: Created authentic Tier 4 / Red vector magazine graphic in [`assets/images/corrupted_mag.svg`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/assets/images/corrupted_mag.svg) to replace the CSS-tinted `magi.png`.
+- [x] **Modern Typography & UI Styling**: Integrated Google Fonts 'Inter' (sans-serif) and 'JetBrains Mono' (monospace numbers/stats), enabled subpixel smoothing, unified dark form elements, and fixed responsive media queries.
+- [x] **Trainer Search & Weapon Categorization**: Real-time search bar, category pills (All, AR, SMG, LMG, Mark, Snip, Shot, Pist), data-category tags for all 31 weapons, and live mag capacity badges.
+- [x] **Editor Toolbar Ergonomics & HUD Minimization**: Organized tools into segmented button groups with horizontal scroll protection, and added minimize button to Discrepancy HUD.
+- [x] **Accessibility & Security Polish**: Added `rel="noopener noreferrer"` across all external links and descriptive `aria-label` attributes across buttons and inputs.
+- [x] **Global Escape Key Dismissal**: Instant dismissal of modal dialogs, instruction overlays, and stat graphs.
+- [ ] **Codebase Follow-up Polish**:
   - Review and resolve `TODO` in [client/game.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts#L368) (argument passing).
   - Review and resolve `TODO` in [client/game.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts#L956) (multi-attribute watcher).
   - Review and resolve `TODO` in [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts#L94) & [L311](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts#L311) (anchor length warning).

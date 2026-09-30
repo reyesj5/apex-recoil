@@ -1,5 +1,30 @@
 # v260922
 
+- **Comprehensive UI/UX Modernization, Ergonomics & Accessibility**:
+  - **Modern Typography & Global Theming ([views/layout.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/layout.pug), [style.scss](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss))**:
+    - Replaced generic browser fonts with Google Fonts `Inter` (sans-serif) for high-clarity UI typography and `JetBrains Mono` for monospace data displays, timestamps, and numbers.
+    - Enabled subpixel font-smoothing (`-webkit-font-smoothing: antialiased`, `-moz-osx-font-smoothing: grayscale`) across the body.
+    - Added `:focus-within` and `:hover` triggers to `.tooltip` elements for keyboard navigation accessibility.
+    - Replaced deprecated `@media (max-device-width: 900px)` with standard `@media (max-width: 768px)` viewport width querying, enabling responsive desktop window resizing below 900px without breaking layout.
+    - Unified dark mode aesthetics across text inputs, select dropdowns, and range sliders with custom accent thumbs.
+  - **Trainer Ergonomics, Instant Search & Category Filtering ([views/index.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index.pug), [client/game.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts))**:
+    - Added `#weapon-filter-bar` featuring an instant live search input and category pills (`All`, `AR`, `SMG`, `LMG`, `Mark`, `Snip`, `Shot`, `Pist`).
+    - Categorized all 31 weapons via `data-category` attributes; dynamic search matches both internal weapon tags and localized weapon display names in real time.
+    - Redesigned weapon selection cards with clean vertical flex flow, eliminating artwork overlap by placing names statically beneath thumbnails.
+    - Added live magazine capacity badges (`span.mag-cap`) displaying exact round counts for each weapon tier and stock penalties.
+    - Created custom vector artwork for Tier 4 Corrupted Magazine ([`assets/images/corrupted_mag.svg`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/assets/images/corrupted_mag.svg)) with authentic crystalline shard geometry.
+    - Redesigned `#invert-y-btn` into a modern toggle pill with active state styling.
+    - Bound `Escape` key to instantly dismiss instruction overlays and detailed stat graphs.
+    - Fully synchronized localized templates ([`views/index-ru.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index-ru.pug), [`views/index-zh-CN.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index-zh-CN.pug)).
+  - **Recoil Editor Toolbar Reorganization & Modal Ergonomics ([views/editor.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug), [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts))**:
+    - Reorganized the 16-button `#stage-toolbar` into compact segmented control groups (`.segmented-btn-group`) for Undo/Redo, Canvas Modes (Pan, Align, Correct), and View Controls with horizontal scroll protection preventing multi-line toolbar wrapping on 1080p viewports.
+    - Added minimize/restore button (`#min-hud-btn`) to the floating `#discrepancy-hud`, collapsing the card into a sleek 1-line title bar.
+    - Implemented global `Escape` key handling to dismiss all open modals, cancel active comparison overlays, or exit shot correction mode.
+  - **Security & Link Hygiene**:
+    - Added `rel="noopener noreferrer"` to all outbound target="_blank" links across all templates, mitigating tab-nabbing vulnerabilities.
+    - Enriched interactive buttons and form inputs with descriptive `aria-label` attributes.
+
+
 - **Full-Stack Codebase Hardening, Correctness & Error Resilience**:
   - **Server & Process Safety ([app.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js))**:
     - Added `proc.on('error')` failure listeners to `spawn()` calls in `/api/discovery/process-session` and `/api/discovery/process-static-image`, guarding against uncaught Node.js server crashes if Python or virtual environment binaries are missing or misconfigured.

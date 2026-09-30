@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Background outer glow -->
+    <filter id="corrupt-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Linear gradients for mythic red metal & crystalline texture -->
+    <linearGradient id="body-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a080c" />
+      <stop offset="45%" stop-color="#850f1d" />
+      <stop offset="85%" stop-color="#e63946" />
+      <stop offset="100%" stop-color="#ff4d6d" />
+    </linearGradient>
+
+    <linearGradient id="crystal-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff758f" />
+      <stop offset="50%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#ff0054" />
+    </linearGradient>
+
+    <linearGradient id="facet-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#590d22" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#ff4d6d" stop-opacity="0.4" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient corruption aura -->
+  <path d="M 22 6 L 42 6 L 46 16 L 43 46 L 38 58 L 22 58 L 18 46 L 16 16 Z"
+        fill="none" stroke="#e63946" stroke-width="6" opacity="0.35" filter="url(#corrupt-glow)" />
+
+  <!-- Magazine Feed Lips & Top Collar -->
+  <path d="M 23 8 L 41 8 L 43 14 L 21 14 Z" fill="#3a090e" stroke="#ff4d6d" stroke-width="1.2" />
+  <rect x="26" y="5" width="12" height="4" rx="1.5" fill="#ff758f" opacity="0.85" />
+
+  <!-- Main Magazine Body (Curved Tactical Extended Profile) -->
+  <path d="M 21 14 L 43 14 L 41 46 L 36 57 L 24 57 L 20 46 Z"
+        fill="url(#body-grad)" stroke="#ff758f" stroke-width="1.5" stroke-linejoin="round" />
+
+  <!-- Crystalline Nanite Facets (Corrupted Veins) -->
+  <polygon points="23,17 31,17 35,27 26,29" fill="url(#facet-grad)" stroke="#ff0054" stroke-width="0.8" />
+  <polygon points="32,17 41,18 40,28 35,27" fill="#800f2f" stroke="#ff4d6d" stroke-width="0.8" />
+  <polygon points="26,29 35,27 38,39 27,41" fill="url(#facet-grad)" stroke="#ff758f" stroke-width="0.8" />
+  <polygon points="35,27 40,28 39,40 38,39" fill="#590d22" stroke="#ff0054" stroke-width="0.8" />
+  <polygon points="27,41 38,39 36,52 25,50" fill="url(#facet-grad)" stroke="#ff4d6d" stroke-width="0.8" />
+
+  <!-- Mythic Red Crystal Core Spike -->
+  <path d="M 32 18 L 36 29 L 34 46 L 30 45 L 28 29 Z"
+        fill="url(#crystal-grad)" opacity="0.9" />
+
+  <!-- Extended Baseplate with Tier 4 Chevron Indicator -->
+  <path d="M 22 55 L 38 55 L 36 61 L 24 61 Z" fill="#1f0306" stroke="#e63946" stroke-width="1.5" />
+  <polyline points="27,58 30,60 33,58" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" />
+
+  <!-- Glow Accents & Corner Nodes -->
+  <circle cx="36" cy="27" r="1.8" fill="#ffffff" filter="url(#corrupt-glow)" />
+  <circle cx="27" cy="41" r="1.4" fill="#ffffff" filter="url(#corrupt-glow)" />
+  <circle cx="38" cy="39" r="1.6" fill="#ff758f" />
+</svg>

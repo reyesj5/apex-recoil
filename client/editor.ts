@@ -642,6 +642,13 @@ function setupStageToolbarControls() {
     setCompareOverlayActive(false);
   });
 
+  const minHudBtn = document.getElementById('min-hud-btn');
+  minHudBtn?.addEventListener('click', () => {
+    const hud = document.getElementById('discrepancy-hud');
+    const isMin = hud?.classList.toggle('minimized');
+    if (minHudBtn) minHudBtn.innerText = isMin ? '□' : '─';
+  });
+
   const prevBtn = document.getElementById('prev-stage-img-btn') as HTMLButtonElement | null;
   const nextBtn = document.getElementById('next-stage-img-btn') as HTMLButtonElement | null;
 
@@ -782,8 +789,34 @@ function setupStageToolbarControls() {
     if (e.target === shortcutsModal) closeShortcuts();
   });
 
-  // ? key toggles shortcuts modal when not typing in form inputs
+  // ? key toggles shortcuts modal, Escape dismisses any active modal or overlay
   window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const activeModals = [
+        document.getElementById('shortcuts-modal'),
+        document.getElementById('analysis-confirm-modal'),
+        document.getElementById('spec-checkpoint-modal'),
+        document.getElementById('video-modal')
+      ];
+      let closedModal = false;
+      for (const m of activeModals) {
+        if (m && !m.classList.contains('hidden') && m.style.display !== 'none') {
+          m.classList.add('hidden');
+          m.style.display = 'none';
+          closedModal = true;
+        }
+      }
+      if (!closedModal) {
+        const sel = document.getElementById('stage-preview-select') as HTMLSelectElement | null;
+        if (sel && sel.value === 'compare') {
+          setCompareOverlayActive(false);
+        } else if (isCorrectionModeActive) {
+          correctionBtn?.click();
+        }
+      }
+      return;
+    }
+
     const target = e.target as HTMLElement;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
       return;
@@ -794,8 +827,6 @@ function setupStageToolbarControls() {
       } else {
         closeShortcuts();
       }
-    } else if (e.key === 'Escape' && !shortcutsModal?.classList.contains('hidden')) {
-      closeShortcuts();
     }
   });
 

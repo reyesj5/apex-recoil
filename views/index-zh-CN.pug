@@ -21,114 +21,125 @@ block content
       h1 Apex Legends 后坐力弹道
       p.description 练习连射控枪
       p#sensitivity-warning.hidden
-        | 练习区域太小了! #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#mouse-sensitivity" target="_blank") 如何修复] 
+        | 练习区域太小了! #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#mouse-sensitivity" target="_blank" rel="noopener noreferrer") 如何修复] 
       #top-links
         p#show-instructions-btn.action
           | 显示说明
         a(href="/editor")
           | 压枪编辑器 🛠️
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank")
+        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer")
           | FAQ
-        a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank")
+        a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank" rel="noopener noreferrer")
           | 支援 ❤️
       #score
-        div#stats-graph-btn.tooltip.btn
+        div#stats-graph-btn.tooltip.btn(aria-label="显示历史成绩")
           img(src="/outline_insert_chart_white_48dp.png"  alt="show graph")
           .tooltiptext 显示历史成绩
         div#stats-wrap
           p#score-stats
+      #weapon-filter-bar
+        input#weapon-search-input(type="text" placeholder="🔍 搜索武器..." autocomplete="off" aria-label="搜索武器")
+        .weapon-category-pills(role="tablist" aria-label="武器分类")
+          button.cat-pill.active(type="button" data-category="all") 全部
+          button.cat-pill(type="button" data-category="ar") AR
+          button.cat-pill(type="button" data-category="smg") SMG
+          button.cat-pill(type="button" data-category="lmg") LMG
+          button.cat-pill(type="button" data-category="marksman") 射手
+          button.cat-pill(type="button" data-category="sniper") 狙击
+          button.cat-pill(type="button" data-category="shotgun") 霰弹
+          button.cat-pill(type="button" data-category="pistol") 手枪
       #weapon-select.grid
-        div.flatline.btn(data-weapon="flatline")
+        div.flatline.btn(data-weapon="flatline" data-category="ar")
           img(src="/images/flatline.png", alt="flatline")
           p.name 平行步枪
-        div.r301.btn(data-weapon="r301")
+        div.r301.btn(data-weapon="r301" data-category="ar")
           img(src="/images/r301.png", alt="r-301")
           p.name R-301
-        div.havoc_tc.btn(data-weapon="havoc_tc")
+        div.havoc_tc.btn(data-weapon="havoc_tc" data-category="ar")
           img(src="/images/havoc.png", alt="havoc")
           p.name 哈沃克步枪
-        div.hemlok.btn(data-weapon="hemlok")
+        div.hemlok.btn(data-weapon="hemlok" data-category="ar")
           img(src="/images/hemlok.png", alt="hemlok")
           p.name 赫姆洛克
-        div.nemesis.btn(data-weapon="nemesis")
+        div.nemesis.btn(data-weapon="nemesis" data-category="ar")
           img(src="/images/nemesis.svg", alt="nemesis")
           p.name 复仇女神
-        div.alternator.btn(data-weapon="alternator")
+        div.alternator.btn(data-weapon="alternator" data-category="smg")
           img(src="/images/alternator.png", alt="alternator")
           p.name 转换者冲锋枪
-        div.prowler.btn(data-weapon="prowler")
+        div.prowler.btn(data-weapon="prowler" data-category="smg")
           img(src="/images/prowler.png", alt="prowler")
           p.name 猎手冲锋枪
-        div.r99.btn(data-weapon="r99")
+        div.r99.btn(data-weapon="r99" data-category="smg")
           img(src="/images/r99.png", alt="r-99")
           p.name R-99
-        div.volt.btn(data-weapon="volt")
+        div.volt.btn(data-weapon="volt" data-category="smg")
           img(src="/images/volt.png", alt="volt")
           p.name 电能冲锋枪
-        div.car.btn(data-weapon="car")
+        div.car.btn(data-weapon="car" data-category="smg")
           img(src="/images/car.png", alt="car")
           p.name C.A.R.
-        div.devotion_tc.btn(data-weapon="devotion_tc")
+        div.devotion_tc.btn(data-weapon="devotion_tc" data-category="lmg")
           img(src="/images/devotion.png", alt="devotion")
           p.name 专注轻机枪
-        div.lstar.btn(data-weapon="lstar")
+        div.lstar.btn(data-weapon="lstar" data-category="lmg")
           img(src="/images/lstar.png", alt="lstar")
           p.name L-STAR
-        div.spitfire.btn(data-weapon="spitfire")
+        div.spitfire.btn(data-weapon="spitfire" data-category="lmg")
           img(src="/images/spitfire.png", alt="spitfire")
           p.name 喷火轻机枪
-        div.rampage.btn(data-weapon="rampage")
+        div.rampage.btn(data-weapon="rampage" data-category="lmg")
           img(src="/images/rampage.png", alt="rampage")
           p.name 暴走轻机枪
-        div.g7_scout.btn(data-weapon="g7_scout")
+        div.g7_scout.btn(data-weapon="g7_scout" data-category="marksman")
           img(src="/images/g7_scout.svg", alt="g7 scout")
           p.name G7侦灵枪
-        div.triple_take.btn(data-weapon="triple_take")
+        div.triple_take.btn(data-weapon="triple_take" data-category="marksman")
           img(src="/images/triple_take.svg", alt="triple take")
           p.name 三重击
-        div.btn(data-weapon="3030_repeater" class="w-3030_repeater")
+        div.btn(data-weapon="3030_repeater" class="w-3030_repeater" data-category="marksman")
           img(src="/images/3030_repeater.svg", alt="30-30 repeater")
           p.name 30-30连发枪
-        div.bocek.btn(data-weapon="bocek")
+        div.bocek.btn(data-weapon="bocek" data-category="marksman")
           img(src="/images/bocek.svg", alt="bocek")
           p.name 波塞克复合弓
-        div.charge_rifle.btn(data-weapon="charge_rifle")
+        div.charge_rifle.btn(data-weapon="charge_rifle" data-category="sniper")
           img(src="/images/charge_rifle.svg", alt="charge rifle")
           p.name 充能步枪
-        div.longbow.btn(data-weapon="longbow")
+        div.longbow.btn(data-weapon="longbow" data-category="sniper")
           img(src="/images/longbow.svg", alt="longbow")
           p.name 长弓精确步枪
-        div.sentinel.btn(data-weapon="sentinel")
+        div.sentinel.btn(data-weapon="sentinel" data-category="sniper")
           img(src="/images/sentinel.svg", alt="sentinel")
           p.name 哨兵狙击枪
-        div.kraber.btn(data-weapon="kraber")
+        div.kraber.btn(data-weapon="kraber" data-category="sniper")
           img(src="/images/kraber.svg", alt="kraber")
           p.name 克雷贝尔
-        div.eva8.btn(data-weapon="eva8")
+        div.eva8.btn(data-weapon="eva8" data-category="shotgun")
           img(src="/images/eva8.svg", alt="eva8")
           p.name EVA-8连发霰弹枪
-        div.mastiff.btn(data-weapon="mastiff")
+        div.mastiff.btn(data-weapon="mastiff" data-category="shotgun")
           img(src="/images/mastiff.svg", alt="mastiff")
           p.name 敖犬霰弹枪
-        div.mozambique.btn(data-weapon="mozambique")
+        div.mozambique.btn(data-weapon="mozambique" data-category="shotgun")
           img(src="/images/mozambique.svg", alt="mozambique")
           p.name 莫桑比克
-        div.mozambique_akimbo.btn(data-weapon="mozambique_akimbo")
+        div.mozambique_akimbo.btn(data-weapon="mozambique_akimbo" data-category="shotgun")
           img(src="/images/mozambique_akimbo.svg", alt="mozambique akimbo")
           p.name 莫桑比克 (双持)
-        div.peacekeeper.btn(data-weapon="peacekeeper")
+        div.peacekeeper.btn(data-weapon="peacekeeper" data-category="shotgun")
           img(src="/images/peacekeeper.svg", alt="peacekeeper")
           p.name 和平捍卫者
-        div.re45.btn(data-weapon="re45")
+        div.re45.btn(data-weapon="re45" data-category="pistol")
           img(src="/images/re45.png", alt="re45")
           p.name RE-45
-        div.p2020.btn(data-weapon="p2020")
+        div.p2020.btn(data-weapon="p2020" data-category="pistol")
           img(src="/images/p2020.svg", alt="p2020")
           p.name P2020
-        div.p2020_akimbo.btn(data-weapon="p2020_akimbo")
+        div.p2020_akimbo.btn(data-weapon="p2020_akimbo" data-category="pistol")
           img(src="/images/p2020_akimbo.svg", alt="p2020 akimbo")
           p.name P2020 (双持)
-        div.wingman.btn(data-weapon="wingman")
+        div.wingman.btn(data-weapon="wingman" data-category="pistol")
           img(src="/images/wingman.svg", alt="wingman")
           p.name 辅助手枪
       #fire-mode-select.button-row
@@ -150,21 +161,27 @@ block content
       #mag-select.button-row
         div.mag-0.tooltip
           img(src="/images/magi.png" alt="no magazine")
+          span.mag-cap
           span.tooltiptext 无扩容
         div.mag-1.tooltip
           img(src="/images/magi.png" alt="magazine level 1")
+          span.mag-cap
           span.tooltiptext 等级1
         div.mag-2.tooltip
           img(src="/images/magi.png" alt="magazine level 2")
+          span.mag-cap
           span.tooltiptext 等级2
         div.mag-3.tooltip
           img(src="/images/magi.png" alt="magazine level 3")
+          span.mag-cap
           span.tooltiptext 等级3
         div.mag-4.tooltip
-          img(src="/images/magi.png" alt="corrupted magazine")
+          img(src="/images/corrupted_mag.svg" alt="corrupted magazine")
+          span.mag-cap
           span.tooltiptext 异变弹匣 (Corrupted)
         div.mag-drop.tooltip.hidden
           img(src="/images/magi.png" alt="drop magazine")
+          span.mag-cap
           span.tooltiptext 固定弹容量
         div.mod-revved_up.mod.hidden.tooltip
           img(src="/images/thermite_grenade.png" alt="thermite grenade")
@@ -175,7 +192,7 @@ block content
       #settings
           #mouse-settings.row
             div
-              input(type='text' id='sens')
+              input(type='text' id='sens' aria-label="鼠标灵敏度")
               span.tooltip.underlined
                 | 灵敏度
                 span.tooltiptext
@@ -247,18 +264,18 @@ block content
       #controls-bottom
         #copyright
           div.links
-            a(href="https://github.com/metaflow/apex-recoil" target="_blank")
+            a(href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
               img(src="/GitHub-Mark-Light-32px.png", alt="github")
-            a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank")
+            a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
               img(src="/reddit.png", alt="reddit")
             a(href="/").lang
               | english
             a(href="/ru").lang
               | русский
             div.vertical
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank")
+              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
                 | Privacy Policy
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank")
+              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
                 | Datenschutzerklärung
               a(href="#cookies")
                 | Cookie settings
@@ -267,14 +284,14 @@ block content
           p
             | This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. 
             | Game content and materials are trademarks and copyrights of 
-            | #[a(href="https://ea.com" target="_blank") Electronic Arts Inc.]              
-            | or #[a(href="https://www.respawn.com/" target="_blank") Respawn Entertainment]. 
+            | #[a(href="https://ea.com" target="_blank" rel="noopener noreferrer") Electronic Arts Inc.]              
+            | or #[a(href="https://www.respawn.com/" target="_blank" rel="noopener noreferrer") Respawn Entertainment]. 
             | Some images and reference materials come from 
-            | #[a(href="https://apexlegends.fandom.com/wiki/" target="_blank") Apex Legends Wiki].
+            | #[a(href="https://apexlegends.fandom.com/wiki/" target="_blank" rel="noopener noreferrer") Apex Legends Wiki].
         #version
           p
             | version #[span#version-value 17]&nbsp;
-            a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank")
+            a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank" rel="noopener noreferrer")
               | what's new
     #workspace
       #detailed-stats.hidden
@@ -284,11 +301,11 @@ block content
           p.action#hide-stats 关闭图表
       #instructions.hidden
           h2 说明
-          p 在Youtube上 #[a(href="https://www.youtube.com/watch?v=tTPKHa4aXug") 查看简介].
+          p 在Youtube上 #[a(href="https://www.youtube.com/watch?v=tTPKHa4aXug" target="_blank" rel="noopener noreferrer") 查看简介].
           ul
-            li #[a(href="https://www.google.com/search?q=turn+off+enhance+pointer+precision" target="_blank") 确保“增强鼠标精度”选项已关闭].
+            li #[a(href="https://www.google.com/search?q=turn+off+enhance+pointer+precision" target="_blank" rel="noopener noreferrer") 确保“增强鼠标精度”选项已关闭].
             li 设置 #[i 灵敏度].&nbsp;
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#controller-support" target="_blank") 手柄设置办法.
+              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#controller-support" target="_blank" rel="noopener noreferrer") 手柄设置办法.
             li 选择武器和弹夹。
             li 点击下方虚线区域并尝试控枪。
             li 你控制的越好分数就越高。最高为100分。           
@@ -300,17 +317,17 @@ block content
     p 你好! 感谢你使用这个小程序来练习后坐力弹道. 它旨在通过鼠标或者手柄在电脑浏览器上使用。
       | 您的屏幕宽度必须大于900像素。
       | 同时请看Reddit上
-      | #[a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/") 这个帖子] 
-      | and #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md") FAQ].
+      | #[a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer") 这个帖子] 
+      | and #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer") FAQ].
     br
     p Cheers!
     img(src="/trail.png", alt="trail")
     #copyright-mobile
       p
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank")
+        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
           | Privacy Policy
       p
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank")
+        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
           | Datenschutzerklärung
       p
         a(href="#cookies")

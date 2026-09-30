@@ -282,45 +282,48 @@ block content
           #text
     #stage-container
       #stage-toolbar.stage-toolbar
-        .toolbar-group
-          button#toggle-sidebar-btn.small-btn(type="button" title="Toggle Sidebar Menu [M]") ◀ Sidebar
-          span.toolbar-title 🎯 Pattern & Wall Overlay
+        .toolbar-group.view-controls-group
+          button#toggle-sidebar-btn.small-btn(type="button" title="Toggle Sidebar Menu [M]" aria-label="Toggle Sidebar Menu") ◀ Sidebar
           label.toolbar-toggle(title="Toggle background wall image on/off")
             input(type="checkbox" id="toggle-bg-img" checked)
-            span 🖼️ Wall Image
+            span 🖼️ Wall
           .toolbar-slider-group(title="Adjust background image opacity")
             label(for="bg-opacity-slider") Opacity:
-            input(type="range" id="bg-opacity-slider" min="10" max="100" value="80")
+            input(type="range" id="bg-opacity-slider" min="10" max="100" value="80" aria-label="Background image opacity")
             span#bg-opacity-val 80%
           .toolbar-slider-group.scale-adjust-group(title="Fine-tune visual overlay scale (e.g. adjust for player FOV 90 - 110)")
             label(for="scale-adjust-slider") Scale:
-            input(type="range" id="scale-adjust-slider" min="80" max="120" value="100" step="1")
+            input(type="range" id="scale-adjust-slider" min="80" max="120" value="100" step="1" aria-label="Visual overlay scale")
             span#scale-adjust-val 100%
-            button#scale-reset-btn.icon-btn(type="button" title="Reset visual scale to 100%") ↺
-        .toolbar-group
-          label(for="stage-preview-select") View:
-          select#stage-preview-select
-            option(value="spec") 📐 Median Calculated Spec
+            button#scale-reset-btn.icon-btn(type="button" title="Reset visual scale to 100%" aria-label="Reset visual scale") ↺
+          .view-select-wrap
+            label(for="stage-preview-select") View:
+            select#stage-preview-select(aria-label="Select stage overlay view")
+              option(value="spec") 📐 Median Calculated Spec
         .toolbar-group#batch-nav-group.hidden
-          button#prev-stage-img-btn.small-btn(type="button" title="Previous image [ [ ]") ◀ Prev
+          button#prev-stage-img-btn.small-btn(type="button" title="Previous image [ [ ]" aria-label="Previous image") ◀ Prev
           span#stage-img-indicator.stage-img-indicator 🖼️ 1/1
-          button#next-stage-img-btn.small-btn(type="button" title="Next image [ ] ]") Next ▶
-        .toolbar-group
+          button#next-stage-img-btn.small-btn(type="button" title="Next image [ ] ]" aria-label="Next image") Next ▶
+        .toolbar-group.toolbar-actions-group
           button#save-stage-spec-btn.tool-btn.primary-btn(type='button', title='Save current weapon spec to specs.json [Ctrl+S]') 💾 Save Spec
-          button#undo-stage-btn.small-btn(type="button" title="Undo last action [Ctrl+Z]" disabled) ↩ Undo
-          button#redo-stage-btn.small-btn(type="button" title="Redo [Ctrl+Y / Ctrl+Shift+Z]" disabled) ↪ Redo
-          button#pan-mode-toggle-btn.small-btn(type="button" title="Pan canvas [Drag with Right-Click, Middle-Click, or Spacebar]") ✋ Pan Canvas
-          button#move-all-toggle-btn.small-btn(type="button" title="When active, dragging any point shifts all points together to align with wall decals") ✥ Move All (Align)
-          button#correction-mode-btn.small-btn(type="button" title="Toggle correction mode to manually add or remove bullet holes that the algorithm missed or got wrong. Left-click canvas to add, right-click a point to remove.") 🔧 Correct Shots
-          button#compare-stage-btn.small-btn(type="button" title="Toggle dual comparison overlay of Saved Spec vs Candidate [O]") ⚖️ Compare Overlay
-          button#recenter-stage-btn.small-btn(type="button" title="Fit & center background and pattern in view") 🎯 Fit & Center
+          .segmented-btn-group(role="group" aria-label="Undo and Redo")
+            button#undo-stage-btn.small-btn(type="button" title="Undo last action [Ctrl+Z]" aria-label="Undo" disabled) ↩ Undo
+            button#redo-stage-btn.small-btn(type="button" title="Redo [Ctrl+Y / Ctrl+Shift+Z]" aria-label="Redo" disabled) ↪ Redo
+          .segmented-btn-group(role="group" aria-label="Canvas interaction modes")
+            button#pan-mode-toggle-btn.small-btn(type="button" title="Pan canvas [Drag with Right-Click, Middle-Click, or Spacebar]") ✋ Pan
+            button#move-all-toggle-btn.small-btn(type="button" title="Drag any point to shift all points together to align with wall decals") ✥ Align
+            button#correction-mode-btn.small-btn(type="button" title="Toggle correction mode to manually add or remove bullet holes") 🔧 Correct
+          button#compare-stage-btn.small-btn(type="button" title="Toggle dual comparison overlay of Saved Spec vs Candidate [O]") ⚖️ Compare
+          button#recenter-stage-btn.small-btn(type="button" title="Fit & center background and pattern in view") 🎯 Fit
           button#shortcuts-help-btn.small-btn(type="button" title="Keyboard shortcuts reference [?]") ⌨️ Shortcuts
           button#clear-stage-bg-btn.small-btn(type="button" title="Remove background image from canvas") 🗑 Clear BG
         #shot-correction-status.shot-correction-status.hidden
         #discrepancy-hud.discrepancy-hud.hidden
           .hud-header
             span.hud-title ⚖️ Spec vs Candidate Discrepancy
-            button#close-hud-btn.hud-close-btn(type="button" title="Close comparison overlay") ✕
+            .hud-actions
+              button#min-hud-btn.hud-min-btn(type="button" title="Minimize/Maximize HUD" aria-label="Minimize HUD") ─
+              button#close-hud-btn.hud-close-btn(type="button" title="Close comparison overlay" aria-label="Close HUD") ✕
           .hud-body
             .hud-stat-row
               span.hud-label Shots:

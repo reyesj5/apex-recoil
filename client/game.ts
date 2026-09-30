@@ -314,6 +314,22 @@ export function updateMagTooltips() {
       }
       tooltipElem.innerText = `${baseLabel} (${count} ${unit}${penaltyNote})`;
     }
+    const capElem = document.querySelector(`#mag-select .mag-${i} .mag-cap`) as HTMLElement | null;
+    if (capElem) {
+      if (i < w.mags.length) {
+        const raw = w.mags[i].size;
+        const count = stockActive ? Math.max(1, raw - penalty) : raw;
+        capElem.innerText = `${count}`;
+        capElem.style.display = 'block';
+        if (stockActive) {
+          capElem.classList.add('penalty');
+        } else {
+          capElem.classList.remove('penalty');
+        }
+      } else {
+        capElem.style.display = 'none';
+      }
+    }
   }
 
   const dropTooltipElem = document.querySelector(`#mag-select .mag-drop .tooltiptext`) as HTMLElement | null;
@@ -323,6 +339,12 @@ export function updateMagTooltips() {
     const penaltyNote = stockActive ? ` (-${penalty})` : '';
     let label = isRu ? 'Фиксированный магазин' : isZh ? '固定弹容量' : 'Standard Capacity';
     dropTooltipElem.innerText = `${label} (${count} ${unit}${penaltyNote})`;
+  }
+  const dropCapElem = document.querySelector(`#mag-select .mag-drop .mag-cap`) as HTMLElement | null;
+  if (dropCapElem) {
+    const raw = w.mags[0]?.size || 1;
+    const count = stockActive ? Math.max(1, raw - penalty) : raw;
+    dropCapElem.innerText = `${count}`;
   }
 
   const stockTooltipElem = document.querySelector('.mod-corrupted_stock .tooltiptext') as HTMLElement | null;
@@ -839,6 +861,42 @@ function weaponControls() {
     const d = (document.querySelector(`#weapon-select [data-weapon="${s.name}"]`) ||
                document.querySelector(`#weapon-select .${CSS.escape(s.name)}`)) as HTMLDivElement;
     if (d != null) d.addEventListener('click', () => aWeapon.set(s.name));
+  });
+
+  // Weapon Search & Category Filtering
+  const searchInput = document.getElementById('weapon-search-input') as HTMLInputElement | null;
+  const categoryPills = document.querySelectorAll('.cat-pill');
+  let activeCategory = 'all';
+
+  function filterWeapons() {
+    const query = (searchInput?.value || '').toLowerCase().trim();
+    const weaponButtons = document.querySelectorAll('#weapon-select > .btn');
+    weaponButtons.forEach(btn => {
+      const el = btn as HTMLElement;
+      const wName = (el.getAttribute('data-weapon') || '').toLowerCase();
+      const wCategory = (el.getAttribute('data-category') || '').toLowerCase();
+      const displayName = (el.querySelector('.name')?.textContent || '').toLowerCase();
+
+      const matchesCat = activeCategory === 'all' || wCategory === activeCategory;
+      const matchesQuery = !query || wName.includes(query) || displayName.includes(query);
+
+      if (matchesCat && matchesQuery) {
+        el.style.display = '';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+  }
+
+  searchInput?.addEventListener('input', filterWeapons);
+  categoryPills.forEach(pill => {
+    pill.addEventListener('click', (e) => {
+      categoryPills.forEach(p => p.classList.remove('active'));
+      const target = e.currentTarget as HTMLElement;
+      target.classList.add('active');
+      activeCategory = target.getAttribute('data-category') || 'all';
+      filterWeapons();
+    });
   });
 
   aWeapon.watch((v: string) => {
@@ -1639,6 +1697,15 @@ export function initGame() {
   });
   hotkeys('b', () => {
     toggleFireMode();
+  });
+  hotkeys('escape', () => {
+    if (aShowInstructions.get()) {
+      aShowInstructions.set(false);
+    }
+    const detailedStats = document.getElementById('detailed-stats');
+    if (detailedStats && !detailedStats.classList.contains('hidden')) {
+      detailedStats.classList.add('hidden');
+    }
   });
   aMovingTarget.watch((v: boolean) => {
     target.onSettingsUpdated();
