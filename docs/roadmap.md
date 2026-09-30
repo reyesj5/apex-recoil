@@ -44,8 +44,38 @@ This document outlines the architectural milestones, completed implementations, 
   - In-Game Live Studio Past Sessions Loader: browse and load past recorded sessions from disk, load companion wall screenshots into sample cards, import local video/companion files from disk, and re-run discovery.
   - Sidebar preview containment & full footage visibility: resolved SCSS nesting selector mismatch, enforced `overflow-x: hidden` on `#tools`, constrained `.sample-media-row .media-col video, img` (height: 95px, object-fit: contain), and fixed `img.batch-thumb` (52x38px) thumbnail styling so 100% of footage is visible and cards fit neatly without horizontal expansion.
   - Duplicate image and video clip upload prevention: validates incoming filenames, URLs, and base64 contents across disk uploads, server libraries, and local imports, blocking duplicates.
-  - 1:1 Recoil Game Scale Calibration & True Muscle Memory Guarantee: calibrated canvas overlay mapping ($\text{px} = \frac{\text{spec}}{\text{mult}} \times \text{zoom}$) and upgraded `havoc_tc` in `client/specs.json` with authentic 36-round recoil and `"multiplier": 0.73`, guaranteeing identical in-game mouse counter-aiming.
+  - 1:1 Recoil Game Scale Calibration & True Muscle Memory Guarantee: calibrated canvas overlay mapping with Source Engine 1080p 1x geometric constant ($K_{px\_to\_mouse} = 3.36$ or $0.2976$ px/mickey) and restored `havoc_tc` in `client/specs.json` with canonical 35-round recoil and full ground loot mag progression `[18, 21, 25, 29, 35]`, guaranteeing identical in-game mouse counter-aiming.
   - One-click session analysis calling `POST /api/discovery/process-session`.
+  - Shot Count Mismatch Detection & Manual Correction Mode: compares detected bullet holes against expected magazine size, flags mismatches with amber badges on batch cards and dropdown entries, and provides a `🔧 Correct Shots` toolbar toggle for manually adding/removing bullet holes with a live shot counter status bar.
+  - Recoil Editor Usability, Zoom-Adaptive Markers, Undo/Redo & Smart Sequential Insertion:
+    - Canvas zoom and pan preserved across view switches (`spec`, `analyzed`, `trial-X`), batch image selections, and spec reloads (`🔄 Reload`) without resetting the user's view coordinates.
+    - Zoom-adaptive marker circles ($r = 4.5 / s$, $w = 1.2 / s$) maintaining crisp ~4.5px screen radius across 1x–8x zoom with translucent fills (`rgba(0, 229, 255, 0.22)`) so decal holes underneath remain clearly visible.
+    - Scaled hitboxes in stage coordinates allowing effortless placement of new markers close to existing markers in crowded decal clusters without blocking clicks.
+    - Complete 50-step Undo / Redo history stack with toolbar buttons (`↩ Undo`, `↪ Redo`) and keyboard shortcuts (`Ctrl+Z`, `Ctrl+Y`, `Ctrl+Shift+Z`).
+    - Smart sequential trajectory insertion: newly added markers automatically project onto the nearest spray segment or endpoint ($0 \to 1 \dots \to N-1$), re-indexing points and rebuilding connected lines automatically. Right-click deletes and reconnects lines seamlessly.
+    - Eliminated legacy `edgeStartName` bolding on click.
+  - Interactive Keyboard Shortcuts & Controls Reference (`⌨️ Shortcuts` / `?`): full in-UI modal reference table documenting all editor keyboard shortcuts, batch navigation keys (`[` and `]`), pan controls, mouse wheel zoom, and correction mode clicks.
+  - Stage Visual Scale Fine-Tuner (`Scale: 100% ↺`): toolbar slider (80%–120%) enabling live fine-tuning of the overlay scale to compensate for player FOV variations (90° vs 110°) without modifying canonical game specs.
+  - Pre-Analysis Reticle Alignment & Offline Screenshot Positioning: pre-analysis overlays on loaded wall screenshots anchor directly at the 20m target board center reticle ($X \approx 48.7\%, Y \approx 49.5\%$) and dynamically adjust to the selected optic zoom (1x, 2x, 3x, 4x).
+  - Startup Cache Purge & Standalone Pattern Responsive Fit: purged legacy `localStorage` keys on startup to prevent double-pattern ghosting, and added responsive standalone canvas scaling fitting trajectories within 65% of viewport height.
+  - View Dropdown Synchronization & Batch Card Integration: `#stage-preview-select` is fully synchronized with batch thumbnail card clicks, carousel navigation (`[` and `]`), and non-session screenshot loading (`batch-0`, `batch-1`). Reloading specs preserves active inspection views without resetting to spec.
+  - Fit & Center Pattern & Correction Preservation: `fitAndCenterCanvas()` re-centers the stage and linearly rescales Konva shapes without clearing canvas or re-fetching overlays, preserving analyzed patterns and manual corrections.
+  - In-Game FOV 104 Perspective Calibration & Automatic Scale Automation: integrated $\text{fovFactor} = \frac{1}{\tan(\text{FOV} / 2)}$ into camera projection layers across Python CV backend and frontend editor, automatically calibrating decal pixels to true mouse mickeys for 104° FOV without manual slider adjustments.
+  - Havoc Weapon Multiplier Normalization (0.73): normalized Havoc (`havoc_tc`) in [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json) back to standard assault rifle multiplier `0.73` ($y$ ending at $-393.11$) while preserving lossless `raw_1x_x` and `raw_1x_y` (ending at $-538.5$), aligning Havoc with R-99/R-301 and re-exporting [`arduino_mouse/src/recoil.inc`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/arduino_mouse/src/recoil.inc).
+  - HDR-to-SDR Color Tone-Mapping & Over-Exposure Correction: implemented 2D Canvas LUT-based tone mapping ($\gamma \approx 1.6$, exposure $0.85$, contrast $1.20$, saturation boost $1.25$), dynamic video preview CSS filter, and Python OpenCV tone-mapping with dedicated `#capture-hdr-select` and `#static-hdr-select` controls, completely resolving washed-out over-bright captures from Windows HDR / Auto HDR.
+  - 1-Click Spec Saving & Direct Stage Toolbar Integration:
+    - Added dedicated `💾 Save Spec` (`#save-stage-spec-btn`) button to the stage toolbar and global `Ctrl+S` / `Cmd+S` keyboard shortcut with transient "✅ Saved!" button feedback.
+    - Added prominent 1-click `💾 Save Analyzed Pattern to specs.json` button inside both live session completion cards (`#session-process-status`) and batch screenshot completion cards (`#wall-file-status`), eliminating confusion about how to commit analysis results.
+  - Spec Safety Verification Checkpoint & Dual Comparison Overlay:
+    - Pre-save safety verification checkpoint modal (`#spec-checkpoint-modal`) checking for shot count truncations, deflection drift, large single-shot outliers, and recoil direction inversions before committing to `specs.json`.
+    - Dual-curve comparison overlay mode (`⚖️ Compare: Spec vs Candidate Overlay` / `#compare-stage-btn` / `O` shortcut) concurrently rendering Cyan baseline spec, Orange candidate spec, and color-coded discrepancy vector lines over canvas wall decals.
+    - Floating on-stage Discrepancy HUD (`#discrepancy-hud`) providing real-time alignment metrics (shots, mean delta, max delta, and status badges).
+    - Inline discrepancy health check badges and `⚖️ Inspect Discrepancies` action button in live and batch analysis cards.
+  - Incremental Proportional Spec Accumulation vs Overwrite:
+    - Implemented mathematical proportional sample merging via `RecoilAggregator.weighted_merge_recoil` and updated the Python pipeline to weight new samples proportionally: $\text{Coord}_{\text{combined}}[i] = \frac{N \cdot \text{Coord}_{\text{old}}[i] + M \cdot \text{Coord}_{\text{new}}[i]}{N + M}$.
+    - Added Spec Integration Mode selection in `#analysis-confirm-modal` (`➕ Proportional Accumulation` vs `🔄 Fresh Overwrite`).
+    - Added `sample_count` tracking in `client/specs.json` and a sidebar sample counter `#spec-samples-info` with a 1-click reset button `↺` to reset sample count back to 1 after patches.
+    - Added `🔬 New Batch Alone` option in the stage View dropdown (`#stage-preview-select`) to compare newly captured batch samples against the accumulated canonical spec.
 - [x] **Web UI Weapon Manager**:
   - Live weapon parameter controls (RPM, multiplier, mag tiers 0–4) in `/editor`.
   - Backend REST API endpoints `GET /api/specs` and `POST /api/specs` in [app.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) with automatic `.bak` backups.
@@ -89,6 +119,7 @@ All 31 weapons in [client/specs.json](file:///c:/Users/micro.VADER/Documents/Pro
 ---
 
 ### Milestone 7: UI & Asset Polish
+- [x] **Remove Legacy Development Hiatus & End-of-Support Splash**: Removed outdated September 2024 notice dialog and associated attributes (`#notify-splash`, `aShowDevUpdate`) from [`views/index.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index.pug) and [`client/game.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts).
 - [ ] **Custom Corrupted Magazine Graphic**: Create a distinctive Tier 4 / Red magazine icon in `assets/images/` to replace the CSS-tinted `magi.png`.
 - [ ] **Codebase Cleanup**:
   - Review and resolve `TODO` in [client/game.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts#L368) (argument passing).

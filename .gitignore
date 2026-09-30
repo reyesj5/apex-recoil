@@ -90,13 +90,30 @@ diff_*.png
 *_test_spec.json
 *.json.bak
 *.bak
+*.tmp
+debug_*.*
+temp_*.*
+session_*.json
 
-# Video captures & recordings
+# Video captures, sessions & recordings
 processing/captures/
 captures/
 recordings/
+sessions/
+screenshots/
+processing/screenshots/
 processing/data/
+processing/output/
+processing/runs/
 data/
+*.webm
+*.mp4
+
+# Scratch and intermediate IDE storage
+scratch/
+.tempmediaStorage/
+.system_generated/
+arduino_mouse/build/
 
 # Knowledge graph outputs (graphify)
 graphify-out/
@@ -104,3 +121,4 @@ graphify-out/
 # Operating System
 .DS_Store
 Thumbs.db
+

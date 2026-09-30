@@ -949,6 +949,12 @@ b {
           font-weight: 700;
           box-shadow: 0 0 8px rgba(255, 152, 0, 0.6);
         }
+
+        button:disabled {
+          opacity: 0.35;
+          cursor: not-allowed !important;
+          pointer-events: none;
+        }
       }
     }
 
@@ -1484,24 +1490,6 @@ div.btn {
   align-items:center;
 }
 
-#notify-splash {
-  width: 500px;
-  height: auto;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: $background;
-  border: 3px solid $active;
-  padding: 12px;
-  p {
-    margin-bottom: 8px;
-    &.action {
-      text-align: right;
-    }
-  }  
-}
-
 .video-modal-overlay {
   position: fixed;
   top: 0;
@@ -1913,3 +1901,539 @@ div.btn {
   border: 1px solid rgba(255, 255, 255, 0.1);
   white-space: nowrap;
 }
+
+// --- Shot Correction Mode & Mismatch Warning Styles ---
+
+// Mismatch badge for batch screenshot cards (amber warning)
+.batch-badge.badge-mismatch {
+  background: rgba(255, 152, 0, 0.2);
+  color: #ffab40;
+  border: 1px solid rgba(255, 152, 0, 0.5);
+  font-size: 0.72em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  animation: mismatch-pulse 2s ease-in-out infinite;
+}
+
+@keyframes mismatch-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+// Correction mode active state on the toolbar button
+#correction-mode-btn.active {
+  background: rgba(255, 152, 0, 0.25) !important;
+  color: #ffab40 !important;
+  border-color: rgba(255, 152, 0, 0.6) !important;
+  box-shadow: 0 0 8px rgba(255, 152, 0, 0.3);
+}
+
+// Shot correction status bar beneath the stage toolbar
+.shot-correction-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 0.82em;
+  font-weight: 600;
+  border-radius: 0 0 6px 6px;
+  transition: all 0.2s ease;
+
+  &.hidden {
+    display: none;
+  }
+
+  &.match {
+    background: rgba(46, 204, 113, 0.12);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    border-top: none;
+    color: #2ecc71;
+  }
+
+  &.deficit {
+    background: rgba(255, 152, 0, 0.12);
+    border: 1px solid rgba(255, 152, 0, 0.35);
+    border-top: none;
+    color: #ffab40;
+    animation: deficit-glow 2s ease-in-out infinite;
+  }
+
+  &.excess {
+    background: rgba(231, 76, 60, 0.12);
+    border: 1px solid rgba(231, 76, 60, 0.35);
+    border-top: none;
+    color: #e74c3c;
+  }
+
+  .correction-icon {
+    font-size: 1.1em;
+  }
+
+  .correction-label {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  .correction-detail {
+    font-weight: 400;
+    font-size: 0.9em;
+    opacity: 0.85;
+  }
+}
+
+@keyframes deficit-glow {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 6px rgba(255, 152, 0, 0.2); }
+}
+
+// Shot mismatch warning in the analysis status box
+.shot-mismatch-warning {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: rgba(255, 152, 0, 0.15);
+  border: 1px solid rgba(255, 152, 0, 0.4);
+  border-radius: 4px;
+  color: #ffab40;
+  font-size: 0.92em;
+  line-height: 1.4;
+}
+
+// Analysis status box warning variant
+#wall-file-status.warning,
+#session-process-status.warning {
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.35);
+  border-radius: 6px;
+  padding: 10px 14px;
+  color: #f0e0c0;
+  font-size: 0.88em;
+  line-height: 1.5;
+}
+
+// Shortcuts reference modal dialog
+.shortcuts-dialog {
+  max-width: 580px !important;
+  width: 95vw !important;
+
+  .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 12px 18px !important;
+  }
+}
+
+.shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  td {
+    padding: 10px 8px;
+    vertical-align: top;
+
+    &.key-cell {
+      width: 140px;
+      white-space: nowrap;
+    }
+
+    strong {
+      color: #e2e8f0;
+      font-size: 0.95em;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .shortcut-desc {
+      margin: 0;
+      font-size: 0.84em;
+      color: #94a3b8;
+      line-height: 1.35;
+    }
+  }
+
+  kbd {
+    display: inline-block;
+    padding: 3px 7px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #ffca28;
+    background: #1e2633;
+    border: 1px solid rgba(255, 202, 40, 0.35);
+    border-radius: 4px;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  .plus {
+    color: #64748b;
+    font-size: 0.85em;
+    margin: 0 2px;
+  }
+
+  .action-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 0.82em;
+    font-weight: 600;
+    background: rgba(33, 150, 243, 0.2);
+    border: 1px solid rgba(33, 150, 243, 0.4);
+    border-radius: 4px;
+    color: #90caf9;
+  }
+}
+
+// Visual overlay scale adjust control in stage toolbar
+.scale-adjust-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82em;
+  color: #cbd5e1;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 2px 8px;
+
+  input[type="range"] {
+    width: 65px;
+    cursor: pointer;
+    accent-color: #ffca28;
+  }
+
+  span {
+    min-width: 38px;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #ffca28;
+    font-weight: 600;
+  }
+
+  .icon-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0 3px;
+    font-size: 1.1em;
+    line-height: 1;
+
+    &:hover {
+      color: #ffca28;
+    }
+  }
+}
+
+// Compare Overlay Button active state
+#compare-stage-btn.active {
+  background: #ff9800 !important;
+  color: #121212 !important;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(255, 152, 0, 0.4);
+}
+
+// Discrepancy Floating HUD on Stage
+.discrepancy-hud {
+  position: absolute;
+  top: 48px;
+  right: 14px;
+  z-index: 100;
+  min-width: 250px;
+  background: rgba(18, 24, 38, 0.92);
+  border: 1px solid rgba(255, 152, 0, 0.4);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  font-size: 0.85em;
+  color: #e2e8f0;
+  animation: fadeIn 0.2s ease-out;
+
+  .hud-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    .hud-title {
+      font-weight: 700;
+      color: #ffb74d;
+      font-size: 0.95em;
+    }
+
+    .hud-close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.1em;
+      cursor: pointer;
+      padding: 0 4px;
+
+      &:hover {
+        color: #ff5252;
+      }
+    }
+  }
+
+  .hud-stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+
+    .hud-label {
+      color: #94a3b8;
+    }
+
+    .hud-val {
+      font-weight: 600;
+      font-family: monospace;
+      color: #fff;
+    }
+  }
+
+  .hud-badge-row {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    display: flex;
+    justify-content: center;
+
+    .hud-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.88em;
+      font-weight: 700;
+
+      &.safe {
+        background: rgba(39, 174, 96, 0.25);
+        border: 1px solid #27ae60;
+        color: #69f0ae;
+      }
+      &.warning {
+        background: rgba(255, 152, 0, 0.25);
+        border: 1px solid #ff9800;
+        color: #ffb74d;
+      }
+      &.danger {
+        background: rgba(235, 87, 87, 0.25);
+        border: 1px solid #eb5757;
+        color: #ff5252;
+      }
+    }
+  }
+
+  .hud-legend {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.82em;
+    color: #cbd5e1;
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+
+      &.spec-dot {
+        background: #00e5ff;
+        box-shadow: 0 0 6px #00e5ff;
+      }
+      &.cand-dot {
+        background: #ff9800;
+        box-shadow: 0 0 6px #ff9800;
+      }
+    }
+
+    .legend-line {
+      width: 12px;
+      height: 2px;
+
+      &.delta-line {
+        background: #ff5252;
+        border-top: 1px dashed #ff5252;
+      }
+    }
+  }
+}
+
+// Spec Checkpoint Modal
+.checkpoint-dialog {
+  max-width: 620px !important;
+  width: 95vw !important;
+
+  .modal-body {
+    max-height: 75vh;
+    overflow-y: auto;
+    padding: 16px 20px !important;
+  }
+
+  .checkpoint-alert-box {
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    line-height: 1.45;
+
+    &.safe {
+      background: rgba(39, 174, 96, 0.15);
+      border: 1px solid rgba(39, 174, 96, 0.4);
+      color: #a7f3d0;
+    }
+
+    &.warning {
+      background: rgba(255, 152, 0, 0.15);
+      border: 1px solid rgba(255, 152, 0, 0.45);
+      color: #fde68a;
+    }
+
+    &.danger {
+      background: rgba(239, 68, 68, 0.18);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #fecaca;
+    }
+  }
+
+  .checkpoint-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+
+    .checkpoint-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 6px;
+      padding: 10px 12px;
+
+      .card-title {
+        display: block;
+        font-size: 0.85em;
+        font-weight: 700;
+        color: #94a3b8;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .card-metric {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.88em;
+        margin-bottom: 4px;
+
+        .metric-label {
+          color: #94a3b8;
+        }
+
+        strong, span {
+          color: #f8fafc;
+        }
+      }
+    }
+  }
+
+  .checkpoint-discrepancy-table {
+    margin-bottom: 14px;
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+
+      tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+
+      td {
+        padding: 8px 6px;
+        vertical-align: middle;
+
+        strong {
+          color: #f1f5f9;
+          font-size: 0.9em;
+          display: block;
+        }
+
+        .table-desc {
+          margin: 1px 0 0 0;
+          font-size: 0.78em;
+          color: #94a3b8;
+        }
+      }
+    }
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-weight: 700;
+    white-space: nowrap;
+
+    &.safe {
+      background: rgba(39, 174, 96, 0.2);
+      border: 1px solid #27ae60;
+      color: #6ee7b7;
+    }
+    &.warning {
+      background: rgba(255, 152, 0, 0.2);
+      border: 1px solid #ff9800;
+      color: #fde047;
+    }
+    &.danger {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+    }
+  }
+
+  .checkpoint-warnings-list {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+
+    h4 {
+      margin: 0 0 6px 0;
+      font-size: 0.9em;
+      color: #fca5a5;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #fecaca;
+      font-size: 0.84em;
+      line-height: 1.45;
+
+      li {
+        margin-bottom: 4px;
+      }
+    }
+  }
+}

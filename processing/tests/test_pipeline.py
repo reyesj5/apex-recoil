@@ -132,3 +132,42 @@ def test_process_images_session(tmp_path):
         assert result["individual_trials"][0]["source"] == "img1.jpg"
         assert result["individual_trials"][1]["source"] == "img2.jpg"
 
+
+def test_pipeline_proportional_accumulation():
+    pipeline = RecoilPipeline()
+    existing_spec = {
+        "name": "flatline",
+        "rpm": 600,
+        "multiplier": 0.73,
+        "x": [0.0, 10.0, 20.0],
+        "y": [0.0, -10.0, -20.0],
+        "raw_1x_x": [0.0, 10.0, 20.0],
+        "raw_1x_y": [0.0, -10.0, -20.0],
+        "time_points": [0, 100, 200],
+        "sample_count": 9
+    }
+
+    # New single trial
+    new_trials = [
+        {"x": [0.0, 21.0, 31.0], "y": [0.0, -21.0, -31.0]}
+    ]
+
+    merged_spec, conv = pipeline.aggregate_and_build_spec(
+        trials=new_trials,
+        weapon_name="flatline",
+        rpm=600.0,
+        multiplier=1.0,
+        merge_strategy="accumulate",
+        existing_spec=existing_spec,
+        existing_sample_count=9
+    )
+
+    # 9 prior samples + 1 new trial = 10 total samples
+    assert merged_spec["sample_count"] == 10
+    assert merged_spec["total_sample_count"] == 10
+    assert merged_spec["merge_strategy"] == "accumulate"
+
+    # Shot 1: (9 * 10.0 + 1 * 21.0) / 10 = (90 + 21) / 10 = 11.1
+    assert round(merged_spec["x"][1], 2) == 11.1
+
+

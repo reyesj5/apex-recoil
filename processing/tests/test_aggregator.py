@@ -51,3 +51,38 @@ def test_convergence_evaluation():
     conv = RecoilAggregator.evaluate_convergence(trials)
     assert conv["convergence_score"] > 90.0
     assert len(conv["outlier_trials"]) == 0
+
+
+def test_weighted_merge_recoil_proportional_weight():
+    """
+    Test proportional weighting:
+    Existing spec built with 10 samples (x = [0, 100], y = [0, -100]).
+    New sample built with 1 sample (x = [0, 111], y = [0, -89]).
+    Merged spec should weight existing by 10/11 and new by 1/11.
+    Expected shot 1 x: (10*100 + 1*111) / 11 = 1111 / 11 = 101.0
+    Expected shot 1 y: (10*-100 + 1*-89) / 11 = -1089 / 11 = -99.0
+    Total sample_count: 11
+    """
+    existing_spec = {
+        "name": "r301",
+        "x": [0.0, 100.0],
+        "y": [0.0, -100.0],
+        "raw_1x_x": [0.0, 136.99],
+        "raw_1x_y": [0.0, -136.99],
+        "sample_count": 10
+    }
+    new_spec = {
+        "name": "r301",
+        "x": [0.0, 111.0],
+        "y": [0.0, -89.0],
+        "raw_1x_x": [0.0, 152.05],
+        "raw_1x_y": [0.0, -121.92]
+    }
+
+    merged = RecoilAggregator.weighted_merge_recoil(existing_spec, new_spec, existing_weight=10, new_weight=1)
+    assert merged["sample_count"] == 11
+    assert merged["x"][0] == 0.0
+    assert merged["x"][1] == 101.0
+    assert merged["y"][0] == 0.0
+    assert merged["y"][1] == -99.0
+

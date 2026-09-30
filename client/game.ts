@@ -70,7 +70,6 @@ const aMods = new StringAttribute('mods', NS, '');
 const aScaleX = new NumericAttribute('scale-x', NS, 1);
 const aScaleY = new NumericAttribute('scale-y', NS, 1);
 const aCorruptedStock = new BooleanAttribute('corrupted-stock', NS, false);
-const aShowDevUpdate = new BooleanAttribute('dev-update-2024-1', NS, true);
 export const aFireMode = new StringAttribute('fire-mode', NS, 'default');
 
 export type FireMode = 'auto' | 'burst' | 'single';
@@ -1540,30 +1539,6 @@ class Shooting {
 }
 let shooting = new Shooting();
 
-function maybeShowDevUpdate() {
-  aShowDevUpdate.watch((v: boolean) => {
-    console.log('dev update', v);
-    const d = document.querySelector(`#notify-splash`) as HTMLDivElement;
-    if (d == null) {
-      console.warn("#notify-splash not found");
-      return;
-    }
-    if (v) {
-      d.classList.remove('hidden');
-    } else {
-      d.classList.add('hidden');
-    }
-  })
-  const b = document.querySelector(`#close-notify-splash`) as HTMLButtonElement;
-  if (b == null) {
-    console.warn("#close-notify-splash not found");
-    return;
-  }
-  b.addEventListener('click', () => {
-    aShowDevUpdate.set(false);
-  })
-}
-
 export function initGame() {
   const version = document.getElementById('version-value');
   if (version != null) version.innerText = '240915';
@@ -1579,7 +1554,6 @@ export function initGame() {
   instructionsControls();
   weaponControls();
   statControls();
-  maybeShowDevUpdate();
   const urlSearchParams = new URLSearchParams(window.location.search);
   if (urlSearchParams.has('dev')) dev = true;
   {

@@ -10,6 +10,47 @@ import cv2
 import numpy as np
 
 
+def tone_map_hdr_image(
+    image: np.ndarray,
+    mode: str = "natural"
+) -> np.ndarray:
+    """
+    Applies HDR-to-SDR tone-mapping to restore proper brightness, contrast,
+    and saturation when game captures were recorded with Windows HDR / Auto HDR enabled.
+    
+    Modes:
+      'natural' (default): Balanced exposure pull-down (0.85), gamma 1.6, contrast 1.20, sat 1.25.
+      'vibrant': Stronger exposure pull-down (0.80), gamma 1.75, contrast 1.30, sat 1.40.
+      'off': Returns image unmodified.
+    """
+    if mode == "off" or image is None:
+        return image
+
+    gamma = 1.6 if mode == "natural" else 1.75
+    exposure = 0.85 if mode == "natural" else 0.80
+    contrast = 1.20 if mode == "natural" else 1.30
+    sat_boost = 1.25 if mode == "natural" else 1.40
+
+    if len(image.shape) == 3:
+        f = image.astype(np.float32) / 255.0
+        f = f * exposure
+        f = np.power(np.clip(f, 0.0, 1.0), gamma)
+        f = (f - 0.5) * contrast + 0.5
+        res = (np.clip(f, 0.0, 1.0) * 255.0).astype(np.uint8)
+
+        if sat_boost != 1.0:
+            hsv = cv2.cvtColor(res, cv2.COLOR_BGR2HSV).astype(np.float32)
+            hsv[:, :, 1] = np.clip(hsv[:, :, 1] * sat_boost, 0.0, 255.0)
+            res = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
+        return res
+    else:
+        f = image.astype(np.float32) / 255.0
+        f = f * exposure
+        f = np.power(np.clip(f, 0.0, 1.0), gamma)
+        f = (f - 0.5) * contrast + 0.5
+        return (np.clip(f, 0.0, 1.0) * 255.0).astype(np.uint8)
+
+
 class DecalTracker:
     """
     Tracks bullet impact decals across video frames or in static screenshots.
@@ -218,7 +259,8 @@ class DecalTracker:
         threshold_val: int = 80,
         baseline_image: Optional[np.ndarray] = None,
         roi_mask: Optional[np.ndarray] = None,
-        return_metadata: bool = False
+        return_metadata: bool = False,
+        hdr_mode: str = "auto"
     ) -> Union[Tuple[List[float], List[float]], Tuple[List[float], List[float], Dict[str, Any]]]:
         """
         Extraction for static wall screenshots or settled video frames.
@@ -226,10 +268,20 @@ class DecalTracker:
         Black Top-Hat decal filtering, camera-aligned baseline differencing,
         and directional nearest-neighbor path sequencing.
         """
+        working_img = image
         if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            if hdr_mode == "auto":
+                hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+                mean_v = float(hsv[:, :, 2].mean())
+                if mean_v > 155.0:
+                    working_img = tone_map_hdr_image(image, "natural")
+            elif hdr_mode in ["natural", "vibrant", "hdr-standard", "hdr-vibrant"]:
+                working_img = tone_map_hdr_image(image, "natural" if "standard" in hdr_mode else hdr_mode)
+
+        if len(working_img.shape) == 3:
+            gray = cv2.cvtColor(working_img, cv2.COLOR_BGR2GRAY)
         else:
-            gray = image.copy()
+            gray = working_img.copy()
 
         h, w = gray.shape[:2]
         is_gameplay_res = (w >= 1000 and h >= 600)
@@ -292,7 +344,7 @@ class DecalTracker:
                 top, bottom = int(h * 0.16), int(h * 0.75)
 
         board_roi = gray[top:bottom, left:right]
-        board_bgr = image[top:bottom, left:right] if len(image.shape) == 3 else None
+        board_bgr = working_img[top:bottom, left:right] if len(working_img.shape) == 3 else None
         blobs: List[Tuple[float, float]] = []
         blob_areas: Dict[Tuple[float, float], float] = {}
 

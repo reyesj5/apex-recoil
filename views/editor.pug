@@ -62,6 +62,8 @@ block content
         .spec-stats
           span#spec-shot-info Shots: 0
           span#spec-interval-info Interval: 0 ms
+          span#spec-samples-info Samples: 1
+          button#reset-samples-btn.icon-btn(type="button" title="Reset sample history to 1 (e.g. after a patch)") ↺
 
         .action-row
           button#save-weapon-btn.primary-btn 💾 Save to specs.json
@@ -110,6 +112,16 @@ block content
                 option(value="2.0" selected) 2x (2x HCOG Bruiser) - Standard @ 20m
                 option(value="3.0") 3x (3x HCOG Ranger)
                 option(value="4.0") 4x (2x-4x Variable / Sniper Scope)
+            .calib-item
+              label(for="capture-fov-input") 👁️ FOV:
+              input(type="number" id="capture-fov-input" value="104" min="70" max="120" step="1")
+              span.unit-label deg
+            .calib-item
+              label(for="capture-hdr-select") ☀️ Color:
+              select#capture-hdr-select(title="Fix washed-out, over-bright colors when playing with Windows HDR / Auto HDR enabled")
+                option(value="hdr-standard" selected) ☀️ HDR Fix (Natural)
+                option(value="hdr-vibrant") ☀️ HDR Fix (Vibrant)
+                option(value="off") Standard (SDR)
 
           .monitor-panel#monitor-panel.hidden
             .video-container
@@ -187,6 +199,16 @@ block content
                 option(value="2.0" selected) 2x (2x HCOG Bruiser) - Standard @ 20m
                 option(value="3.0") 3x (3x HCOG Ranger)
                 option(value="4.0") 4x (4x / Sniper)
+            .calib-item
+              label(for="static-fov-input") 👁️ FOV:
+              input(type="number" id="static-fov-input" value="104" min="70" max="120" step="1")
+              span.unit-label deg
+            .calib-item
+              label(for="static-hdr-select") ☀️ Color:
+              select#static-hdr-select(title="Fix washed-out, over-bright colors when playing with Windows HDR / Auto HDR enabled")
+                option(value="hdr-standard" selected) ☀️ HDR Fix (Natural)
+                option(value="hdr-vibrant") ☀️ HDR Fix (Vibrant)
+                option(value="off") Standard (SDR)
 
           .server-library-box
             .box-title-row
@@ -270,6 +292,11 @@ block content
             label(for="bg-opacity-slider") Opacity:
             input(type="range" id="bg-opacity-slider" min="10" max="100" value="80")
             span#bg-opacity-val 80%
+          .toolbar-slider-group.scale-adjust-group(title="Fine-tune visual overlay scale (e.g. adjust for player FOV 90 - 110)")
+            label(for="scale-adjust-slider") Scale:
+            input(type="range" id="scale-adjust-slider" min="80" max="120" value="100" step="1")
+            span#scale-adjust-val 100%
+            button#scale-reset-btn.icon-btn(type="button" title="Reset visual scale to 100%") ↺
         .toolbar-group
           label(for="stage-preview-select") View:
           select#stage-preview-select
@@ -279,10 +306,43 @@ block content
           span#stage-img-indicator.stage-img-indicator 🖼️ 1/1
           button#next-stage-img-btn.small-btn(type="button" title="Next image [ ] ]") Next ▶
         .toolbar-group
+          button#save-stage-spec-btn.tool-btn.primary-btn(type='button', title='Save current weapon spec to specs.json [Ctrl+S]') 💾 Save Spec
+          button#undo-stage-btn.small-btn(type="button" title="Undo last action [Ctrl+Z]" disabled) ↩ Undo
+          button#redo-stage-btn.small-btn(type="button" title="Redo [Ctrl+Y / Ctrl+Shift+Z]" disabled) ↪ Redo
           button#pan-mode-toggle-btn.small-btn(type="button" title="Pan canvas [Drag with Right-Click, Middle-Click, or Spacebar]") ✋ Pan Canvas
           button#move-all-toggle-btn.small-btn(type="button" title="When active, dragging any point shifts all points together to align with wall decals") ✥ Move All (Align)
+          button#correction-mode-btn.small-btn(type="button" title="Toggle correction mode to manually add or remove bullet holes that the algorithm missed or got wrong. Left-click canvas to add, right-click a point to remove.") 🔧 Correct Shots
+          button#compare-stage-btn.small-btn(type="button" title="Toggle dual comparison overlay of Saved Spec vs Candidate [O]") ⚖️ Compare Overlay
           button#recenter-stage-btn.small-btn(type="button" title="Fit & center background and pattern in view") 🎯 Fit & Center
+          button#shortcuts-help-btn.small-btn(type="button" title="Keyboard shortcuts reference [?]") ⌨️ Shortcuts
           button#clear-stage-bg-btn.small-btn(type="button" title="Remove background image from canvas") 🗑 Clear BG
+        #shot-correction-status.shot-correction-status.hidden
+        #discrepancy-hud.discrepancy-hud.hidden
+          .hud-header
+            span.hud-title ⚖️ Spec vs Candidate Discrepancy
+            button#close-hud-btn.hud-close-btn(type="button" title="Close comparison overlay") ✕
+          .hud-body
+            .hud-stat-row
+              span.hud-label Shots:
+              span#hud-shots-val.hud-val 35 vs 35
+            .hud-stat-row
+              span.hud-label Mean Delta:
+              span#hud-mean-val.hud-val 2.1 px
+            .hud-stat-row
+              span.hud-label Max Delta:
+              span#hud-max-val.hud-val 5.4 px (#12)
+            .hud-badge-row
+              span#hud-status-badge.hud-badge.safe 🟢 Consistent
+          .hud-legend
+            .legend-item
+              span.legend-dot.spec-dot
+              span Saved Spec (specs.json)
+            .legend-item
+              span.legend-dot.cand-dot
+              span Candidate to Save
+            .legend-item
+              span.legend-line.delta-line
+              span Discrepancy Vector
       #stage
 
     #analysis-confirm-modal.modal-overlay.hidden
@@ -303,6 +363,176 @@ block content
               input(type="checkbox" id="modal-save-capture" checked)
               span 💾 Save capture files to <code>processing/captures/</code>
             p.modal-help-text Uncheck this if you are analyzing an existing capture or testing, to prevent duplicating files.
+          .form-group.spec-strategy-group(style="margin-top: 14px; margin-bottom: 8px; border-top: 1px solid #333; padding-top: 12px;")
+            label 📊 Spec Integration Mode:
+            .strategy-radios(style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;")
+              label.strategy-radio-label(style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;")
+                input(type="radio" name="modal-analysis-strategy" value="accumulate" checked)
+                div
+                  strong ➕ Proportional Accumulation (Refine Spec)
+                  p#strategy-accumulate-desc.modal-help-text(style="margin: 2px 0 0 0; font-size: 11px; color: #aaa;")
+                    | Blends new captures proportionally with the existing spec based on sample history (e.g. 10 prior + 1 new = 10/11 prior + 1/11 new). Reduces noise and increases accuracy.
+              label.strategy-radio-label(style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;")
+                input(type="radio" name="modal-analysis-strategy" value="overwrite")
+                div
+                  strong 🔄 Fresh Overwrite (New Baseline)
+                  p.modal-help-text(style="margin: 2px 0 0 0; font-size: 11px; color: #aaa;")
+                    | Discard prior recordings and build a completely fresh spec from this batch alone. Ideal after an Apex Legends weapon balance patch.
         .modal-footer
           button#cancel-analysis-btn.secondary-btn(type="button") ✕ Cancel
           button#proceed-analysis-btn.primary-btn(type="button") ⚡ Confirm & Run Analysis
+
+    #spec-checkpoint-modal.modal-overlay.hidden
+      .modal-dialog.checkpoint-dialog
+        .modal-header
+          h3 🛡️ Spec Safety Verification & Checkpoint
+          button#close-checkpoint-modal-btn.alert-close-btn(type="button") ✕
+        .modal-body
+          p.modal-desc Inspect discrepancies between the <strong>Saved Baseline Spec</strong> and the <strong>Candidate to be Saved</strong> before committing to <code>specs.json</code>:
+          #checkpoint-alert-box.checkpoint-alert-box
+          .checkpoint-stats-grid
+            .checkpoint-card
+              span.card-title 📐 Saved Spec (specs.json)
+              .card-metric
+                span.metric-label Shots:
+                strong#cp-saved-shots 35
+              .card-metric
+                span.metric-label Sample History:
+                span#cp-saved-samples 10 samples
+            .checkpoint-card
+              span.card-title 🔬 Candidate to Save
+              .card-metric
+                span.metric-label Shots:
+                strong#cp-cand-shots 35
+              .card-metric
+                span.metric-label Target Sample Size:
+                span#cp-cand-samples 11 samples (Proportional)
+          .checkpoint-discrepancy-table
+            table
+              tbody
+                tr
+                  td
+                    strong Shot Count Match
+                    p.table-desc Compares detected shots against expected magazine capacity
+                  td#cp-match-status
+                    span.status-badge.safe ✅ 35 / 35 Matched
+                tr
+                  td
+                    strong Mean Trajectory Deviation
+                    p.table-desc Average distance between corresponding shots across pattern
+                  td#cp-mean-status
+                    span.status-badge.safe 2.1 px (0.7 mickeys)
+                tr
+                  td
+                    strong Maximum Single-Shot Deviation
+                    p.table-desc Largest outlier deflection point in candidate
+                  td#cp-max-status
+                    span.status-badge.safe 5.4 px at Shot #12
+          #checkpoint-warnings-list.checkpoint-warnings-list.hidden
+            h4 ⚠️ Discrepancy Warnings:
+            ul#cp-warnings-ul
+        .modal-footer
+          button#inspect-overlay-btn.secondary-btn(type="button") 👁️ Inspect Dual Overlay on Canvas
+          button#cancel-checkpoint-btn.secondary-btn(type="button") ✕ Cancel
+          button#confirm-checkpoint-save-btn.primary-btn(type="button") 💾 Confirm & Save Spec to specs.json
+
+    #shortcuts-modal.modal-overlay.hidden
+      .modal-dialog.shortcuts-dialog
+        .modal-header
+          h3 ⌨️ Keyboard Shortcuts & Controls Reference
+          button#close-shortcuts-modal-btn.alert-close-btn(type="button") ✕
+        .modal-body
+          table.shortcuts-table
+            tbody
+              tr
+                td.key-cell
+                  kbd Ctrl
+                  span.plus  + 
+                  kbd S
+                td
+                  strong Save Spec
+                  p.shortcut-desc Save current weapon recoil pattern and settings to specs.json.
+              tr
+                td.key-cell
+                  kbd M
+                td
+                  strong Toggle Sidebar
+                  p.shortcut-desc Collapse or expand the tools menu to maximize canvas work area.
+              tr
+                td.key-cell
+                  kbd Space
+                  span.plus  (hold)
+                td
+                  strong Pan Canvas
+                  p.shortcut-desc Temporarily activates the grab hand to pan the canvas stage.
+              tr
+                td.key-cell
+                  kbd Space
+                  span.plus  (tap)
+                td
+                  strong Snap Wall Screenshot
+                  p.shortcut-desc In In-Game Live Studio recording, immediately captures the wall decal image without waiting for timer.
+              tr
+                td.key-cell
+                  kbd Mouse Wheel
+                td
+                  strong Zoom Canvas
+                  p.shortcut-desc Zoom in and out centered on the cursor position.
+              tr
+                td.key-cell
+                  kbd [
+                  span.plus  / 
+                  kbd ]
+                td
+                  strong Previous / Next Screenshot
+                  p.shortcut-desc Cycle through batch screenshots or session trials on the canvas.
+              tr
+                td.key-cell
+                  kbd Left Click
+                td
+                  strong Add Bullet Hole
+                  p.shortcut-desc When <code>🔧 Correct Shots</code> is ON, adds a bullet point at clicked position.
+              tr
+                td.key-cell
+                  kbd Right Click
+                td
+                  strong Remove Bullet Hole
+                  p.shortcut-desc When <code>🔧 Correct Shots</code> is ON, deletes the clicked point.
+              tr
+                td.key-cell
+                  span.action-badge ✥ Move All
+                td
+                  strong Align Spray Pattern
+                  p.shortcut-desc Drag all pattern dots together to align onto wall decals.
+              tr
+                td.key-cell
+                  kbd Ctrl
+                  span.plus  + 
+                  kbd Z
+                td
+                  strong Undo
+                  p.shortcut-desc Undo previous point placement, deletion, or alignment move.
+              tr
+                td.key-cell
+                  kbd Ctrl
+                  span.plus  + 
+                  kbd Y
+                  span.plus  / 
+                  kbd ⇧Z
+                td
+                  strong Redo
+                  p.shortcut-desc Redo previously undone action.
+              tr
+                td.key-cell
+                  kbd O
+                td
+                  strong Compare Overlay
+                  p.shortcut-desc Toggle dual-curve comparison overlay of Current Spec vs Candidate.
+              tr
+                td.key-cell
+                  kbd ?
+                td
+                  strong Shortcuts Guide
+                  p.shortcut-desc Opens this shortcuts reference dialog.
+        .modal-footer
+          button#close-shortcuts-modal-footer-btn.primary-btn(type="button") Got it!

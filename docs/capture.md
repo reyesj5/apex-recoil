@@ -64,11 +64,26 @@ To ensure pixel-accurate recoil extraction that aligns with Source Engine geomet
 
 ### 1:1 Recoil Game Scale Calibration & Muscle Memory
 * In Apex Legends (Source engine), mouse input is measured in mickeys (counts) where 1 count $= 0.022^\circ \times \text{sensitivity}$.
-* To cancel recoil, the counter-movement in mouse counts is:
-  $$\text{mouse\_counts} = \text{pixels\_1x} \times \text{multiplier} = \left(\frac{\text{raw\_pixels}}{Z}\right) \times \text{multiplier}$$
-* When viewing a saved spec on top of a screenshot captured with optic magnification $Z$:
-  $$\text{screen\_pixels} = \left(\frac{\text{spec}}{\text{multiplier}}\right) \times Z$$
-* This mathematical identity ensures that the spec overlay on canvas matches the detected bullet decals 1:1, and that training in the web simulator develops exact 1:1 mouse muscle memory for the live game.
+* To cancel recoil, the counter-movement in mouse counts is directly proportional to angular viewangle kick.
+* Decal pixels on a wall screenshot depend on camera FOV, optic magnification $Z$, and screen height $H_{\text{frame}}$. The camera focal length scales inversely with $\tan(\text{FOV} / 2)$:
+  $$\text{fovFactor}(\text{FOV}) = \frac{\tan(45^\circ)}{\tan(\text{FOV} / 2)} = \frac{1}{\tan(\text{FOV} / 2)}$$
+* At the standard competitive **FOV = 104°**, $\tan(52^\circ) \approx 1.28$, meaning decals on screen are visually $\approx 22\%$ smaller in pixels than at default 90° FOV:
+  $$\text{mouse\_counts} = \left(\frac{\text{raw\_pixels}}{Z}\right) \times 3.36 \times \left(\frac{1080}{H_{\text{frame}}}\right) \times \tan\left(\frac{\text{FOV}}{2}\right)$$
+* When overlaying a canonical spec on top of a screenshot captured at magnification $Z$, height $H_{\text{frame}}$, and field of view $\text{FOV}$:
+  $$\text{screen\_pixels} = \left(\frac{\text{spec}}{\text{multiplier}}\right) \times \left(\frac{Z}{3.36}\right) \times \left(\frac{H_{\text{frame}}}{1080}\right) \times \left(\frac{1}{\tan(\text{FOV} / 2)}\right)$$
+* This mathematical calibration ensures that specs in `client/specs.json` remain 100% true to the in-game mouse feel, while visual overlays in the `/editor` canvas align 1:1 with the screenshot bullet decals automatically without requiring manual slider guesswork. Both live and offline panels support configuring in-game FOV (defaulting to **104°**).
+
+### HDR vs SDR Display Colors & Automated Tone-Mapping Fix
+* **Why Captures Look Washed Out with Windows HDR / Auto HDR:**
+  * When Windows HDR or Auto HDR is turned on, Apex Legends renders in high dynamic range (up to 1000 nits). When captured via WebRTC `getDisplayMedia` or standard screenshots, high luminance values get linearly clamped into standard 8-bit SDR ($[0, 255]$) without monitor tone-mapping.
+  * This blows out midtones (elevating mean luminance over 190), turns concrete walls blindingly bright gray/white, and washes out color saturation.
+* **Built-in HDR Color Correction (`☀️ Color`):**
+  * Both the **In-Game Live Studio** and **Offline Screenshot** panels include an HDR color dropdown:
+    * `☀️ HDR Fix (Natural)` (Default): Balanced tone mapping ($\gamma \approx 1.6$, exposure $0.85$, contrast $1.20$, saturation $1.25$). Restores true concrete textures and deep black bullet decals.
+    * `☀️ HDR Fix (Vibrant)`: Deeper contrast and vivid colors ($\gamma \approx 1.75$, exposure $0.80$, contrast $1.30$, saturation $1.40$).
+    * `Standard (SDR)`: Direct un-tone-mapped image, for users playing with Windows HDR disabled.
+  * The fix applies in real time to the live video preview via GPU CSS filters and is baked directly into wall decal screenshots via Canvas 2D LUT processing.
+  * Selecting a different mode in `/editor` re-renders the canvas background immediately without reloading the page or re-selecting files.
 
 ---
 
@@ -105,17 +120,41 @@ Instead of manually recording clips with OBS or Shadowplay, chopping files, and 
    * **Fit & Center:** Click **🎯 Fit & Center** to reset canvas pan and zoom.
    * **Move All:** Toggle **✥ Move All (Align)** to shift all points simultaneously if you want to micro-align with the target board.
 5. **One-Click Analysis & Spec Update:**
-   * Click **⚡ Analyze Sprays & Calculate Recoil**.
+   * Click **⚡ Analyze Sprays & Calculate Recoil** (or **⚡ Analyze Screenshot(s)** in the Offline tab).
    * Captures are organized under `processing/captures/session_<weapon>_<mode>_<timestamp>/` containing companion video clips and high-res wall screenshots.
    * The backend runs **Target Board Isolation** and **Morphological Black Top-Hat Filtering** to isolate dark bullet decals while completely ignoring dark target frame pillars, vertical seams, and weapon sights.
    * Old patterns on the canvas are automatically cleared before plotting new sprays.
-   * Click **💾 Save to specs.json** to commit the new pattern directly to the trainer!
-6. **Loading Past Sessions & Importing Local Clips:**
+   * An inline **Discrepancy Health Check** badge appears on the results card (`🟢 Consistent`, `🟡 Moderate Drift`, or `🔴 Major Discrepancy Alert`), along with an **⚖️ Inspect Discrepancies** button.
+   * Click **💾 Save to specs.json** (or press **Ctrl+S**) to trigger the **Spec Safety Verification Checkpoint**.
+6. **Spec Safety Verification Checkpoint & Discrepancy Inspection:**
+   * Before modifying `specs.json`, the editor opens the **Spec Safety Verification Checkpoint**:
+     * **Shot Count Check:** Verifies total shots match the weapon magazine. Flags potential truncation (e.g. firing stopped early or magazine size mismatch) as **🚨 High Risk**.
+     * **Mean Deflection Drift:** Checks average spatial variation across all coordinate points.
+     * **Outlier Deflection Spikes:** Highlights any individual shots drifting more than $25\text{px}$ from baseline.
+     * **Recoil Direction Inversion:** Detects if any shot moves in the opposite cardinal direction compared to canonical spec.
+     * **Safety Score:** Displays an overall risk badge (`🛡️ SAFE TO SAVE`, `⚠️ MODERATE DRIFT`, or `🚨 HIGH RISK`).
+7. **Dual Comparison Overlay & Real-Time Discrepancy HUD:**
+   * Toggle **⚖️ Compare** in the stage toolbar, select **Overlay Comparison** in the View dropdown, or press **`O`** on your keyboard:
+     * **Saved Spec (Cyan Dashed):** Renders the existing baseline spec from `specs.json`.
+     * **Candidate Spec (Orange Solid):** Renders the newly analyzed or edited recoil curve.
+     * **Delta Vectors:** Color-coded connecting lines illustrate per-shot drift:
+       * **Green ($<8\text{px}$):** Tight consistency.
+       * **Amber ($8\text{--}20\text{px}$):** Normal spray variance or minor crosshair offset.
+       * **Red ($>20\text{px}$):** Significant anomaly or misdetected decal, annotated with pixel delta labels.
+     * **Floating Discrepancy HUD:** Displays real-time summary statistics on-canvas, including shot count agreement, mean deviation, and maximum delta.
+8. **Incremental Proportional Spec Accumulation vs Overwrite:**
+   * **Proportional Accumulation (Recommended for refining specs):**
+     * Blends candidate recordings into the existing pattern weighted by total sample count:
+       $$\vec{P}_{\text{combined}} = \frac{N \cdot \vec{P}_{\text{baseline}} + M \cdot \vec{P}_{\text{candidate}}}{N + M}$$
+     * Each new spray incrementally reduces noise and variance without wiping out established ground-truth data.
+   * **Complete Overwrite (Post-Patch Re-calibration):**
+     * Replaces the canonical spec entirely with the candidate curve. Recommended when Respawn publishes a balance update modifying a weapon's recoil pattern.
+9. **Loading Past Sessions & Importing Local Clips:**
    * Under **Past Recording Sessions** in the Live Studio, choose any past session from the dropdown and click **📥 Load Session**.
    * The studio fetches the session's recorded `.webm` videos, audio, and companion wall screenshots directly into the sample cards.
    * You can inspect, re-snap, or click **⚡ Analyze Sprays & Calculate Recoil** to re-analyze historical sessions at any time!
    * To import local video files from your disk, click **📁 Import Local Video(s)**. You can select multiple `.webm` or `.mp4` recordings along with companion wall `.jpg` / `.png` screenshots.
-7. **Batch Wall Screenshot Analysis & Stage Carousel Navigation:**
+10. **Batch Wall Screenshot Analysis & Stage Carousel Navigation:**
    * Switch to the **🖼️ Offline Screenshot** tab to analyze saved wall screenshots in batches.
    * **Choose Image(s) (Multi-Select):** Select multiple screenshots from disk at once.
    * **Server Screenshots Library:** Choose any saved screenshot from `processing/captures/` and click **📥 Add to Batch**.
@@ -139,10 +178,13 @@ python -m recoil_discovery.cli process --input clip.mp4 --weapon r301
 # 3. Batch process multiple clips, compute median-delta recoil, and generate patch diff plot
 python -m recoil_discovery.cli batch --dir ./recordings/r301/ --weapon r301 --plot
 
-# 4. Commit changes directly into specs.json once satisfied
+# 4. Process an Auto-Capture Studio session with proportional accumulation or overwrite
+python -m recoil_discovery.cli session --dir ./captures/session_r301_auto_12345/ --weapon r301 --strategy accumulate --existing-samples 5
+
+# 5. Commit changes directly into specs.json once satisfied
 python -m recoil_discovery.cli batch --dir ./recordings/r301/ --weapon r301 --update
 
-# 5. Export to Arduino mouse hardware table (optional)
+# 6. Export to Arduino mouse hardware table (optional)
 python -m recoil_discovery.cli export-arduino
 ```
 

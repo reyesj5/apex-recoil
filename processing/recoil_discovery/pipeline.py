@@ -5,6 +5,7 @@ and weapon spec generation.
 """
 
 import sys
+import math
 import base64
 from collections import deque
 from pathlib import Path
@@ -40,7 +41,9 @@ class RecoilPipeline:
         anchor_distance_override: Optional[float] = None,
         anchor_angles: Optional[Tuple[float, float, float, float]] = None,
         zoom: float = 1.0,
-        wall_image_path: Optional[Path] = None
+        wall_image_path: Optional[Path] = None,
+        fov: float = 104.0,
+        hdr: str = "auto"
     ) -> Dict[str, Any]:
         """
         Process a gameplay video clip of a wall spray.
@@ -107,13 +110,24 @@ class RecoilPipeline:
         if wall_image_path is not None and Path(wall_image_path).exists():
             wall_img = cv2.imread(str(wall_image_path))
             if wall_img is not None:
+                if hdr == "auto":
+                    if len(wall_img.shape) == 3:
+                        hsv = cv2.cvtColor(wall_img, cv2.COLOR_BGR2HSV)
+                        if float(hsv[:, :, 2].mean()) > 155.0:
+                            from .tracker import tone_map_hdr_image
+                            wall_img = tone_map_hdr_image(wall_img, "natural")
+                elif hdr in ["natural", "vibrant", "hdr-standard", "hdr-vibrant"]:
+                    from .tracker import tone_map_hdr_image
+                    wall_img = tone_map_hdr_image(wall_img, "natural" if "standard" in hdr else hdr)
+
                 thresholds = [80, 70, 90, 60, 100, 50, 110] if target_points else [80]
                 for th in thresholds:
                     rx, ry, m = self.tracker.extract_from_static_image(
                         wall_img,
                         expected_points=target_points,
                         threshold_val=th,
-                        return_metadata=True
+                        return_metadata=True,
+                        hdr_mode="off"
                     )
                     if target_points and len(rx) == target_points:
                         raw_x, raw_y, meta = rx, ry, m
@@ -158,6 +172,16 @@ class RecoilPipeline:
         scaled_origin = [0.0, 0.0]
 
         if settled_bgr is not None:
+            if hdr == "auto":
+                if len(settled_bgr.shape) == 3:
+                    hsv = cv2.cvtColor(settled_bgr, cv2.COLOR_BGR2HSV)
+                    if float(hsv[:, :, 2].mean()) > 155.0:
+                        from .tracker import tone_map_hdr_image
+                        settled_bgr = tone_map_hdr_image(settled_bgr, "natural")
+            elif hdr in ["natural", "vibrant", "hdr-standard", "hdr-vibrant"]:
+                from .tracker import tone_map_hdr_image
+                settled_bgr = tone_map_hdr_image(settled_bgr, "natural" if "standard" in hdr else hdr)
+
             orig_h, orig_w = settled_bgr.shape[:2]
             scale = 1.0
             if orig_w > 1920:
@@ -196,12 +220,20 @@ class RecoilPipeline:
                 scaled_x, scaled_y = scale_to_game_distances(raw_x, raw_y, [ia, ib], in_game_dist)
             else:
                 scaled_x, scaled_y = raw_x, raw_y
-        elif zoom and zoom > 0 and zoom != 1.0:
-            # Optic magnification scaling (e.g. 2.0 for 2x Bruiser, 3.0 for 3x Ranger, 4.0 for Sniper)
-            scaled_x = [round(float(x / zoom), 2) for x in raw_x]
-            scaled_y = [round(float(y / zoom), 2) for y in raw_y]
-        else:
+        elif in_game_dist and len(raw_x) >= 2:
             scaled_x, scaled_y = raw_x, raw_y
+        else:
+            # Convert screenshot decal pixels to canonical in-game mouse units (at 1080p reference)
+            # Reference calibration at FOV 90: 1 1080p 1x decal pixel = ~3.36 in-game mouse counts (mickeys)
+            # Perspective projection: focal length scales with 1 / tan(fov / 2).
+            # At 104 FOV, decals on screen are ~22% smaller, so each pixel represents more mouse deflection counts.
+            z = zoom if (zoom and zoom > 0) else 1.0
+            ref_h = orig_h if settled_bgr is not None else (frames_gray[0].shape[0] if frames_gray else 1080)
+            fov_rad = math.radians(fov / 2.0)
+            fov_factor = 1.0 / math.tan(fov_rad) if math.tan(fov_rad) > 0 else 1.0
+            px_to_mouse = ((3.36 / z) * (1080.0 / ref_h) / fov_factor) if ref_h > 0 else ((3.36 / z) / fov_factor)
+            scaled_x = [round(float(x * px_to_mouse), 2) for x in raw_x]
+            scaled_y = [round(float(y * px_to_mouse), 2) for y in raw_y]
 
         time_points = generate_ideal_time_points(len(scaled_x), final_rpm)
 
@@ -228,7 +260,9 @@ class RecoilPipeline:
         expected_shots: int,
         rpm: float,
         anchor_distance: Optional[float] = None,
-        zoom: float = 1.0
+        zoom: float = 1.0,
+        fov: float = 104.0,
+        hdr: str = "auto"
     ) -> Dict[str, Any]:
         """
         Process a static screenshot of a wall pattern (e.g. assets/recoils/*.png).
@@ -237,10 +271,21 @@ class RecoilPipeline:
         if img is None:
             raise FileNotFoundError(f"Cannot open image file: {image_path}")
 
+        if hdr == "auto":
+            if len(img.shape) == 3:
+                hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+                if float(hsv[:, :, 2].mean()) > 155.0:
+                    from .tracker import tone_map_hdr_image
+                    img = tone_map_hdr_image(img, "natural")
+        elif hdr in ["natural", "vibrant", "hdr-standard", "hdr-vibrant"]:
+            from .tracker import tone_map_hdr_image
+            img = tone_map_hdr_image(img, "natural" if "standard" in hdr else hdr)
+
         raw_x, raw_y, meta = self.tracker.extract_from_static_image(
             img,
             expected_points=expected_shots,
-            return_metadata=True
+            return_metadata=True,
+            hdr_mode="off"
         )
 
         orig_h, orig_w = img.shape[:2]
@@ -269,11 +314,17 @@ class RecoilPipeline:
             ia = 0
             ib = int(np.argmax(np.abs(raw_y)))
             scaled_x, scaled_y = scale_to_game_distances(raw_x, raw_y, [ia, ib], anchor_distance)
-        elif zoom and zoom > 0 and zoom != 1.0:
-            scaled_x = [round(float(x / zoom), 2) for x in raw_x]
-            scaled_y = [round(float(y / zoom), 2) for y in raw_y]
         else:
-            scaled_x, scaled_y = raw_x, raw_y
+            # Convert screenshot decal pixels to canonical in-game mouse units (at 1080p reference)
+            # Reference calibration at FOV 90: 1 1080p 1x decal pixel = ~3.36 in-game mouse counts (mickeys)
+            # Perspective projection: focal length scales with 1 / tan(fov / 2).
+            # At 104 FOV, decals on screen are ~22% smaller, so each pixel represents more mouse deflection counts.
+            z = zoom if (zoom and zoom > 0) else 1.0
+            fov_rad = math.radians(fov / 2.0)
+            fov_factor = 1.0 / math.tan(fov_rad) if math.tan(fov_rad) > 0 else 1.0
+            px_to_mouse = ((3.36 / z) * (1080.0 / orig_h) / fov_factor) if orig_h > 0 else ((3.36 / z) / fov_factor)
+            scaled_x = [round(float(x * px_to_mouse), 2) for x in raw_x]
+            scaled_y = [round(float(y * px_to_mouse), 2) for y in raw_y]
 
         time_points = generate_ideal_time_points(len(scaled_x), rpm)
 
@@ -298,11 +349,14 @@ class RecoilPipeline:
         trials: List[Dict[str, Any]],
         weapon_name: str,
         rpm: float,
-        multiplier: float = 0.73
+        multiplier: float = 0.73,
+        merge_strategy: str = "overwrite",
+        existing_spec: Optional[Dict[str, Any]] = None,
+        existing_sample_count: int = 1
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Combine multiple trials using median delta recoil, evaluate convergence,
-        and build spec object ready for client/specs.json.
+        and optionally merge proportionally with an existing weapon spec.
         Returns (spec_dict, convergence_metrics)
         """
         if not trials:
@@ -315,7 +369,7 @@ class RecoilPipeline:
         mult_x = [round(float(x * multiplier), 2) for x in mx]
         mult_y = [round(float(y * multiplier), 2) for y in my]
 
-        spec = {
+        batch_spec = {
             "name": weapon_name,
             "rpm": int(rpm),
             "multiplier": multiplier,
@@ -326,10 +380,32 @@ class RecoilPipeline:
             "raw_1x_x": mx,
             "raw_1x_y": my,
             "time_points": time_points,
-            "ping_points": []
+            "ping_points": [],
+            "sample_count": len(trials)
         }
 
-        return spec, convergence
+        if merge_strategy == "accumulate" and existing_spec and existing_spec.get("x") and len(mx) >= len(existing_spec["x"]) * 0.6:
+            merged_spec = RecoilAggregator.weighted_merge_recoil(
+                existing_spec=existing_spec,
+                new_spec=batch_spec,
+                existing_weight=existing_sample_count,
+                new_weight=len(trials)
+            )
+            merged_spec["standalone_batch_spec"] = batch_spec
+            merged_spec["existing_sample_count"] = existing_sample_count
+            merged_spec["new_sample_count"] = len(trials)
+            merged_spec["total_sample_count"] = existing_sample_count + len(trials)
+            merged_spec["merge_strategy"] = "accumulate"
+            if existing_spec.get("mags"):
+                merged_spec["mags"] = existing_spec["mags"]
+            return merged_spec, convergence
+        else:
+            batch_spec["standalone_batch_spec"] = batch_spec
+            batch_spec["existing_sample_count"] = 0
+            batch_spec["new_sample_count"] = len(trials)
+            batch_spec["total_sample_count"] = len(trials)
+            batch_spec["merge_strategy"] = "overwrite"
+            return batch_spec, convergence
 
     def process_clips_session(
         self,
@@ -338,7 +414,11 @@ class RecoilPipeline:
         expected_shots: Optional[int] = None,
         rpm: Optional[float] = None,
         multiplier: float = 0.73,
-        zoom: float = 1.0
+        zoom: float = 1.0,
+        fov: float = 104.0,
+        hdr: str = "auto",
+        merge_strategy: str = "overwrite",
+        existing_sample_count: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Process a list of recorded spray video clips, extract individual recoil curves,
@@ -361,7 +441,9 @@ class RecoilPipeline:
                 expected_shots=expected_shots,
                 rpm=rpm,
                 zoom=zoom,
-                wall_image_path=wall_img_path if wall_img_path.exists() else None
+                wall_image_path=wall_img_path if wall_img_path.exists() else None,
+                fov=fov,
+                hdr=hdr
             )
             trials.append(trial)
             if trial.get("rpm"):
@@ -369,11 +451,22 @@ class RecoilPipeline:
 
         effective_rpm = rpm if (rpm and rpm > 0) else (float(np.median(measured_rpms)) if measured_rpms else 600.0)
 
+        existing_spec = self.spec_manager.get_weapon_spec(weapon_name)
+        actual_existing_count = 1
+        if existing_spec:
+            if existing_sample_count is not None and existing_sample_count > 0:
+                actual_existing_count = existing_sample_count
+            elif "sample_count" in existing_spec:
+                actual_existing_count = int(existing_spec.get("sample_count", 1))
+
         spec, convergence = self.aggregate_and_build_spec(
             trials=trials,
             weapon_name=weapon_name,
             rpm=effective_rpm,
-            multiplier=multiplier
+            multiplier=multiplier,
+            merge_strategy=merge_strategy,
+            existing_spec=existing_spec,
+            existing_sample_count=actual_existing_count
         )
 
         best_trial = trials[0] if trials else {}
@@ -386,6 +479,8 @@ class RecoilPipeline:
             "convergence": convergence,
             "trials_count": len(trials),
             "measured_rpm": effective_rpm,
+            "zoom": zoom,
+            "fov": fov,
             "preview_image": best_trial.get("frame_image"),
             "preview_points": best_trial.get("frame_points", []),
             "preview_origin": best_trial.get("origin", [0, 0]),
@@ -418,7 +513,11 @@ class RecoilPipeline:
         rpm: float,
         multiplier: float = 0.73,
         zoom: float = 1.0,
-        distance: float = 20.0
+        distance: float = 20.0,
+        fov: float = 104.0,
+        hdr: str = "auto",
+        merge_strategy: str = "overwrite",
+        existing_sample_count: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Process a list of wall screenshot images, extract individual decal patterns,
@@ -431,15 +530,28 @@ class RecoilPipeline:
                 weapon_name=weapon_name,
                 expected_shots=expected_shots,
                 rpm=rpm,
-                zoom=zoom
+                zoom=zoom,
+                fov=fov,
+                hdr=hdr
             )
             trials.append(trial)
+
+        existing_spec = self.spec_manager.get_weapon_spec(weapon_name)
+        actual_existing_count = 1
+        if existing_spec:
+            if existing_sample_count is not None and existing_sample_count > 0:
+                actual_existing_count = existing_sample_count
+            elif "sample_count" in existing_spec:
+                actual_existing_count = int(existing_spec.get("sample_count", 1))
 
         spec, convergence = self.aggregate_and_build_spec(
             trials=trials,
             weapon_name=weapon_name,
             rpm=rpm,
-            multiplier=multiplier
+            multiplier=multiplier,
+            merge_strategy=merge_strategy,
+            existing_spec=existing_spec,
+            existing_sample_count=actual_existing_count
         )
 
         best_trial = trials[0] if trials else {}
@@ -452,6 +564,8 @@ class RecoilPipeline:
             "convergence": convergence,
             "trials_count": len(trials),
             "measured_rpm": rpm,
+            "zoom": zoom,
+            "fov": fov,
             "preview_image": best_trial.get("frame_image"),
             "preview_points": best_trial.get("frame_points", []),
             "preview_origin": best_trial.get("origin", [0, 0]),

@@ -103,3 +103,87 @@ class RecoilAggregator:
             "outlier_trials": outliers,
             "trial_scores": [round(s, 1) for s in avg_scores]
         }
+
+    @staticmethod
+    def weighted_merge_recoil(
+        existing_spec: Dict[str, Any],
+        new_spec: Dict[str, Any],
+        existing_weight: int = 1,
+        new_weight: int = 1
+    ) -> Dict[str, Any]:
+        """
+        Combines an existing canonical recoil spec with a newly analyzed spec,
+        weighting each coordinate proportionally:
+            combined = (existing_weight * old + new_weight * new) / (existing_weight + new_weight)
+        
+        Args:
+            existing_spec: Dict containing existing 'x', 'y', optional 'raw_1x_x', 'raw_1x_y'
+            new_spec: Dict containing new 'x', 'y', 'raw_1x_x', 'raw_1x_y'
+            existing_weight: Number of historical trials the existing spec represents (e.g. 10)
+            new_weight: Number of new trials analyzed in this batch (e.g. 1)
+
+        Returns:
+            Merged spec dict with updated coordinates and 'sample_count'
+        """
+        if not existing_spec or not existing_spec.get('x'):
+            merged = dict(new_spec) if new_spec else {}
+            merged['sample_count'] = new_weight
+            return merged
+
+        if not new_spec or not new_spec.get('x'):
+            merged = dict(existing_spec)
+            merged['sample_count'] = existing_weight
+            return merged
+
+        w_old = float(existing_weight)
+        w_new = float(new_weight)
+        w_total = w_old + w_new
+
+        old_x, old_y = existing_spec['x'], existing_spec['y']
+        new_x, new_y = new_spec['x'], new_spec['y']
+        max_len = max(len(old_x), len(new_x))
+
+        merged_x = []
+        merged_y = []
+
+        for i in range(max_len):
+            if i < len(old_x) and i < len(new_x):
+                val_x = (w_old * old_x[i] + w_new * new_x[i]) / w_total
+                val_y = (w_old * old_y[i] + w_new * new_y[i]) / w_total
+            elif i < len(old_x):
+                val_x = old_x[i]
+                val_y = old_y[i]
+            else:
+                val_x = new_x[i]
+                val_y = new_y[i]
+            merged_x.append(round(float(val_x), 2))
+            merged_y.append(round(float(val_y), 2))
+
+        merged = dict(new_spec)
+        merged['x'] = merged_x
+        merged['y'] = merged_y
+        merged['sample_count'] = int(w_total)
+
+        # Merge raw_1x coordinates if present
+        if 'raw_1x_x' in existing_spec and 'raw_1x_x' in new_spec:
+            old_rx, old_ry = existing_spec['raw_1x_x'], existing_spec['raw_1x_y']
+            new_rx, new_ry = new_spec['raw_1x_x'], new_spec['raw_1x_y']
+            max_rlen = max(len(old_rx), len(new_rx))
+            merged_rx = []
+            merged_ry = []
+            for i in range(max_rlen):
+                if i < len(old_rx) and i < len(new_rx):
+                    rx = (w_old * old_rx[i] + w_new * new_rx[i]) / w_total
+                    ry = (w_old * old_ry[i] + w_new * new_ry[i]) / w_total
+                elif i < len(old_rx):
+                    rx = old_rx[i]
+                    ry = old_ry[i]
+                else:
+                    rx = new_rx[i]
+                    ry = new_ry[i]
+                merged_rx.append(round(float(rx), 2))
+                merged_ry.append(round(float(ry), 2))
+            merged['raw_1x_x'] = merged_rx
+            merged['raw_1x_y'] = merged_ry
+
+        return merged

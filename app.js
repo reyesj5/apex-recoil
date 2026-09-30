@@ -95,6 +95,7 @@ app.post('/api/discovery/process-session', function(req, res) {
   var rpm = body.rpm;
   var shots = body.shots;
   var zoom = body.zoom || 1.0;
+  var fov = body.fov || 104.0;
   var distance = body.distance || 20.0;
   var multiplier = body.multiplier || 0.73;
 
@@ -147,8 +148,22 @@ app.post('/api/discovery/process-session', function(req, res) {
   if (zoom && Number(zoom) !== 1.0) {
     cliArgs.push('--zoom', String(zoom));
   }
+  if (fov) {
+    cliArgs.push('--fov', String(fov));
+  }
   if (distance) {
     cliArgs.push('--distance', String(distance));
+  }
+  var hdr = body.hdr || body.hdr_mode || 'auto';
+  if (hdr) {
+    cliArgs.push('--hdr', String(hdr));
+  }
+  var strategy = body.strategy || 'accumulate';
+  if (strategy) {
+    cliArgs.push('--strategy', String(strategy));
+  }
+  if (body.existing_samples && Number(body.existing_samples) > 0) {
+    cliArgs.push('--existing-samples', String(body.existing_samples));
   }
 
   var proc = spawn('python', cliArgs, {
@@ -324,6 +339,7 @@ app.post('/api/discovery/process-static-image', function(req, res) {
   var shots = body.shots;
   var rpm = body.rpm;
   var zoom = body.zoom || 1.0;
+  var fov = body.fov || 104.0;
   var distance = body.distance || 20.0;
   var multiplier = body.multiplier || 0.73;
   var saveCapture = body.save_capture === true;
@@ -370,7 +386,15 @@ app.post('/api/discovery/process-static-image', function(req, res) {
   if (rpm) cliArgs.push('--rpm', String(rpm));
   if (shots) cliArgs.push('--shots', String(shots));
   if (zoom && Number(zoom) !== 1.0) cliArgs.push('--zoom', String(zoom));
+  if (fov) cliArgs.push('--fov', String(fov));
   if (distance) cliArgs.push('--distance', String(distance));
+  var hdr = body.hdr || body.hdr_mode || 'auto';
+  if (hdr) cliArgs.push('--hdr', String(hdr));
+  var strategy = body.strategy || 'accumulate';
+  if (strategy) cliArgs.push('--strategy', String(strategy));
+  if (body.existing_samples && Number(body.existing_samples) > 0) {
+    cliArgs.push('--existing-samples', String(body.existing_samples));
+  }
 
   var proc = spawn('python', cliArgs, { cwd: path.join(__dirname, 'processing') });
   var stdoutData = '';

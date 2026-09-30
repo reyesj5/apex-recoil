@@ -177,3 +177,27 @@ def test_extract_target_board_20m_with_pillar_seam_noise():
         assert pt[0] > 700 and pt[0] < 1200
 
 
+def test_tone_map_hdr_image():
+    from recoil_discovery.tracker import tone_map_hdr_image
+
+    # Over-bright HDR image (mean brightness > 200)
+    overbright = np.full((100, 100, 3), 220, dtype=np.uint8)
+    # Add a dark decal
+    cv2.circle(overbright, (50, 50), 10, (30, 30, 30), -1)
+
+    natural = tone_map_hdr_image(overbright, mode="natural")
+    vibrant = tone_map_hdr_image(overbright, mode="vibrant")
+    off = tone_map_hdr_image(overbright, mode="off")
+
+    assert natural.shape == overbright.shape
+    assert natural.mean() < overbright.mean()
+    assert vibrant.mean() < natural.mean()
+    assert np.array_equal(off, overbright)
+
+    # Test grayscale
+    gray_overbright = np.full((100, 100), 220, dtype=np.uint8)
+    gray_tm = tone_map_hdr_image(gray_overbright, mode="natural")
+    assert gray_tm.mean() < gray_overbright.mean()
+
+
+

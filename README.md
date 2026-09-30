@@ -25,7 +25,10 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
 2. **Web UI Weapon Manager & Editor (`/editor`)**:
    - Visual management dashboard to quickly update weapon parameters when balance patches drop.
    - Fine-tune RPM, per-tier magazine sizes (0 through 4), and sensitivity multipliers.
-   - Live canvas preview of recoil curves.
+   - Live canvas preview of recoil curves with smooth pan/zoom, zoom-invariant bullet markers, and multi-step Undo/Redo (`Ctrl+Z` / `Ctrl+Y`).
+   - **Spec Safety Verification Checkpoint**: Pre-save audit checking for shot count truncation, average deflection drift, outlier spikes ($>25\text{px}$), and directional inversions before modifying `specs.json`.
+   - **Dual Comparison Overlay & Real-Time Discrepancy HUD**: Concurrently view saved baseline (Cyan dashed) and candidate spec (Orange solid) with colored delta vector lines and live consistency stats (toggle with `O` key).
+   - **Incremental Proportional Spec Accumulation**: Blend new captures proportionally ($1/(N+1)$ weight) to reduce variance over time, or execute complete overwrites post-patch.
    - **💾 Save to specs.json**: Commits changes directly to `client/specs.json` with automatic `.bak` backups.
    - Import/export JSON drawer for direct data exchange.
 
@@ -48,7 +51,7 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
    - **Dynamic Target Board Isolation & Morphological Black Top-Hat Filtering**: isolates bullet decals on the white target board while completely rejecting dark frame pillars, vertical seams, and weapon sights.
    - Automatic acoustic and visual rate of fire (RPM) measurement ($\text{RPM} = 60000 / \text{median}(\Delta t_{\text{ms}})$).
    - Multi-spray median-delta integration and convergence scoring ($rc\_score$).
-   - Comprehensive test suite with 22 automated unit tests.
+   - Comprehensive test suite with 27 automated unit tests.
 
 ---
 

@@ -116,8 +116,10 @@ def cmd_process(args):
     shots, rpm = resolve_weapon_params(pipeline.spec_manager, args.weapon, args.shots, args.rpm)
     multiplier = getattr(args, "multiplier", 0.73) or 0.73
     zoom = getattr(args, "zoom", 1.0) or 1.0
+    fov = getattr(args, "fov", 104.0) or 104.0
     distance = getattr(args, "distance", 20.0) or 20.0
     anchor_dist = getattr(args, "anchor_distance", None)
+    hdr = getattr(args, "hdr", "auto") or "auto"
 
     if path.suffix.lower() in [".mp4", ".mkv", ".avi", ".mov", ".webm"]:
         trial = pipeline.process_video_clip(
@@ -126,7 +128,9 @@ def cmd_process(args):
             expected_shots=shots,
             rpm=rpm,
             anchor_distance_override=anchor_dist,
-            zoom=zoom
+            zoom=zoom,
+            fov=fov,
+            hdr=hdr
         )
     else:
         trial = pipeline.process_static_image(
@@ -135,7 +139,9 @@ def cmd_process(args):
             expected_shots=shots,
             rpm=rpm,
             anchor_distance=anchor_dist,
-            zoom=zoom
+            zoom=zoom,
+            fov=fov,
+            hdr=hdr
         )
 
     if getattr(args, "json", False):
@@ -159,6 +165,7 @@ def cmd_process(args):
             "spec": spec,
             "distance": distance,
             "zoom": zoom,
+            "fov": fov,
             "trials_count": 1,
             "measured_rpm": trial.get("rpm", rpm),
             "preview_image": trial.get("frame_image"),
@@ -215,7 +222,12 @@ def cmd_session(args):
     shots, rpm = resolve_weapon_params(pipeline.spec_manager, args.weapon, args.shots, args.rpm)
     multiplier = args.multiplier if getattr(args, "multiplier", None) is not None else 0.73
     zoom = getattr(args, "zoom", 1.0) or 1.0
+    fov = getattr(args, "fov", 104.0) or 104.0
     distance = getattr(args, "distance", 20.0) or 20.0
+    hdr = getattr(args, "hdr", "auto") or "auto"
+
+    strategy = getattr(args, "strategy", "accumulate") or "accumulate"
+    existing_samples = getattr(args, "existing_samples", None)
 
     try:
         if video_files:
@@ -225,7 +237,11 @@ def cmd_session(args):
                 expected_shots=shots,
                 rpm=rpm,
                 multiplier=multiplier,
-                zoom=zoom
+                zoom=zoom,
+                fov=fov,
+                hdr=hdr,
+                merge_strategy=strategy,
+                existing_sample_count=existing_samples
             )
         else:
             result = pipeline.process_images_session(
@@ -235,12 +251,17 @@ def cmd_session(args):
                 rpm=rpm,
                 multiplier=multiplier,
                 zoom=zoom,
-                distance=distance
+                distance=distance,
+                fov=fov,
+                hdr=hdr,
+                merge_strategy=strategy,
+                existing_sample_count=existing_samples
             )
         diff_report = pipeline.spec_manager.diff_weapon_spec(result["spec"])
         result["diff_report"] = diff_report
         result["distance"] = distance
         result["zoom"] = zoom
+        result["fov"] = fov
         result["success"] = True
         print(json.dumps(result))
     except Exception as e:
@@ -268,12 +289,14 @@ def cmd_batch(args):
     print(f"[+] Found {len(files)} files in {directory}. Processing...")
     trials = []
     zoom = getattr(args, "zoom", 1.0) or 1.0
+    fov = getattr(args, "fov", 104.0) or 104.0
+    hdr = getattr(args, "hdr", "auto") or "auto"
     for f in files:
         try:
             if f.suffix.lower() in [".mp4", ".mkv", ".avi", ".webm"]:
-                t = pipeline.process_video_clip(f, args.weapon, shots, rpm, args.distance, zoom=zoom)
+                t = pipeline.process_video_clip(f, args.weapon, shots, rpm, args.distance, zoom=zoom, fov=fov, hdr=hdr)
             else:
-                t = pipeline.process_static_image(f, args.weapon, shots, rpm, args.distance, zoom=zoom)
+                t = pipeline.process_static_image(f, args.weapon, shots, rpm, args.distance, zoom=zoom, fov=fov, hdr=hdr)
             trials.append(t)
             print(f"    - Processed {f.name}: {len(t['x'])} shots")
         except Exception as e:
@@ -350,6 +373,8 @@ def main():
     p_proc.add_argument("--distance", "-d", type=float, default=20.0, help="Shooting distance in meters (default: 20m)")
     p_proc.add_argument("--anchor-distance", type=float, default=None, help="In-game anchor distance in mouse units")
     p_proc.add_argument("--zoom", "-z", type=float, default=1.0, help="Optic zoom multiplier (e.g. 2.0 for 2x Bruiser, 3.0 for 3x)")
+    p_proc.add_argument("--fov", type=float, default=104.0, help="Field of View in degrees (default: 104.0)")
+    p_proc.add_argument("--hdr", default="auto", choices=["auto", "natural", "vibrant", "off", "hdr-standard", "hdr-vibrant"], help="Tone-mapping mode for HDR captures")
     p_proc.add_argument("--multiplier", "-m", type=float, default=0.73, help="Recoil multiplier")
     p_proc.add_argument("--json", action="store_true", help="Output Web UI compatible JSON to stdout")
     p_proc.add_argument("--output", "-o", help="Output JSON path")
@@ -362,6 +387,8 @@ def main():
     p_batch.add_argument("--rpm", "-r", type=float, default=None, help="Weapon rounds per minute (default: auto from specs.json)")
     p_batch.add_argument("--distance", "-d", type=float, default=20.0, help="Shooting distance in meters (default: 20m)")
     p_batch.add_argument("--zoom", "-z", type=float, default=1.0, help="Optic zoom multiplier (e.g. 2.0 for 2x Bruiser, 3.0 for 3x)")
+    p_batch.add_argument("--fov", type=float, default=104.0, help="Field of View in degrees (default: 104.0)")
+    p_batch.add_argument("--hdr", default="auto", choices=["auto", "natural", "vibrant", "off", "hdr-standard", "hdr-vibrant"], help="Tone-mapping mode for HDR captures")
     p_batch.add_argument("--plot", "-p", action="store_true", help="Generate visual diff plot")
     p_batch.add_argument("--update", "-u", action="store_true", help="Update client/specs.json directly")
     p_batch.add_argument("--output", "-o", help="Output JSON path")
@@ -375,6 +402,10 @@ def main():
     p_session.add_argument("--distance", "-d", type=float, default=20.0, help="Shooting distance in meters (default: 20m)")
     p_session.add_argument("--multiplier", "-m", type=float, default=0.73, help="Recoil multiplier")
     p_session.add_argument("--zoom", "-z", type=float, default=1.0, help="Optic zoom multiplier (e.g. 2.0 for 2x Bruiser, 3.0 for 3x)")
+    p_session.add_argument("--fov", type=float, default=104.0, help="Field of View in degrees (default: 104.0)")
+    p_session.add_argument("--hdr", default="auto", choices=["auto", "natural", "vibrant", "off", "hdr-standard", "hdr-vibrant"], help="Tone-mapping mode for HDR captures")
+    p_session.add_argument("--strategy", choices=["accumulate", "overwrite"], default="accumulate", help="Spec integration strategy: accumulate (proportional sample weight) or overwrite")
+    p_session.add_argument("--existing-samples", type=int, default=None, help="Prior sample count for existing spec (default: read from specs.json or 1)")
 
     # export-arduino
     subparsers.add_parser("export-arduino", help="Export client/specs.json to arduino_mouse/src/recoil.inc")
