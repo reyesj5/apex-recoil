@@ -14,6 +14,7 @@
 //- limitations under the License.
 
 extends layout
+include mixins/icons
 
 block content
   #game
@@ -26,11 +27,13 @@ block content
         p#show-instructions-btn.action
           | Инструкции
         a(href="/editor")
-          | Студия отдачи 🛠️
+          +icon('wrench')
+          |  Студия отдачи
         a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer")
           | FAQ (англ.)
         a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank" rel="noopener noreferrer")
-          | Поддержать ❤️
+          +icon('heart')
+          |  Поддержать
       #score
         div#stats-graph-btn.tooltip.btn(aria-label="Показать график статистики")
           img(src="/outline_insert_chart_white_48dp.png" alt="show graph")
@@ -38,7 +41,7 @@ block content
         div#stats-wrap
           p#score-stats
       #weapon-filter-bar
-        input#weapon-search-input(type="text" placeholder="🔍 Поиск оружия..." autocomplete="off" aria-label="Поиск оружия")
+        input#weapon-search-input(type="text" placeholder="Поиск оружия..." autocomplete="off" aria-label="Поиск оружия")
         .weapon-category-pills(role="tablist" aria-label="Категории оружия")
           button.cat-pill.active(type="button" data-category="all") Все
           button.cat-pill(type="button" data-category="ar") AR

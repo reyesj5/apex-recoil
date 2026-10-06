@@ -14,6 +14,7 @@
 //- limitations under the License.
 
 extends layout
+include mixins/icons
 
 block content
   #game
@@ -26,11 +27,13 @@ block content
         p#show-instructions-btn.action
           | 显示说明
         a(href="/editor")
-          | 压枪编辑器 🛠️
+          +icon('wrench')
+          |  压枪编辑器
         a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer")
           | FAQ
         a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank" rel="noopener noreferrer")
-          | 支援 ❤️
+          +icon('heart')
+          |  支援
       #score
         div#stats-graph-btn.tooltip.btn(aria-label="显示历史成绩")
           img(src="/outline_insert_chart_white_48dp.png"  alt="show graph")
@@ -38,7 +41,7 @@ block content
         div#stats-wrap
           p#score-stats
       #weapon-filter-bar
-        input#weapon-search-input(type="text" placeholder="🔍 搜索武器..." autocomplete="off" aria-label="搜索武器")
+        input#weapon-search-input(type="text" placeholder="搜索武器..." autocomplete="off" aria-label="搜索武器")
         .weapon-category-pills(role="tablist" aria-label="武器分类")
           button.cat-pill.active(type="button" data-category="all") 全部
           button.cat-pill(type="button" data-category="ar") AR

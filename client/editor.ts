@@ -223,7 +223,11 @@ let panStart = { x: 0, y: 0 };
 let isCorrectionModeActive = false;
 let correctionExpectedShots = 0;
 
-function syncStageSize(): { width: number; height: number } {
+// Recoil pattern overlay visibility and opacity controls
+let isPatternVisible: boolean = true;
+let patternOpacity: number = 1.0;
+
+function syncStageSize(): { width: number; height: number; changed: boolean } {
   const stageContainer = document.getElementById('stage-container');
   const toolbar = document.getElementById('stage-toolbar');
   const stageEl = document.getElementById('stage');
@@ -232,13 +236,15 @@ function syncStageSize(): { width: number; height: number } {
   const availW = stageContainer?.clientWidth || (stageEl?.clientWidth || (window.innerWidth - 380));
   const availH = (stageContainer?.clientHeight ? (stageContainer.clientHeight - toolbarH) : 0) || (stageEl?.clientHeight || (window.innerHeight - 50));
 
+  let changed = false;
   if (availW > 50 && availH > 50) {
-    if (stage.width() !== availW || stage.height() !== availH) {
+    if (Math.abs(stage.width() - availW) > 2 || Math.abs(stage.height() - availH) > 2) {
       stage.width(availW);
       stage.height(availH);
+      changed = true;
     }
   }
-  return { width: stage.width(), height: stage.height() };
+  return { width: stage.width(), height: stage.height(), changed };
 }
 
 function fitAndCenterCanvas() {
@@ -308,7 +314,8 @@ function fitAndCenterCanvas() {
 
 let stageResizeDebounce: any = null;
 function handleStageResize() {
-  syncStageSize();
+  const { changed } = syncStageSize();
+  if (!changed) return;
   if (stageResizeDebounce) {
     cancelAnimationFrame(stageResizeDebounce);
   }
@@ -581,6 +588,25 @@ export function setupEditor() {
   stage.batchDraw();
 }
 
+export function applyPatternVisibilityAndOpacity() {
+  const togglePattern = document.getElementById('toggle-pattern') as HTMLInputElement | null;
+  const patternOpacitySlider = document.getElementById('pattern-opacity-slider') as HTMLInputElement | null;
+  const patternOpacityVal = document.getElementById('pattern-opacity-val');
+
+  if (togglePattern) isPatternVisible = togglePattern.checked;
+  if (patternOpacitySlider) patternOpacity = Math.max(0, Math.min(100, Number(patternOpacitySlider.value))) / 100;
+  if (patternOpacityVal) patternOpacityVal.innerText = `${Math.round(patternOpacity * 100)}%`;
+
+  layer.children.forEach(child => {
+    // Only adjust pattern/spec/comparison shapes, never the background wall image
+    if (child !== currentBgImageObj && !(child instanceof Konva.Image)) {
+      child.visible(isPatternVisible);
+      child.opacity(patternOpacity);
+    }
+  });
+  stage.batchDraw();
+}
+
 function setupStageToolbarControls() {
   const toggleBg = document.getElementById('toggle-bg-img') as HTMLInputElement | null;
   const opacitySlider = document.getElementById('bg-opacity-slider') as HTMLInputElement | null;
@@ -610,6 +636,17 @@ function setupStageToolbarControls() {
       currentBgImageObj.opacity(v / 100);
       stage.batchDraw();
     }
+  });
+
+  const togglePattern = document.getElementById('toggle-pattern') as HTMLInputElement | null;
+  const patternOpacitySlider = document.getElementById('pattern-opacity-slider') as HTMLInputElement | null;
+
+  togglePattern?.addEventListener('change', () => {
+    applyPatternVisibilityAndOpacity();
+  });
+
+  patternOpacitySlider?.addEventListener('input', () => {
+    applyPatternVisibilityAndOpacity();
   });
 
   previewSelect?.addEventListener('change', () => {
@@ -675,6 +712,15 @@ function setupStageToolbarControls() {
       toggleCompareOverlay();
       return;
     }
+    if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      const togglePattern = document.getElementById('toggle-pattern') as HTMLInputElement | null;
+      if (togglePattern) {
+        togglePattern.checked = !togglePattern.checked;
+        applyPatternVisibilityAndOpacity();
+      }
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
       if (e.shiftKey) {
         e.preventDefault();
@@ -720,7 +766,10 @@ function setupStageToolbarControls() {
   correctionBtn?.addEventListener('click', () => {
     isCorrectionModeActive = !isCorrectionModeActive;
     correctionBtn.classList.toggle('active', isCorrectionModeActive);
-    correctionBtn.innerText = isCorrectionModeActive ? '🔧 Correction: ON' : '🔧 Correct Shots';
+    const correctSvg = '<svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>';
+    correctionBtn.innerHTML = isCorrectionModeActive
+      ? `<span class="btn-icon">${correctSvg}</span><span class="btn-label"> ON</span>`
+      : `<span class="btn-icon">${correctSvg}</span><span class="btn-label"> Correct</span>`;
     const stageEl = document.getElementById('stage');
     if (stageEl && !isPanModeActive && !isSpacePressed) {
       stageEl.style.cursor = isCorrectionModeActive ? 'copy' : 'crosshair';
@@ -915,6 +964,7 @@ function setupStageToolbarControls() {
   liveFov?.addEventListener('input', onFovChange);
 
   // Mouse wheel zoom centered on cursor
+  let wheelTimeout: any = null;
   stage.on('wheel', (e) => {
     e.evt.preventDefault();
     const oldScale = stage.scaleX();
@@ -937,11 +987,16 @@ function setupStageToolbarControls() {
       y: pointer.y - mousePointTo.y * newScale,
     };
     stage.position(newPos);
-    updateMarkerScales();
     stage.batchDraw();
+
+    if (wheelTimeout) clearTimeout(wheelTimeout);
+    wheelTimeout = setTimeout(() => {
+      updateMarkerScales();
+    }, 40);
   });
 
   // Canvas Panning: Right-click (button 2), Middle-click (button 1), Alt+drag, Space+drag, or Pan Mode
+  let panRaf: number | null = null;
   stage.on('mousedown', (e) => {
     if (e.evt.button === 1 || e.evt.button === 2 || e.evt.altKey || isSpacePressed || isPanModeActive) {
       isPanning = true;
@@ -953,14 +1008,27 @@ function setupStageToolbarControls() {
 
   window.addEventListener('mousemove', (e) => {
     if (isPanning) {
-      stage.position({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
-      stage.batchDraw();
+      const nextX = e.clientX - panStart.x;
+      const nextY = e.clientY - panStart.y;
+      if (panRaf === null) {
+        panRaf = requestAnimationFrame(() => {
+          panRaf = null;
+          if (isPanning) {
+            stage.position({ x: nextX, y: nextY });
+            stage.batchDraw();
+          }
+        });
+      }
     }
   });
 
   window.addEventListener('mouseup', () => {
     if (isPanning) {
       isPanning = false;
+      if (panRaf !== null) {
+        cancelAnimationFrame(panRaf);
+        panRaf = null;
+      }
       const stageContainer = document.getElementById('stage');
       if (stageContainer) {
         stageContainer.style.cursor = (isSpacePressed || isPanModeActive) ? 'grab' : 'crosshair';
@@ -982,10 +1050,11 @@ function acceptAuto() {
 
 function initImage() {
   watch([aThreshold, aEnableThreshold, aAutoTargets, aTargetTo, aTargetFrom], () => {
-    // TODO: all of that is needed?
-    img?.cache();
-    img?.draw();
-    stage.batchDraw();
+    // Re-cache image to apply updated filter parameters to canvas, then batch-draw stage
+    if (img && img.isCached()) {
+      img.cache();
+      stage.batchDraw();
+    }
   });
   aImageData.watch((s: string) => {
     if (s === '' || s === '[]') {
@@ -1297,14 +1366,23 @@ export function deleteBulletHole(targetIdx: number) {
   rebuildSequencePattern(coords);
 }
 
+function updateEdgePoints() {
+  edges.forEach(e => {
+    const a = points.get(e.from);
+    const b = points.get(e.to);
+    if (a && b) {
+      e.line.points([a.x(), a.y(), b.x(), b.y()]);
+    }
+  });
+}
+
 function updateShapes() {
   const swNormal = getAdaptiveStrokeWidth(false);
   const swSpecial = getAdaptiveStrokeWidth(true);
   points.forEach((c) => {
     const isShotZero = c.name() === '0';
-    c.stroke(anchors.has(c.name()) ? '#f44336' : (isShotZero ? '#4caf50' : 'white'));
+    c.stroke(anchors.has(c.name()) ? '#ef4444' : (isShotZero ? '#22c55e' : '#f8fafc'));
     c.strokeWidth(isShotZero || anchors.has(c.name()) ? swSpecial : swNormal);
-    c.moveToTop();
   });
   edges = edges.filter(e => {
     const z = points.has(e.from) && points.has(e.to);
@@ -1316,7 +1394,7 @@ function updateShapes() {
     const a = points.get(e.from)!;
     const b = points.get(e.to)!;
     e.line.points([a.x(), a.y(), b.x(), b.y()]);
-    e.line.stroke('rgba(255, 171, 0, 0.85)');
+    e.line.stroke('#f59e0b');
     e.line.strokeWidth(lw);
   });
   updateSpec();
@@ -1330,17 +1408,20 @@ function addPoint(p: PlainPoint, name: string) {
 
   const c = new Konva.Circle({
     radius: r,
-    fill: isShotZero ? 'rgba(76, 175, 80, 0.3)' : 'rgba(0, 229, 255, 0.22)',
-    stroke: isShotZero ? '#4caf50' : 'white',
+    fill: isShotZero ? 'rgba(34, 197, 94, 0.45)' : 'rgba(14, 165, 233, 0.35)',
+    stroke: isShotZero ? '#22c55e' : '#f8fafc',
     strokeWidth: sw,
     hitStrokeWidth: Math.max(2.0, 3.5 / (stage.scaleX() || 1.0)),
     position: p,
     draggable: true,
     name,
+    visible: isPatternVisible,
+    opacity: patternOpacity,
   });
   let dragStartPos = { x: 0, y: 0 };
   c.on('dragstart', function () {
     saveUndoState();
+    c.moveToTop();
     dragStartPos = { x: c.x(), y: c.y() };
   });
   c.on('dragmove', function () {
@@ -1356,12 +1437,9 @@ function addPoint(p: PlainPoint, name: string) {
           });
         }
       });
-      updateShapes();
-      stage.batchDraw();
-    } else {
-      updateShapes();
-      stage.batchDraw();
     }
+    updateEdgePoints();
+    stage.batchDraw();
   });
   c.on('dragend', function () {
     updateShapes();
@@ -1431,7 +1509,109 @@ export function getMouseToPixelScale(imgHeight?: number, zoom?: number, fov?: nu
   return (z / 3.36) * (h / 1080) * fovFactor * activeScaleFactor;
 }
 
-function computeDiscrepancyReport(baselineSpec: any, candidateSpec: any, zoom?: number, imgH?: number): DiscrepancyReport {
+/**
+ * Retrieves the ground-truth decal points [x, y] in screenshot pixel coordinates
+ * for the currently active trial or preview session.
+ */
+export function getActiveCaptureDecals(trialIndex?: number | null): { points: [number, number][], origin: [number, number] } | null {
+  if (!activeSessionData) return null;
+
+  const idx = (trialIndex !== undefined && trialIndex !== null) ? trialIndex : activeBatchIndex;
+
+  // 1. Try specified or active batch trial
+  if (idx !== null && activeSessionData.individual_trials?.[idx]) {
+    const trial = activeSessionData.individual_trials[idx];
+    if (trial.frame_points && trial.frame_points.length > 0) {
+      const orig = (trial.origin && (trial.origin[0] > 0 || trial.origin[1] > 0))
+        ? trial.origin
+        : trial.frame_points[0];
+      return { points: trial.frame_points, origin: [orig[0], orig[1]] };
+    }
+  }
+
+  // 2. Try session preview_points
+  if (activeSessionData.preview_points && activeSessionData.preview_points.length > 0) {
+    const orig = (activeSessionData.preview_origin && (activeSessionData.preview_origin[0] > 0 || activeSessionData.preview_origin[1] > 0))
+      ? activeSessionData.preview_origin
+      : activeSessionData.preview_points[0];
+    return { points: activeSessionData.preview_points, origin: [orig[0], orig[1]] };
+  }
+
+  // 3. Fallback: try any trial that has frame_points
+  if (activeSessionData.individual_trials) {
+    for (const trial of activeSessionData.individual_trials) {
+      if (trial.frame_points && trial.frame_points.length > 0) {
+        const orig = (trial.origin && (trial.origin[0] > 0 || trial.origin[1] > 0))
+          ? trial.origin
+          : trial.frame_points[0];
+        return { points: trial.frame_points, origin: [orig[0], orig[1]] };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Computes the empirical scaling factor (in screenshot pixels per 1x spec unit)
+ * mapping canonical spec coordinates directly to the screenshot wall decals.
+ * Uses least-squares regression between capture decal displacements and spec displacements.
+ */
+export function computeCaptureToSpecScale(
+  captureDecals: { points: [number, number][], origin: [number, number] } | null,
+  referenceSpec?: any
+): number | null {
+  if (!captureDecals || !captureDecals.points || captureDecals.points.length < 2) {
+    return null;
+  }
+  const spec = referenceSpec || activeSessionData?.candidate_spec || activeSessionData?.spec || activeSessionData?.baseline_spec;
+  if (!spec || !spec.x || !spec.y || spec.x.length < 2) {
+    return null;
+  }
+
+  const mult = spec.multiplier || 1.0;
+  const numPoints = Math.min(captureDecals.points.length, spec.x.length);
+  if (numPoints < 2) return null;
+
+  let dotProduct = 0;
+  let specNormSq = 0;
+  let sumCapDist = 0;
+  let sumSpecDist = 0;
+
+  for (let i = 1; i < numPoints; i++) {
+    const capDx = captureDecals.points[i][0] - captureDecals.origin[0];
+    const capDy = captureDecals.points[i][1] - captureDecals.origin[1];
+
+    const specDx = (spec.raw_1x_x && spec.raw_1x_x[i] !== undefined)
+      ? spec.raw_1x_x[i]
+      : (mult ? spec.x[i] / mult : spec.x[i]);
+    const specDy = (spec.raw_1x_y && spec.raw_1x_y[i] !== undefined)
+      ? spec.raw_1x_y[i]
+      : (mult ? spec.y[i] / mult : spec.y[i]);
+
+    dotProduct += (capDx * specDx + capDy * specDy);
+    specNormSq += (specDx * specDx + specDy * specDy);
+
+    sumCapDist += Math.hypot(capDx, capDy);
+    sumSpecDist += Math.hypot(specDx, specDy);
+  }
+
+  if (specNormSq > 0.0001 && dotProduct > 0.0001) {
+    return dotProduct / specNormSq;
+  }
+  if (sumSpecDist > 0.0001 && sumCapDist > 0.0001) {
+    return sumCapDist / sumSpecDist;
+  }
+  return null;
+}
+
+function computeDiscrepancyReport(
+  baselineSpec: any,
+  candidateSpec: any,
+  zoom?: number,
+  imgH?: number,
+  captureScaleOverride?: number
+): DiscrepancyReport {
   const weapon = baselineSpec?.name || candidateSpec?.name || 'WEAPON';
   const baselineShots = baselineSpec?.x?.length || 0;
   const candidateShots = candidateSpec?.x?.length || 0;
@@ -1440,7 +1620,9 @@ function computeDiscrepancyReport(baselineSpec: any, candidateSpec: any, zoom?: 
 
   const z = zoom || activeOpticZoom || 2.0;
   const h = imgH || currentBgImageObj?.height() || 1080;
-  const mouseToPx = getMouseToPixelScale(h, z);
+  const mouseToPx = (captureScaleOverride && captureScaleOverride > 0)
+    ? captureScaleOverride
+    : getMouseToPixelScale(h, z);
 
   const bMult = baselineSpec?.multiplier || 1.0;
   const cMult = candidateSpec?.multiplier || 1.0;
@@ -1553,7 +1735,9 @@ function syncSpecFromPoints() {
   const scale = (activeBgImageScale && activeBgImageScale > 0) ? activeBgImageScale : (hasBg ? 1.0 : 0.65);
   const zoom = getActiveOpticZoom();
   const imgH = currentBgImageObj?.height() || 1080;
-  const mouseToPx = hasBg ? getMouseToPixelScale(imgH, zoom) : 1.0;
+  const captureDecals = getActiveCaptureDecals();
+  const empiricalScale = hasBg ? computeCaptureToSpecScale(captureDecals) : null;
+  const mouseToPx = hasBg ? ((empiricalScale && empiricalScale > 0) ? empiricalScale : getMouseToPixelScale(imgH, zoom)) : 1.0;
 
   const sel = document.getElementById('weapon-select') as HTMLSelectElement | null;
   const targetW = sel
@@ -1695,13 +1879,17 @@ function switchBatchScreenshot(idx: number) {
 
   const previewSelect = document.getElementById('stage-preview-select') as HTMLSelectElement | null;
   if (activeSessionData && activeSessionData.individual_trials) {
-    const trialKey = `trial-${idx}`;
-    if (previewSelect) {
-      if (Array.from(previewSelect.options).some(o => o.value === trialKey)) {
-        previewSelect.value = trialKey;
+    if (previewSelect && previewSelect.value === 'compare') {
+      renderCompareOverlay();
+    } else {
+      const trialKey = `trial-${idx}`;
+      if (previewSelect) {
+        if (Array.from(previewSelect.options).some(o => o.value === trialKey)) {
+          previewSelect.value = trialKey;
+        }
       }
+      renderSelectedOverlay(trialKey);
     }
-    renderSelectedOverlay(trialKey);
   } else if (batchScreenshots[idx]) {
     const batchKey = `batch-${idx}`;
     if (previewSelect) {
@@ -1790,12 +1978,16 @@ function populateStagePreviewDropdown() {
 
 function switchToTrialPreview(idx: number) {
   const sel = document.getElementById('stage-preview-select') as HTMLSelectElement | null;
-  if (sel) {
-    sel.value = `trial-${idx}`;
-  }
   activeBatchIndex = idx;
   updateBatchNavUI();
-  renderSelectedOverlay(`trial-${idx}`);
+  if (sel && sel.value === 'compare') {
+    renderCompareOverlay();
+  } else {
+    if (sel) {
+      sel.value = `trial-${idx}`;
+    }
+    renderSelectedOverlay(`trial-${idx}`);
+  }
 }
 
 function renderSelectedOverlay(key: string) {
@@ -1816,7 +2008,7 @@ function renderSelectedOverlay(key: string) {
   let origin: [number, number] = [0, 0];
   let pts: { x: number, y: number }[] = [];
 
-  const zoom = activeSessionData.zoom || 1.0;
+  const zoom = (activeSessionData.zoom && activeSessionData.zoom > 0) ? activeSessionData.zoom : getActiveOpticZoom();
   activeOpticZoom = zoom;
 
   if (key === 'spec' || key === 'batch_spec') {
@@ -1831,7 +2023,10 @@ function renderSelectedOverlay(key: string) {
       }
     }
 
-    if (!baseOrigin || (baseOrigin[0] === 0 && baseOrigin[1] === 0)) {
+    const captureDecals = getActiveCaptureDecals();
+    if (captureDecals) {
+      baseOrigin = captureDecals.origin;
+    } else if (!baseOrigin || (baseOrigin[0] === 0 && baseOrigin[1] === 0)) {
       if (activeSessionData.preview_points && activeSessionData.preview_points.length > 0) {
         baseOrigin = [activeSessionData.preview_points[0][0], activeSessionData.preview_points[0][1]];
       } else {
@@ -1846,7 +2041,8 @@ function renderSelectedOverlay(key: string) {
       : activeSessionData.spec;
     const mult = spec?.multiplier || activeSessionData.multiplier || 1.0;
     const imgH = activeSessionData.frame_height || currentBgImageObj?.height() || 1080;
-    const mouseToPx = getMouseToPixelScale(imgH, zoom);
+    const empiricalScale = computeCaptureToSpecScale(captureDecals, spec);
+    const mouseToPx = (empiricalScale && empiricalScale > 0) ? empiricalScale : getMouseToPixelScale(imgH, zoom);
     if (spec && spec.x && spec.y) {
       const len = Math.min(spec.x.length, spec.y.length);
       for (let i = 0; i < len; i++) {
@@ -1866,7 +2062,10 @@ function renderSelectedOverlay(key: string) {
   } else if (key === 'median') {
     imgUrl = activeSessionData.preview_image;
     let baseOrigin = activeSessionData.preview_origin;
-    if (!baseOrigin || (baseOrigin[0] === 0 && baseOrigin[1] === 0)) {
+    const captureDecals = getActiveCaptureDecals();
+    if (captureDecals) {
+      baseOrigin = captureDecals.origin;
+    } else if (!baseOrigin || (baseOrigin[0] === 0 && baseOrigin[1] === 0)) {
       if (activeSessionData.preview_points && activeSessionData.preview_points.length > 0) {
         baseOrigin = [activeSessionData.preview_points[0][0], activeSessionData.preview_points[0][1]];
       } else {
@@ -1879,7 +2078,8 @@ function renderSelectedOverlay(key: string) {
     const spec = activeSessionData.spec;
     const mult = spec?.multiplier || activeSessionData.multiplier || 1.0;
     const imgH = activeSessionData.frame_height || currentBgImageObj?.height() || 1080;
-    const mouseToPx = getMouseToPixelScale(imgH, zoom);
+    const empiricalScale = computeCaptureToSpecScale(captureDecals, spec);
+    const mouseToPx = (empiricalScale && empiricalScale > 0) ? empiricalScale : getMouseToPixelScale(imgH, zoom);
     if (spec && spec.x && spec.y) {
       const len = Math.min(spec.x.length, spec.y.length);
       for (let i = 0; i < len; i++) {
@@ -1912,7 +2112,9 @@ function renderSelectedOverlay(key: string) {
         pts = trial.frame_points.map(p => ({ x: p[0], y: p[1] }));
       } else if (trial.x && trial.y) {
         const imgH = trial.frame_height || activeSessionData.frame_height || currentBgImageObj?.height() || 1080;
-        const mouseToPx = getMouseToPixelScale(imgH, zoom);
+        const captureDecals = getActiveCaptureDecals(trialIdx);
+        const empiricalScale = computeCaptureToSpecScale(captureDecals, trial);
+        const mouseToPx = (empiricalScale && empiricalScale > 0) ? empiricalScale : getMouseToPixelScale(imgH, zoom);
         const len = Math.min(trial.x.length, trial.y.length);
         for (let i = 0; i < len; i++) {
           pts.push({
@@ -2029,11 +2231,11 @@ function renderCompareOverlay() {
   const baselineSpec = activeSessionData?.baseline_spec || savedBaselineSpecs.get(currentWeaponName) || loadedSpecsList.find(s => s.name === currentWeaponName);
   const candSpec = activeSessionData?.candidate_spec || activeSessionData?.spec || baselineSpec;
 
-  const zoom = activeSessionData.zoom || 1.0;
+  const zoom = (activeSessionData.zoom && activeSessionData.zoom > 0) ? activeSessionData.zoom : getActiveOpticZoom();
   activeOpticZoom = zoom;
 
   let imgUrl = activeSessionData.preview_image;
-  let origin = activeSessionData.preview_origin;
+  let origin: [number, number] = [0, 0];
 
   if (activeBatchIndex !== null && activeSessionData.individual_trials?.[activeBatchIndex]) {
     const curTrial = activeSessionData.individual_trials[activeBatchIndex];
@@ -2043,7 +2245,10 @@ function renderCompareOverlay() {
     }
   }
 
-  if (!origin || (origin[0] === 0 && origin[1] === 0)) {
+  const captureDecals = getActiveCaptureDecals();
+  if (captureDecals) {
+    origin = captureDecals.origin;
+  } else if (!origin || (origin[0] === 0 && origin[1] === 0)) {
     if (activeSessionData.preview_points && activeSessionData.preview_points.length > 0) {
       origin = [activeSessionData.preview_points[0][0], activeSessionData.preview_points[0][1]];
     } else {
@@ -2053,14 +2258,58 @@ function renderCompareOverlay() {
     }
   }
 
-  const bMult = baselineSpec?.multiplier || 1.0;
-  const cMult = candSpec?.multiplier || 1.0;
   const imgH = activeSessionData.frame_height || currentBgImageObj?.height() || 1080;
-  const mouseToPx = getMouseToPixelScale(imgH, zoom);
+  const empiricalScale = computeCaptureToSpecScale(captureDecals, candSpec)
+    || computeCaptureToSpecScale(captureDecals, baselineSpec);
+  const captureScale = (empiricalScale && empiricalScale > 0)
+    ? empiricalScale
+    : getMouseToPixelScale(imgH, zoom);
 
   const baselinePts: { x: number, y: number }[] = [];
   const candPts: { x: number, y: number }[] = [];
 
+  // 1. Build Candidate points: directly match what the screenshot shows using detected decals
+  if (captureDecals && captureDecals.points.length > 0) {
+    for (let i = 0; i < captureDecals.points.length; i++) {
+      candPts.push({
+        x: captureDecals.points[i][0],
+        y: captureDecals.points[i][1]
+      });
+    }
+    // Extrapolate any extra candidate shots beyond capture decals using captureScale
+    const cMult = candSpec?.multiplier || 1.0;
+    const cLen = Math.min(candSpec?.x?.length || 0, candSpec?.y?.length || 0);
+    for (let i = captureDecals.points.length; i < cLen; i++) {
+      const mouse1xX = (candSpec.raw_1x_x && candSpec.raw_1x_x[i] !== undefined)
+        ? candSpec.raw_1x_x[i]
+        : (cMult ? candSpec.x[i] / cMult : candSpec.x[i]);
+      const mouse1xY = (candSpec.raw_1x_y && candSpec.raw_1x_y[i] !== undefined)
+        ? candSpec.raw_1x_y[i]
+        : (cMult ? candSpec.y[i] / cMult : candSpec.y[i]);
+      candPts.push({
+        x: origin[0] + mouse1xX * captureScale,
+        y: origin[1] + mouse1xY * captureScale
+      });
+    }
+  } else {
+    const cMult = candSpec?.multiplier || 1.0;
+    const cLen = Math.min(candSpec?.x?.length || 0, candSpec?.y?.length || 0);
+    for (let i = 0; i < cLen; i++) {
+      const mouse1xX = (candSpec.raw_1x_x && candSpec.raw_1x_x[i] !== undefined)
+        ? candSpec.raw_1x_x[i]
+        : (cMult ? candSpec.x[i] / cMult : candSpec.x[i]);
+      const mouse1xY = (candSpec.raw_1x_y && candSpec.raw_1x_y[i] !== undefined)
+        ? candSpec.raw_1x_y[i]
+        : (cMult ? candSpec.y[i] / cMult : candSpec.y[i]);
+      candPts.push({
+        x: origin[0] + mouse1xX * captureScale,
+        y: origin[1] + mouse1xY * captureScale
+      });
+    }
+  }
+
+  // 2. Build Baseline points: scale baseline spec to match the capture's physical scale
+  const bMult = baselineSpec?.multiplier || 1.0;
   const bLen = Math.min(baselineSpec?.x?.length || 0, baselineSpec?.y?.length || 0);
   for (let i = 0; i < bLen; i++) {
     const mouse1xX = (baselineSpec.raw_1x_x && baselineSpec.raw_1x_x[i] !== undefined)
@@ -2070,26 +2319,12 @@ function renderCompareOverlay() {
       ? baselineSpec.raw_1x_y[i]
       : (bMult ? baselineSpec.y[i] / bMult : baselineSpec.y[i]);
     baselinePts.push({
-      x: origin[0] + mouse1xX * mouseToPx,
-      y: origin[1] + mouse1xY * mouseToPx
+      x: origin[0] + mouse1xX * captureScale,
+      y: origin[1] + mouse1xY * captureScale
     });
   }
 
-  const cLen = Math.min(candSpec?.x?.length || 0, candSpec?.y?.length || 0);
-  for (let i = 0; i < cLen; i++) {
-    const mouse1xX = (candSpec.raw_1x_x && candSpec.raw_1x_x[i] !== undefined)
-      ? candSpec.raw_1x_x[i]
-      : (cMult ? candSpec.x[i] / cMult : candSpec.x[i]);
-    const mouse1xY = (candSpec.raw_1x_y && candSpec.raw_1x_y[i] !== undefined)
-      ? candSpec.raw_1x_y[i]
-      : (cMult ? candSpec.y[i] / cMult : candSpec.y[i]);
-    candPts.push({
-      x: origin[0] + mouse1xX * mouseToPx,
-      y: origin[1] + mouse1xY * mouseToPx
-    });
-  }
-
-  const report = computeDiscrepancyReport(baselineSpec, candSpec, zoom, imgH);
+  const report = computeDiscrepancyReport(baselineSpec, candSpec, zoom, imgH, captureScale);
 
   // Update Discrepancy HUD
   const hudShots = document.getElementById('hud-shots-val');
@@ -2131,9 +2366,9 @@ function renderCompareOverlay() {
         x: cx,
         y: cy,
         radius: 4 / stage.scaleX(),
-        fill: 'rgba(0, 229, 255, 0.22)',
+        fill: 'rgba(0, 229, 255, 0.35)',
         stroke: '#00e5ff',
-        strokeWidth: 1 / stage.scaleX(),
+        strokeWidth: 1.5 / stage.scaleX(),
         listening: false
       });
       layer.add(circle);
@@ -2143,9 +2378,9 @@ function renderCompareOverlay() {
       const line = new Konva.Line({
         points: baseLinePoints,
         stroke: '#00e5ff',
-        strokeWidth: 1.5 / stage.scaleX(),
+        strokeWidth: 2 / stage.scaleX(),
         dash: [4, 4],
-        opacity: 0.85,
+        opacity: 0.95,
         listening: false
       });
       layer.add(line);
@@ -2167,7 +2402,7 @@ function renderCompareOverlay() {
         radius: 4.8 / stage.scaleX(),
         fill: 'rgba(255, 152, 0, 0.45)',
         stroke: isFirst ? '#00e676' : '#ff9800',
-        strokeWidth: (isFirst ? 2 : 1.2) / stage.scaleX(),
+        strokeWidth: (isFirst ? 2.2 : 1.5) / stage.scaleX(),
         listening: false
       });
       layer.add(circle);
@@ -2177,8 +2412,8 @@ function renderCompareOverlay() {
       const line = new Konva.Line({
         points: candLinePoints,
         stroke: '#ff9800',
-        strokeWidth: 2 / stage.scaleX(),
-        opacity: 0.95,
+        strokeWidth: 2.2 / stage.scaleX(),
+        opacity: 1.0,
         listening: false
       });
       layer.add(line);
@@ -2196,27 +2431,31 @@ function renderCompareOverlay() {
       const dist = Math.hypot(cx - bx, cy - by);
 
       if (dist > 3.0) {
-        const deltaColor = dist > 22.0 ? '#ff1744' : (dist > 10.0 ? '#ffea00' : '#69f0ae');
+        const deltaColor = dist > 22.0 ? '#ff1744' : (dist > 10.0 ? '#ffb300' : '#00e676');
         const deltaLine = new Konva.Line({
           points: [bx, by, cx, cy],
           stroke: deltaColor,
-          strokeWidth: (dist > 22.0 ? 2.0 : 1.2) / stage.scaleX(),
-          dash: dist > 22.0 ? [] : [2, 2],
-          opacity: 0.85,
+          strokeWidth: (dist > 22.0 ? 2.2 : 1.5) / stage.scaleX(),
+          dash: dist > 22.0 ? [] : [3, 2],
+          opacity: 0.95,
           listening: false
         });
         layer.add(deltaLine);
 
+        const imgDist = Math.hypot(candPts[i].x - baselinePts[i].x, candPts[i].y - baselinePts[i].y);
         if (dist > 25.0) {
           const midX = (bx + cx) / 2;
           const midY = (by + cy) / 2;
           const label = new Konva.Text({
             x: midX + 4 / stage.scaleX(),
             y: midY - 6 / stage.scaleX(),
-            text: `Δ${Math.round(dist)}px`,
+            text: `Δ${Math.round(imgDist)}px`,
             fontSize: Math.max(9, 11 / stage.scaleX()),
             fontFamily: 'monospace',
-            fill: '#ff1744',
+            fill: '#ffffff',
+            stroke: '#000000',
+            strokeWidth: 2 / stage.scaleX(),
+            fillAfterStrokeEnabled: true,
             fontStyle: 'bold',
             listening: false
           });
@@ -2225,6 +2464,7 @@ function renderCompareOverlay() {
       }
     }
 
+    applyPatternVisibilityAndOpacity();
     stage.batchDraw();
   };
 
@@ -2310,9 +2550,11 @@ function addEdge(a: string, b: string) {
     from: a,
     to: b,
     line: new Konva.Line({
-      stroke: 'white',
-      strokeWidth: 1,
+      stroke: '#f59e0b',
+      strokeWidth: 1.5,
       points: [],
+      visible: isPatternVisible,
+      opacity: patternOpacity,
     })
   };
   const ex = edges.find((t: Edge) => t.from == e.from && t.to == e.to);
@@ -2370,11 +2612,16 @@ function updateSpec(_?: string) {
   }
   const c = document.getElementById("count");
   if (c) {
-    c.innerText = `points: ${points.size} graph: ${pp.length} mag: ${w.mags[w.mags.length - 1].size}`;
+    let msg = `points: ${points.size} graph: ${pp.length} mag: ${w.mags[w.mags.length - 1].size}`;
+    if (anchors.size > 0 && anchors.size !== 2) {
+      msg += ` | ⚠️ Warning: Exactly 2 anchors required for distance calibration (selected: ${anchors.size})`;
+    }
+    c.innerText = msg;
   }
-  console.log('points', points, anchors, anchorIndexes);
-  idx = Array.from(anchors.values())
-  // TODO: warn about anchors length != 2.
+  if (anchors.size > 0 && anchors.size !== 2) {
+    console.warn(`[RecoilEditor] Distance calibration requires exactly 2 anchors, but ${anchors.size} were selected.`);
+  }
+  idx = Array.from(anchors.values());
   if (pp.length === 0) {
     const spec = {
       version: 2,
@@ -2485,8 +2732,8 @@ function autoFilter(imageData: ImageData) {
     const ip = p.clone().s(img?.scaleX() || 1).plain();
     const c = new Konva.Circle({
       radius: 10,
-      stroke: 'blue',
-      strokeWidth: 1,
+      stroke: '#00e5ff',
+      strokeWidth: 1.5,
       position: ip,
     });
     c.on('mousedown', function (e) {
@@ -2634,13 +2881,21 @@ function displayWeaponOnCanvas(w: any) {
   if (currentBgImageObj) {
     const scale = (activeBgImageScale && activeBgImageScale > 0) ? activeBgImageScale : 1.0;
     const offset = activeBgImageOffset || { x: (stageW - currentBgImageObj.width() * scale) / 2, y: (stageH - currentBgImageObj.height() * scale) / 2 };
-    // Anchor first shot at target crosshair: in 20m firing range ADS, reticle sits at x ≈ 48.7%, y ≈ 49.5%
-    const startX = offset.x + (currentBgImageObj.width() * scale) * 0.487;
-    const startY = offset.y + (currentBgImageObj.height() * scale) * 0.495;
+    const captureDecals = getActiveCaptureDecals();
+    let startX: number;
+    let startY: number;
+    if (captureDecals && captureDecals.origin && (captureDecals.origin[0] > 0 || captureDecals.origin[1] > 0)) {
+      startX = offset.x + captureDecals.origin[0] * scale;
+      startY = offset.y + captureDecals.origin[1] * scale;
+    } else {
+      startX = offset.x + (currentBgImageObj.width() * scale) * 0.487;
+      startY = offset.y + (currentBgImageObj.height() * scale) * 0.495;
+    }
     const mult = w.multiplier || 1.0;
     const zoom = getActiveOpticZoom();
     const imgH = currentBgImageObj.height() || 1080;
-    const mouseToPx = getMouseToPixelScale(imgH, zoom);
+    const empiricalScale = computeCaptureToSpecScale(captureDecals, w);
+    const mouseToPx = (empiricalScale && empiricalScale > 0) ? empiricalScale : getMouseToPixelScale(imgH, zoom);
     for (let i = 0; i < minLen; i++) {
       const mouse1xX = (w.raw_1x_x && w.raw_1x_x[i] !== undefined)
         ? w.raw_1x_x[i]
@@ -2859,11 +3114,12 @@ function saveCurrentWeaponSpec(forceSave?: boolean | Event) {
       }
       const stageSaveBtn = document.getElementById('save-stage-spec-btn') as HTMLButtonElement | null;
       if (stageSaveBtn) {
-        const origText = stageSaveBtn.innerText;
-        stageSaveBtn.innerText = '✅ Saved!';
+        const origHtml = stageSaveBtn.innerHTML;
+        const checkSvg = '<svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+        stageSaveBtn.innerHTML = `<span class="btn-icon">${checkSvg}</span><span class="btn-label"> Saved!</span>`;
         stageSaveBtn.style.background = '#27ae60';
         setTimeout(() => {
-          stageSaveBtn.innerText = origText;
+          stageSaveBtn.innerHTML = origHtml;
           stageSaveBtn.style.background = '';
         }, 2000);
       }
@@ -4049,11 +4305,14 @@ async function loadSampleScreenshotOnCanvas(imgDataUrl: string, isRaw: boolean =
 
     konvaImg.scale({ x: scale, y: scale });
     konvaImg.position({ x: offsetX, y: offsetY });
-    konvaImg.opacity(0.85);
+    const bgOpacitySlider = document.getElementById('bg-opacity-slider') as HTMLInputElement | null;
+    const initialBgOpacity = bgOpacitySlider ? Number(bgOpacitySlider.value) / 100 : 0.8;
+    konvaImg.opacity(initialBgOpacity);
     konvaImg.zIndex(0);
+    konvaImg.moveToBottom();
 
     const toggleBg = document.getElementById('toggle-bg-img') as HTMLInputElement | null;
-    if (toggleBg) toggleBg.checked = true;
+    if (toggleBg) konvaImg.visible(toggleBg.checked);
 
     layer.batchDraw();
     updateMarkerScales();
@@ -4335,7 +4594,17 @@ function renderBatchScreenshotsList() {
     counterLabel.innerText = `Loaded Screenshots (${batchScreenshots.length})`;
   }
   if (analyzeBtn) {
-    analyzeBtn.disabled = batchScreenshots.length === 0;
+    const hasScreenshots = batchScreenshots.length > 0;
+    analyzeBtn.disabled = !hasScreenshots;
+    const btnText = hasScreenshots
+      ? `Analyze ${batchScreenshots.length} Screenshot${batchScreenshots.length > 1 ? 's' : ''}`
+      : 'Analyze Screenshot(s)';
+    const boltSvg = '<svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
+    analyzeBtn.innerHTML = `${boltSvg}<span> ${btnText}</span>`;
+    analyzeBtn.classList.toggle('ready-to-analyze', hasScreenshots);
+    analyzeBtn.title = hasScreenshots
+      ? `Click to analyze ${batchScreenshots.length} loaded screenshot(s)`
+      : 'Select or load screenshots above first to enable analysis';
   }
   if (container) {
     container.classList.toggle('hidden', batchScreenshots.length === 0);
@@ -4621,7 +4890,11 @@ async function executeBatchScreenshotAnalysis(weapon: string, mode: string, save
     statusBox.className = 'info';
     statusBox.innerText = `Analyzing batch of ${batchScreenshots.length} screenshot(s) for ${weapon.toUpperCase()} (${mode.toUpperCase()}) at ${distVal}m (${zoomVal}x zoom, ${fovVal}° FOV)...`;
   }
-  if (analyzeBtn) analyzeBtn.disabled = true;
+  if (analyzeBtn) {
+    analyzeBtn.disabled = true;
+    analyzeBtn.classList.remove('ready-to-analyze');
+    analyzeBtn.innerHTML = `<span>⏳ Analyzing ${batchScreenshots.length} Screenshot(s)...</span>`;
+  }
 
   try {
     const payloadImages = batchScreenshots.map(b => ({
@@ -4791,7 +5064,7 @@ async function executeBatchScreenshotAnalysis(weapon: string, mode: string, save
       statusBox.innerText = `Error: ${err.message}`;
     }
   } finally {
-    if (analyzeBtn) analyzeBtn.disabled = false;
+    renderBatchScreenshotsList();
   }
 }
 

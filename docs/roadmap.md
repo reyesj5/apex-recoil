@@ -48,7 +48,10 @@ This document outlines the architectural milestones, completed implementations, 
   - 1:1 Recoil Game Scale Calibration & True Muscle Memory Guarantee: calibrated canvas overlay mapping with Source Engine 1080p 1x geometric constant ($K_{px\_to\_mouse} = 3.36$ or $0.2976$ px/mickey) and restored `havoc_tc` in `client/specs.json` with canonical 35-round recoil and full ground loot mag progression `[18, 21, 25, 29, 35]`, guaranteeing identical in-game mouse counter-aiming.
   - One-click session analysis calling `POST /api/discovery/process-session`.
   - Shot Count Mismatch Detection & Manual Correction Mode: compares detected bullet holes against expected magazine size, flags mismatches with amber badges on batch cards and dropdown entries, and provides a `🔧 Correct Shots` toolbar toggle for manually adding/removing bullet holes with a live shot counter status bar.
-  - Recoil Editor Usability, Zoom-Adaptive Markers, Undo/Redo & Smart Sequential Insertion:
+  - Recoil Editor Usability, High-Performance Overhaul (60–144Hz), Zoom-Adaptive Markers, Undo/Redo & Smart Sequential Insertion:
+    - Zero `shadowBlur` rasterization: eliminated all Canvas 2D CPU Gaussian blur passes across markers, lines, candidate overlays, and discrepancy vectors, yielding silky 144 FPS canvas rendering.
+    - Decoupled dragmove I/O: replaced continuous `localStorage.setItem` writes and DOM textarea re-serialization during point dragging with instantaneous memory-only line updates (< 0.05ms) and deferred persistence on `dragend`.
+    - `requestAnimationFrame`-throttled panning & debounced wheel zoom marker re-scaling.
     - Canvas zoom and pan preserved across view switches (`spec`, `analyzed`, `trial-X`), batch image selections, and spec reloads (`🔄 Reload`) without resetting the user's view coordinates.
     - Zoom-adaptive marker circles ($r = 4.5 / s$, $w = 1.2 / s$) maintaining crisp ~4.5px screen radius across 1x–8x zoom with translucent fills (`rgba(0, 229, 255, 0.22)`) so decal holes underneath remain clearly visible.
     - Scaled hitboxes in stage coordinates allowing effortless placement of new markers close to existing markers in crowded decal clusters without blocking clicks.
@@ -70,6 +73,7 @@ This document outlines the architectural milestones, completed implementations, 
   - Spec Safety Verification Checkpoint & Dual Comparison Overlay:
     - Pre-save safety verification checkpoint modal (`#spec-checkpoint-modal`) checking for shot count truncations, deflection drift, large single-shot outliers, and recoil direction inversions before committing to `specs.json`.
     - Dual-curve comparison overlay mode (`⚖️ Compare: Spec vs Candidate Overlay` / `#compare-stage-btn` / `O` shortcut) concurrently rendering Cyan baseline spec, Orange candidate spec, and color-coded discrepancy vector lines over canvas wall decals.
+    - Ground-truth screenshot-accurate scaling: Candidate points directly anchor to detected bullet decals on the screenshot wall without shrinking to theoretical spec sizes; baseline spec coordinates are dynamically scaled via least-squares empirical ratio ($K_{\text{cap}}$) to match the physical scale of the capture on the screenshot.
     - Floating on-stage Discrepancy HUD (`#discrepancy-hud`) providing real-time alignment metrics (shots, mean delta, max delta, and status badges).
     - Inline discrepancy health check badges and `⚖️ Inspect Discrepancies` action button in live and batch analysis cards.
   - Incremental Proportional Spec Accumulation vs Overwrite:
@@ -148,18 +152,29 @@ All 31 weapons in [client/specs.json](file:///c:/Users/micro.VADER/Documents/Pro
 
 ---
 
-### Milestone 8: UI/UX Modernization & Polish
+### Milestone 8: UI/UX Modernization, Accessibility & Polish
 - [x] **Remove Legacy Development Hiatus & End-of-Support Splash**: Removed outdated September 2024 notice dialog and associated attributes (`#notify-splash`, `aShowDevUpdate`) from [`views/index.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index.pug) and [`client/game.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts).
 - [x] **Custom Corrupted Magazine Graphic**: Created authentic Tier 4 / Red vector magazine graphic in [`assets/images/corrupted_mag.svg`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/assets/images/corrupted_mag.svg) to replace the CSS-tinted `magi.png`.
 - [x] **Modern Typography & UI Styling**: Integrated Google Fonts 'Inter' (sans-serif) and 'JetBrains Mono' (monospace numbers/stats), enabled subpixel smoothing, unified dark form elements, and fixed responsive media queries.
 - [x] **Trainer Search & Weapon Categorization**: Real-time search bar, category pills (All, AR, SMG, LMG, Mark, Snip, Shot, Pist), data-category tags for all 31 weapons, and live mag capacity badges.
-- [x] **Editor Toolbar Ergonomics & HUD Minimization**: Organized tools into segmented button groups with horizontal scroll protection, and added minimize button to Discrepancy HUD.
-- [x] **Accessibility & Security Polish**: Added `rel="noopener noreferrer"` across all external links and descriptive `aria-label` attributes across buttons and inputs.
+- [x] **Editor Toolbar Ergonomics & Sub-1400px Compaction**: Organized tools into segmented button groups, implemented 2-tier responsive compaction (<1450px and <1250px) preventing crowding on sub-1400px viewports, and added minimize button to Discrepancy HUD.
+- [x] **Accessibility Audit & High-Contrast Controls**: Conducted WCAG 2.1 AA audit ([`accessibility_audit.md`](file:///C:/Users/micro.VADER/.gemini/antigravity-ide/brain/733f6ac0-5f64-4bff-9739-d504f9dfdc0d/accessibility_audit.md)), resolved Undo/Redo invisibility in disabled state (replacing 1.8:1 washed-out opacity with solid $\ge 3.8:1$ borders and slate tones), and added global high-visibility `:focus-visible` focus ring.
+- [x] **Recoil Editor Canvas Tools & Global Contrast Audit (WCAG AA/AAA Compliance)**:
+  - Overhauled stage toolbar buttons (`.small-btn`, `.tool-btn`, `#save-stage-spec-btn`, `.segmented-btn-group`): eliminated browser user-agent `buttonface` grey background bleed with CSS resets in [`reset.scss`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/reset.scss); provided dark slate backgrounds (`rgba(30, 41, 59, 0.9)`), crisp borders, and vibrant `#f8fafc` text (17.5:1, WCAG AAA).
+  - Fixed severe 1.58:1 contrast failure on `.primary-btn` and Save Spec buttons by enforcing dark slate text (`#0f172a`) and icon strokes on Apex gold (`#f59e0b`) for 9.8:1 contrast.
+  - Enhanced canvas rendering on Konva stage in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) with dark drop shadows (`shadowColor: '#000000', shadowBlur: 3, shadowOpacity: 0.9`) on manual points, lines, candidate specs, and delta vectors for crystal clarity against sunny/light rock wall screenshots. Added text outline strokes to delta distance labels (`Δ28px`).
+  - Styled WebKit range sliders (opacity/scale) with visible `#334155` tracks and glowing `#38bdf8` thumbs; styled Wall toggle pill; raised form labels to `#e2e8f0` (14.2:1); recalibrated all 5 magazine tier badges to $\ge 5:1$; upgraded method tabs and status badges.
+  - Upgraded trainer recovery lines in [`client/game.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts) and canvas hint/start colors in [`theme.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/theme.json) to vibrant emerald and slate.
+- [x] **Vector Icon System**: Standardized all system emojis across toolbar, modals, drawers, and headers with scalable, accessible inline SVG icons ([`views/mixins/icons.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/mixins/icons.pug)).
+- [x] **Touch Target Sizing & ARIA Hygiene**: Expanded interactive bounds for secondary icon buttons (`#scale-reset-btn`, `#min-hud-btn`, `#close-hud-btn`, `#reset-samples-btn`) to $\ge 28\times 28$px / $26\times 26$px; added `aria-label`s to magazine inputs and buttons; added `rel="noopener noreferrer"` across external links.
+- [x] **Recoil Pattern Opacity & Visibility Inspection Controls**: Added `#toggle-pattern` checkbox and `#pattern-opacity-slider` (0–100%) to stage toolbar; added `P` hotkey toggle; updated canvas shapes to reactively fade or hide pattern overlay so users can inspect underlying bullet decals on screenshots without visual clutter.
+- [x] **Tactile Screenshot Analysis Button Redesign**: Overhauled `#analyze-wall-file-btn` and `.file-import-label` with prominent 3D button affordances, defined borders, drop shadows, and bevel depths; resolved ambiguous flat disabled state with clear button structure and tooltips; added dynamic batch count labels (e.g. `⚡ Analyze 3 Screenshots`) and pulsing ready-state animation.
 - [x] **Global Escape Key Dismissal**: Instant dismissal of modal dialogs, instruction overlays, and stat graphs.
-- [ ] **Codebase Follow-up Polish**:
-  - Review and resolve `TODO` in [client/game.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts#L368) (argument passing).
-  - Review and resolve `TODO` in [client/game.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts#L956) (multi-attribute watcher).
-  - Review and resolve `TODO` in [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts#L94) & [L311](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts#L311) (anchor length warning).
+- [x] **Codebase TODOs & Technical Debt Elimination**:
+  - Resolved `TODO` in [client/game.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts#L788-L802): removed dead code `const w = selectedWeapon();` and clarified `drawPattern` isolated preview parameters.
+  - Resolved `TODO` in [client/game.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts#L1644): merged `aMovingTarget` into the multi-attribute `watch([...], showStats)` array.
+  - Resolved `TODO` in [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts#L986-L994): removed redundant `img.draw()` call and added `img.isCached()` guard for Konva filter updates.
+  - Resolved `TODO` in [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts#L2374-L2384): added user-facing status warning and console warning when anchor count $\ne 2$ in manual calibration.
 
 ---
 

@@ -649,7 +649,7 @@ function drawPattern(pattern: Point[], mag: number, start: Point, sc: number): [
 
       const resetLn = new Konva.Line({
         points: [xy.x, xy.y, start.x, start.y],
-        stroke: 'rgba(255, 255, 255, 0.3)',
+        stroke: 'rgba(255, 255, 255, 0.55)',
         strokeWidth: 1,
         dash: [3, 3],
       });
@@ -720,7 +720,7 @@ function drawPattern(pattern: Point[], mag: number, start: Point, sc: number): [
       if (lastXy.distance(start) > 2) {
         const resetLine = new Konva.Line({
           points: [lastXy.x, lastXy.y, start.x, start.y],
-          stroke: 'rgba(255, 255, 255, 0.25)',
+          stroke: 'rgba(255, 255, 255, 0.55)',
           strokeWidth: 1,
           dash: [3, 3],
         });
@@ -788,12 +788,11 @@ function unscaledPattern(): Point[] {
 class TracePreview {
   shapes: (Konva.Shape | Konva.Group)[] = [];
   constructor() {
-    const w = selectedWeapon();
     const sc = scale();
     const n = currentMagSize();
     pattern = scaledPattern();
     patternBox = box(pattern);
-    // TODO: do we need to pass all args?
+    // Explicit pattern, shot count, start coordinate offset, and scale factor are required for isolated preview rendering
     const [line, circles, texts] = drawPattern(pattern, n, patternBox[0].clone().s(-1).add(new Point(50, 50)), sc);
     this.addShape(line);
     if (dev) (texts as Konva.Text[]).forEach(t => this.addShape(t));
@@ -1641,8 +1640,7 @@ export function initGame() {
   });
   aShowDetailedStats.watch(redrawStartRectangle);
   aShowInstructions.watch(redrawStartRectangle);
-  watch([aStats, aMag, aWeapon, aHint, aMods, aCorruptedStock], showStats);
-  aMovingTarget.watch(showStats); // TODO add watching of multiple obj attributes.
+  watch([aStats, aMag, aWeapon, aHint, aMods, aCorruptedStock, aMovingTarget], showStats);
   {
     const b = document.getElementById('speed-value');
     if (b) aFireSpeed.watch((s: number) => {
