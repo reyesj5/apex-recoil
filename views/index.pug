@@ -14,6 +14,7 @@
 //- limitations under the License.
 
 extends layout
+include mixins/icons
 
 block content
   #game
@@ -21,94 +22,195 @@ block content
       h1 Apex Legends Recoil Patterns
       p.description Learn and practice spray/recoil patterns
       p#sensitivity-warning.hidden
-        | Active area is too small! #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#mouse-sensitivity" target="_blank") how to fix] 
+        | Active area is too small! #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#mouse-sensitivity" target="_blank" rel="noopener noreferrer") how to fix] 
       #top-links
         p#show-instructions-btn.action
           | Show instructions
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank")
+        a(href="/editor")
+          +icon('wrench')
+          |  Recoil Studio
+        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer")
           | FAQ
-        a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank")
-          | Support ❤️
+        a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank" rel="noopener noreferrer")
+          +icon('heart')
+          |  Support
       #score
-        div#stats-graph-btn.tooltip.btn
-          img(src="/outline_insert_chart_white_48dp.png"  alt="show graph")
+        div#stats-graph-btn.tooltip.btn(aria-label="Show historical stats graph")
+          img(src="/outline_insert_chart_white_48dp.png" alt="show graph")
           .tooltiptext Show historical graph
         div#stats-wrap
           p#score-stats
+      #weapon-filter-bar
+        input#weapon-search-input(type="text" placeholder="Search weapon..." autocomplete="off" aria-label="Search weapon")
+        .weapon-category-pills(role="tablist" aria-label="Weapon categories")
+          button.cat-pill.active(type="button" data-category="all") All
+          button.cat-pill(type="button" data-category="ar") AR
+          button.cat-pill(type="button" data-category="smg") SMG
+          button.cat-pill(type="button" data-category="lmg") LMG
+          button.cat-pill(type="button" data-category="marksman") Mark
+          button.cat-pill(type="button" data-category="sniper") Snip
+          button.cat-pill(type="button" data-category="shotgun") Shot
+          button.cat-pill(type="button" data-category="pistol") Pist
       #weapon-select.grid
-        div.havoc_tc.btn
-          img(src="/images/havoc.png", alt="havoc")
-          p.name HAVOC
-        div.flatline.btn
+        div.flatline.btn(data-weapon="flatline" data-category="ar")
           img(src="/images/flatline.png", alt="flatline")
           p.name Flatline
-        div.r301.btn
+        div.r301.btn(data-weapon="r301" data-category="ar")
           img(src="/images/r301.png", alt="r-301")
           p.name R-301
-        div.alternator.btn
-            img(src="/images/alternator.png", alt="alternator")
-            p.name Alternator (old)
-        div.r99.btn
+        div.havoc_tc.btn(data-weapon="havoc_tc" data-category="ar")
+          img(src="/images/havoc.png", alt="havoc")
+          p.name HAVOC
+        div.hemlok.btn(data-weapon="hemlok" data-category="ar")
+          img(src="/images/hemlok.png", alt="hemlok")
+          p.name Hemlok
+        div.nemesis.btn(data-weapon="nemesis" data-category="ar")
+          img(src="/images/nemesis.svg", alt="nemesis")
+          p.name Nemesis
+        div.alternator.btn(data-weapon="alternator" data-category="smg")
+          img(src="/images/alternator.png", alt="alternator")
+          p.name Alternator
+        div.prowler.btn(data-weapon="prowler" data-category="smg")
+          img(src="/images/prowler.png", alt="prowler")
+          p.name Prowler
+        div.r99.btn(data-weapon="r99" data-category="smg")
           img(src="/images/r99.png", alt="r-99")
           p.name R-99
-        div.volt.btn
+        div.volt.btn(data-weapon="volt" data-category="smg")
           img(src="/images/volt.png", alt="volt")
           p.name Volt
-        div.car.btn
+        div.car.btn(data-weapon="car" data-category="smg")
           img(src="/images/car.png", alt="car")
-          p.name C.A.R. (old)
-        div.devotion_tc.btn
+          p.name C.A.R.
+        div.devotion_tc.btn(data-weapon="devotion_tc" data-category="lmg")
           img(src="/images/devotion.png", alt="devotion")
-          p.name Devotion (old)
-        div.lstar.btn
+          p.name Devotion
+        div.lstar.btn(data-weapon="lstar" data-category="lmg")
           img(src="/images/lstar.png", alt="lstar")
-          p.name L-STAR (old)
-        div.spitfire.btn
+          p.name L-STAR
+        div.spitfire.btn(data-weapon="spitfire" data-category="lmg")
           img(src="/images/spitfire.png", alt="spitfire")
-          p.name Spitfire (old)
-        div.rampage.btn
+          p.name Spitfire
+        div.rampage.btn(data-weapon="rampage" data-category="lmg")
           img(src="/images/rampage.png", alt="rampage")
-          p.name Rampage (old)
-        div.re45.btn
+          p.name Rampage
+        div.g7_scout.btn(data-weapon="g7_scout" data-category="marksman")
+          img(src="/images/g7_scout.svg", alt="g7 scout")
+          p.name G7 Scout
+        div.triple_take.btn(data-weapon="triple_take" data-category="marksman")
+          img(src="/images/triple_take.svg", alt="triple take")
+          p.name Triple Take
+        div.btn(data-weapon="3030_repeater" class="w-3030_repeater" data-category="marksman")
+          img(src="/images/3030_repeater.svg", alt="30-30 repeater")
+          p.name 30-30 Repeater
+        div.bocek.btn(data-weapon="bocek" data-category="marksman")
+          img(src="/images/bocek.svg", alt="bocek")
+          p.name Bocek Bow
+        div.charge_rifle.btn(data-weapon="charge_rifle" data-category="sniper")
+          img(src="/images/charge_rifle.svg", alt="charge rifle")
+          p.name Charge Rifle
+        div.longbow.btn(data-weapon="longbow" data-category="sniper")
+          img(src="/images/longbow.svg", alt="longbow")
+          p.name Longbow
+        div.sentinel.btn(data-weapon="sentinel" data-category="sniper")
+          img(src="/images/sentinel.svg", alt="sentinel")
+          p.name Sentinel
+        div.kraber.btn(data-weapon="kraber" data-category="sniper")
+          img(src="/images/kraber.svg", alt="kraber")
+          p.name Kraber
+        div.eva8.btn(data-weapon="eva8" data-category="shotgun")
+          img(src="/images/eva8.svg", alt="eva8")
+          p.name EVA-8
+        div.mastiff.btn(data-weapon="mastiff" data-category="shotgun")
+          img(src="/images/mastiff.svg", alt="mastiff")
+          p.name Mastiff
+        div.mozambique.btn(data-weapon="mozambique" data-category="shotgun")
+          img(src="/images/mozambique.svg", alt="mozambique")
+          p.name Mozambique
+        div.mozambique_akimbo.btn(data-weapon="mozambique_akimbo" data-category="shotgun")
+          img(src="/images/mozambique_akimbo.svg", alt="mozambique akimbo")
+          p.name Mozam Akimbo
+        div.peacekeeper.btn(data-weapon="peacekeeper" data-category="shotgun")
+          img(src="/images/peacekeeper.svg", alt="peacekeeper")
+          p.name Peacekeeper
+        div.re45.btn(data-weapon="re45" data-category="pistol")
           img(src="/images/re45.png", alt="re45")
-          p.name RE-45 (old)
+          p.name RE-45
+        div.p2020.btn(data-weapon="p2020" data-category="pistol")
+          img(src="/images/p2020.svg", alt="p2020")
+          p.name P2020
+        div.p2020_akimbo.btn(data-weapon="p2020_akimbo" data-category="pistol")
+          img(src="/images/p2020_akimbo.svg", alt="p2020 akimbo")
+          p.name P2020 Akimbo
+        div.wingman.btn(data-weapon="wingman" data-category="pistol")
+          img(src="/images/wingman.svg", alt="wingman")
+          p.name Wingman
+      #fire-mode-select.button-row
+        div.fire-mode-btn.fire-mode-auto.tooltip(data-mode="auto")
+          span.fire-mode-icon ⮓⮓⮓
+          span.fire-mode-text Auto
+          span.tooltiptext Full Auto
+        div.fire-mode-btn.fire-mode-burst.tooltip(data-mode="burst")
+          span.fire-mode-icon ⮓⮓
+          span.fire-mode-text Burst
+          span.tooltiptext Burst Fire
+        div.fire-mode-btn.fire-mode-single.tooltip(data-mode="single")
+          span.fire-mode-icon ⮓
+          span.fire-mode-text Single
+          span.tooltiptext Single Fire
+        div.fire-mode-hint.tooltip
+          span.fire-mode-key [B]
+          span.tooltiptext Toggle Fire Mode [B]
       #mag-select.button-row
         div.mag-0.tooltip
           img(src="/images/magi.png" alt="no magazine")
+          span.mag-cap
           span.tooltiptext No magazine
         div.mag-1.tooltip
           img(src="/images/magi.png" alt="magazine level 1")
+          span.mag-cap
           span.tooltiptext Level 1
         div.mag-2.tooltip
           img(src="/images/magi.png" alt="magazine level 2")
+          span.mag-cap
           span.tooltiptext Level 2
         div.mag-3.tooltip
           img(src="/images/magi.png" alt="magazine level 3")
+          span.mag-cap
           span.tooltiptext Level 3
-        div.mag-drop.hidden
+        div.mag-4.tooltip
+          img(src="/images/corrupted_mag.svg" alt="corrupted magazine")
+          span.mag-cap
+          span.tooltiptext Corrupted Magazine
+        div.mag-drop.tooltip.hidden
           img(src="/images/magi.png" alt="drop magazine")
+          span.mag-cap
+          span.tooltiptext Standard Capacity
         div.mod-revved_up.mod.hidden.tooltip
           img(src="/images/thermite_grenade.png" alt="thermite grenade")
           span.tooltiptext Load thermite grenade
+        div.mod-corrupted_stock.mod.tooltip
+          img(src="/images/barrel_stocki.png" alt="corrupted stock")
+          span.tooltiptext Corrupted Stock (-4 ammo, -1 for shotguns)
       #settings
           #mouse-settings.row
             div
-              input(type='text' id='sens')
+              input(type='text' id='sens' aria-label="Mouse Sensitivity")
               span.tooltip.underlined
                 | Sensitivity
                 span.tooltiptext
                   | Example: for mouse sensitivity 3 and ADS<br/>
                   | multiplier 1.2 set this to 3 * 1.2 = 3.6
             div.scale-x-wrapper
-              input(type='text' id='scale-x')
+              input(type='text' id='scale-x' aria-label="Scale X")
               span
                 | x&nbsp;
             div
-              input(type='text' id='scale-y')
+              input(type='text' id='scale-y' aria-label="Scale Y")
               span
                 | scale
-            #invert-y-btn.btn
-              div Invert Y
+            #invert-y-btn.btn(role="button" title="Invert vertical mouse recoil aim")
+              span Invert Y
           p Mode:
           #mode-selection.button-row
             #mode-fixed-path.btn.tooltip
@@ -125,7 +227,7 @@ block content
               img(src="/outline_run_circle_white_24dp.png" alt="target control")
               span.tooltiptext
                 | Target move speed
-            input.slider#target-speed(type='range' min="1" max="600" step="1")
+            input.slider#target-speed(type='range' min="1" max="600" step="1" aria-label="Target speed")
             #target-speed-value.value
           #recoil-mode.button-row
             .center-text Recoil:
@@ -152,47 +254,47 @@ block content
               img(src="/outline_slow_motion_video_white_24dp.png" alt="speed control").tooltip
               span.tooltiptext
                 | Firing speed. Reduce it if you struggle to follow the pattern
-            input.slider#speed(type='range' min="10" max="100" step="10")
+            input.slider#speed(type='range' min="10" max="100" step="10" aria-label="Firing speed")
             #speed-value.value
           #sound-control.row
-            #toggle-mute.tooltip
-              img(src="/volume_up_white_24dp.svg"  alt="sound is not muted")#unmuted
+            #toggle-mute.tooltip(role="button" aria-label="Toggle sound mute")
+              img(src="/volume_up_white_24dp.svg" alt="sound is not muted")#unmuted
               img(src="/volume_off_white_24dp.svg" alt="sound is muted")#muted.hidden
               span.tooltiptext
                 | Sound volume (click to mute)
-            input.slider#volume(type='range' min="0" max="100")
+            input.slider#volume(type='range' min="0" max="100" aria-label="Volume")
             .value
       #controls-bottom
         #copyright
           div.links
-            a(href="https://github.com/metaflow/apex-recoil" target="_blank")
+            a(href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
               img(src="/GitHub-Mark-Light-32px.png", alt="github")
-            a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank")
+            a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
               img(src="/reddit.png", alt="reddit")
             a(href="/ru").lang
               | русский
             a(href="/zh-CN").lang
               | 中文
             div.vertical
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank")
+              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
                 | Privacy Policy
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank")
+              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
                 | Datenschutzerklärung
               a(href="#cookies")
                 | Cookie settings
           p
-            | 2024 by Mikhail equanimity_rulez Goncharov.
+            | 2026 by Mikhail equanimity_rulez Goncharov.
           p
             | This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. 
             | Game content and materials are trademarks and copyrights of 
-            | #[a(href="https://ea.com" target="_blank") Electronic Arts Inc.]              
-            | or #[a(href="https://www.respawn.com/" target="_blank") Respawn Entertainment]. 
+            | #[a(href="https://ea.com" target="_blank" rel="noopener noreferrer") Electronic Arts Inc.]              
+            | or #[a(href="https://www.respawn.com/" target="_blank" rel="noopener noreferrer") Respawn Entertainment]. 
             | Some images and reference materials come from 
-            | #[a(href="https://apexlegends.fandom.com/wiki/" target="_blank") Apex Legends Wiki].
+            | #[a(href="https://apexlegends.fandom.com/wiki/" target="_blank" rel="noopener noreferrer") Apex Legends Wiki].
         #version
           p
             | version #[span#version-value 17]&nbsp;
-            a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank")
+            a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank" rel="noopener noreferrer")
               | what's new
     #workspace
       #detailed-stats.hidden
@@ -203,46 +305,33 @@ block content
       #instructions.hidden
           h2 Instructions
           p #[a(href="/ru") Russian version].#[a(href="/zh-CN") Chinese version].
-          p Check out an #[a(href="https://www.youtube.com/watch?v=tTPKHa4aXug") overview on YouTube].
+          p Check out an #[a(href="https://www.youtube.com/watch?v=tTPKHa4aXug" target="_blank" rel="noopener noreferrer") overview on YouTube].
           ul
-            li #[a(href="https://www.google.com/search?q=turn+off+enhance+pointer+precision" target="_blank") Make sure that "Enhance pointer precision" is off].
+            li #[a(href="https://www.google.com/search?q=turn+off+enhance+pointer+precision" target="_blank" rel="noopener noreferrer") Make sure that "Enhance pointer precision" is off].
             li Set the #[i sensitivity].&nbsp;
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#controller-support" target="_blank") Setup for controller.
+              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#controller-support" target="_blank" rel="noopener noreferrer") Setup for controller.
             li Pick a weapon and magazine.
             li Click in the dotted area below and try to offset the recoil.
             li The better you compensate the higher score you get. The maximum is 100.
           p Hover over options to see hints (if any).
           p.action#dismiss-instructions Dismiss instructions
       #stage
-  #notify-splash.hidden
-    h2 Development update September 2024
-    p <b>After a long break (since 2021) I am resuming the app updates!</b>
-    p While most of the weapons are still similar to how they were in 2021,
-      | changes like movement to and from drop packages, updated recoil patterns,
-      | magazine sizes, and other tweaks have made the app less relevant to the
-      | current state of the game.
-    p I have already updated R301, R99 and Flatline and hopefully will soon update all recoils.
-    p Please consider #[a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank") supporting] 
-      | this project if you like it, that will help cover hosting and development
-      | costs.
-    p Thank you!
-    p.action#close-notify-splash Close
   #mobile-info
     h1 Apex Legends Recoil Patterns
     p Hi! Thanks for checking out this little app to practice recoil patterns. It's meant to be used on the desktop browser with a mouse or controller. 
-      | The screen width of your device must be greater than 900 pixels. 
+      | The screen width of your device must be greater than 768 pixels. 
       | Meanwhile, please check this 
-      | #[a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/") post on Reddit] 
-      | and #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md") FAQ].
+      | #[a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer") post on Reddit] 
+      | and #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer") FAQ].
     br
     p Cheers!
     img(src="/trail.png", alt="trail")
     #copyright-mobile
       p
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank")
+        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
           | Privacy Policy
       p
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank")
+        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
           | Datenschutzerklärung
       p
         a(href="#cookies")

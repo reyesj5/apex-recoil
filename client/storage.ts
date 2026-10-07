@@ -26,13 +26,13 @@ export function suspendAttrUpdates() {
 }
 
 export function resumeAttrUpdates() {
+  attrUpdatesActive = true;
   allAttributes.forEach(a => {
     if (a.dirty) {
       a.dirty = false;
       a.poke();
     }
   });
-  attrUpdatesActive = true;
 }
 
 export function initAttributes(ns: string) {

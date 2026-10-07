@@ -38,58 +38,66 @@ interface TrialStats {
 };
 
 export function loadStats() {
-  // console.log('stats raw', JSON.parse(getAttr('stats')));
-  JSON.parse(aStats.get()).forEach((t: any) => {
-    const s = t['setup'];
-    if (s === undefined) return;
-    let version = t['v'];
-    if (version == null) {
-      // Initial un-versioned storage.
-      if (s['barrel'] != null && s['barrel'] != '0') return;
-      if (s['stock'] != null && s['stock'] != '0') return;
-      const setup: TrialSetup = {
-        weapon: s['weapon'] || '',
-        mag: s['mag'] || '0',
-        hint: s['hint'] || 'true',
-        moving: false,
-      };
-      const st: TrialStats = {
-        v: statsDataVersion,
-        setup,
-        today: 20210423,
-        dayResults: t['days'].map((d: number, i: number) => {
-          const z: DayResults = [
-            (Math.floor(d / 100) + 1) * 100 + d % 100 + 1,
-            0,
-            t['medianByDay'][i],
-            t['bestByDay'][i],
-          ];
-          return z;
-        }),
-        todayResults: t['todayResults'] || [],
-        bestAllTime: t.bestAllTime,
+  stats = [];
+  try {
+    const raw = aStats.get();
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return;
+
+    parsed.forEach((t: any) => {
+      const s = t['setup'];
+      if (s === undefined) return;
+      let version = t['v'];
+      if (version == null) {
+        // Initial un-versioned storage.
+        if (s['barrel'] != null && s['barrel'] != '0') return;
+        if (s['stock'] != null && s['stock'] != '0') return;
+        const setup: TrialSetup = {
+          weapon: s['weapon'] || '',
+          mag: s['mag'] || '0',
+          hint: s['hint'] || 'true',
+          moving: false,
+        };
+        const st: TrialStats = {
+          v: statsDataVersion,
+          setup,
+          today: 20210423,
+          dayResults: (t['days'] || []).map((d: number, i: number) => {
+            const z: DayResults = [
+              (Math.floor(d / 100) + 1) * 100 + d % 100 + 1,
+              0,
+              t['medianByDay'] ? t['medianByDay'][i] : 0,
+              t['bestByDay'] ? t['bestByDay'][i] : 0,
+            ];
+            return z;
+          }),
+          todayResults: t['todayResults'] || [],
+          bestAllTime: t.bestAllTime || 0,
+        };
+        t = st;
+        version = 1;
       }
-      t = st;
-      stats.push(st);
-      version = 1;
-    }
-    if (version == 1) {
-      // Delete entries that have only "path visible" set.
-      if (s['hint'] == 'true' && s['pacer'] == 'false') return;
-      delete (s['pacer']);
-      version = 2;
-    }
-    if (version == 2) {
-      s['moving'] = false;
-      s['hint'] = s['hint'] == 'true';
-      s['mag'] = Number(s['mag']);
-      version = 3;
-    }
-    t['v'] = statsDataVersion;
-    stats.push(t);
-  });
+      if (version == 1) {
+        // Delete entries that have only "path visible" set.
+        if (s['hint'] == 'true' && s['pacer'] == 'false') return;
+        delete (s['pacer']);
+        version = 2;
+      }
+      if (version == 2) {
+        s['moving'] = false;
+        s['hint'] = s['hint'] == 'true';
+        s['mag'] = Number(s['mag']);
+        version = 3;
+      }
+      t['v'] = statsDataVersion;
+      stats.push(t);
+    });
+  } catch (err) {
+    console.error('Failed to load stats from storage:', err);
+    stats = [];
+  }
   stats.forEach(s => touchStat(s));
-  // console.log('loaded', stats);
 }
 
 function touchStat(s: TrialStats) {

@@ -14,6 +14,7 @@
 //- limitations under the License.
 
 extends layout
+include mixins/icons
 
 block content
   #game
@@ -25,75 +26,176 @@ block content
       #top-links
         p#show-instructions-btn.action
           | Инструкции
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank")
+        a(href="/editor")
+          +icon('wrench')
+          |  Студия отдачи
+        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer")
           | FAQ (англ.)
-        a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank")
-          | Поддержать ❤️
+        a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank" rel="noopener noreferrer")
+          +icon('heart')
+          |  Поддержать
       #score
-        div#stats-graph-btn.tooltip.btn
+        div#stats-graph-btn.tooltip.btn(aria-label="Показать график статистики")
           img(src="/outline_insert_chart_white_48dp.png" alt="show graph")
           .tooltiptext Статистика
         div#stats-wrap
           p#score-stats
+      #weapon-filter-bar
+        input#weapon-search-input(type="text" placeholder="Поиск оружия..." autocomplete="off" aria-label="Поиск оружия")
+        .weapon-category-pills(role="tablist" aria-label="Категории оружия")
+          button.cat-pill.active(type="button" data-category="all") Все
+          button.cat-pill(type="button" data-category="ar") AR
+          button.cat-pill(type="button" data-category="smg") SMG
+          button.cat-pill(type="button" data-category="lmg") LMG
+          button.cat-pill(type="button" data-category="marksman") Марксм.
+          button.cat-pill(type="button" data-category="sniper") Снайпер.
+          button.cat-pill(type="button" data-category="shotgun") Дробов.
+          button.cat-pill(type="button" data-category="pistol") Пистол.
       #weapon-select.grid
-        div.havoc_tc.btn
-          img(src="/images/havoc.png", alt="havoc")
-          p.name HAVOC
-        div.flatline.btn
+        div.flatline.btn(data-weapon="flatline" data-category="ar")
           img(src="/images/flatline.png", alt="flatline")
-          p.name Flatline
-        div.r301.btn
+          p.name Флэтлайн
+        div.r301.btn(data-weapon="r301" data-category="ar")
           img(src="/images/r301.png", alt="r-301")
           p.name R-301
-        div.alternator.btn
-            img(src="/images/alternator.png", alt="alternator")
-            p.name Alternator
-        div.r99.btn
+        div.havoc_tc.btn(data-weapon="havoc_tc" data-category="ar")
+          img(src="/images/havoc.png", alt="havoc")
+          p.name ХАОС
+        div.hemlok.btn(data-weapon="hemlok" data-category="ar")
+          img(src="/images/hemlok.png", alt="hemlok")
+          p.name Хемлок
+        div.nemesis.btn(data-weapon="nemesis" data-category="ar")
+          img(src="/images/nemesis.svg", alt="nemesis")
+          p.name Немезида
+        div.alternator.btn(data-weapon="alternator" data-category="smg")
+          img(src="/images/alternator.png", alt="alternator")
+          p.name Сменщик
+        div.prowler.btn(data-weapon="prowler" data-category="smg")
+          img(src="/images/prowler.png", alt="prowler")
+          p.name Ищейка
+        div.r99.btn(data-weapon="r99" data-category="smg")
           img(src="/images/r99.png", alt="r-99")
           p.name R-99
-        div.volt.btn
+        div.volt.btn(data-weapon="volt" data-category="smg")
           img(src="/images/volt.png", alt="volt")
-          p.name Volt
-        div.car.btn
+          p.name Вольт
+        div.car.btn(data-weapon="car" data-category="smg")
           img(src="/images/car.png", alt="car")
           p.name C.A.R.
-        div.devotion_tc.btn
+        div.devotion_tc.btn(data-weapon="devotion_tc" data-category="lmg")
           img(src="/images/devotion.png", alt="devotion")
-          p.name Devotion
-        div.lstar.btn
+          p.name Преданность
+        div.lstar.btn(data-weapon="lstar" data-category="lmg")
           img(src="/images/lstar.png", alt="lstar")
           p.name L-STAR
-        div.spitfire.btn
+        div.spitfire.btn(data-weapon="spitfire" data-category="lmg")
           img(src="/images/spitfire.png", alt="spitfire")
-          p.name Spitfire
-        div.rampage.btn
+          p.name Спитфайр
+        div.rampage.btn(data-weapon="rampage" data-category="lmg")
           img(src="/images/rampage.png", alt="rampage")
-          p.name Rampage
-        div.re45.btn
+          p.name Неистовство
+        div.g7_scout.btn(data-weapon="g7_scout" data-category="marksman")
+          img(src="/images/g7_scout.svg", alt="g7 scout")
+          p.name G7 Скаут
+        div.triple_take.btn(data-weapon="triple_take" data-category="marksman")
+          img(src="/images/triple_take.svg", alt="triple take")
+          p.name Тройной эффект
+        div.btn(data-weapon="3030_repeater" class="w-3030_repeater" data-category="marksman")
+          img(src="/images/3030_repeater.svg", alt="30-30 repeater")
+          p.name 30-30
+        div.bocek.btn(data-weapon="bocek" data-category="marksman")
+          img(src="/images/bocek.svg", alt="bocek")
+          p.name Лук Босек
+        div.charge_rifle.btn(data-weapon="charge_rifle" data-category="sniper")
+          img(src="/images/charge_rifle.svg", alt="charge rifle")
+          p.name Энерговинтовка
+        div.longbow.btn(data-weapon="longbow" data-category="sniper")
+          img(src="/images/longbow.svg", alt="longbow")
+          p.name Длинный лук
+        div.sentinel.btn(data-weapon="sentinel" data-category="sniper")
+          img(src="/images/sentinel.svg", alt="sentinel")
+          p.name Страж
+        div.kraber.btn(data-weapon="kraber" data-category="sniper")
+          img(src="/images/kraber.svg", alt="kraber")
+          p.name Крабер
+        div.eva8.btn(data-weapon="eva8" data-category="shotgun")
+          img(src="/images/eva8.svg", alt="eva8")
+          p.name EVA-8
+        div.mastiff.btn(data-weapon="mastiff" data-category="shotgun")
+          img(src="/images/mastiff.svg", alt="mastiff")
+          p.name Мастиф
+        div.mozambique.btn(data-weapon="mozambique" data-category="shotgun")
+          img(src="/images/mozambique.svg", alt="mozambique")
+          p.name Мозамбик
+        div.mozambique_akimbo.btn(data-weapon="mozambique_akimbo" data-category="shotgun")
+          img(src="/images/mozambique_akimbo.svg", alt="mozambique akimbo")
+          p.name Мозамбик (Акимбо)
+        div.peacekeeper.btn(data-weapon="peacekeeper" data-category="shotgun")
+          img(src="/images/peacekeeper.svg", alt="peacekeeper")
+          p.name Миротворец
+        div.re45.btn(data-weapon="re45" data-category="pistol")
           img(src="/images/re45.png", alt="re45")
           p.name RE-45
+        div.p2020.btn(data-weapon="p2020" data-category="pistol")
+          img(src="/images/p2020.svg", alt="p2020")
+          p.name P2020
+        div.p2020_akimbo.btn(data-weapon="p2020_akimbo" data-category="pistol")
+          img(src="/images/p2020_akimbo.svg", alt="p2020 akimbo")
+          p.name P2020 (Акимбо)
+        div.wingman.btn(data-weapon="wingman" data-category="pistol")
+          img(src="/images/wingman.svg", alt="wingman")
+          p.name Ведомый
+      #fire-mode-select.button-row
+        div.fire-mode-btn.fire-mode-auto.tooltip(data-mode="auto")
+          span.fire-mode-icon ⮓⮓⮓
+          span.fire-mode-text Авто
+          span.tooltiptext Автоматический огонь
+        div.fire-mode-btn.fire-mode-burst.tooltip(data-mode="burst")
+          span.fire-mode-icon ⮓⮓
+          span.fire-mode-text Очередь
+          span.tooltiptext Стрельба очередями
+        div.fire-mode-btn.fire-mode-single.tooltip(data-mode="single")
+          span.fire-mode-icon ⮓
+          span.fire-mode-text Одиночный
+          span.tooltiptext Одиночные выстрелы
+        div.fire-mode-hint.tooltip
+          span.fire-mode-key [B]
+          span.tooltiptext Переключить режим огня [B]
       #mag-select.button-row
         div.mag-0.tooltip
           img(src="/images/magi.png" alt="no magazine")
+          span.mag-cap
           span.tooltiptext Без магазина
         div.mag-1.tooltip
           img(src="/images/magi.png" alt="magazine level 1")
+          span.mag-cap
           span.tooltiptext Ур. 1
         div.mag-2.tooltip
           img(src="/images/magi.png" alt="magazine level 2")
+          span.mag-cap
           span.tooltiptext Ур. 2
         div.mag-3.tooltip
           img(src="/images/magi.png" alt="magazine level 3")
+          span.mag-cap
           span.tooltiptext Ур. 3
-        div.mag-drop.hidden
+        div.mag-4.tooltip
+          img(src="/images/corrupted_mag.svg" alt="corrupted magazine")
+          span.mag-cap
+          span.tooltiptext Искаженный магазин
+        div.mag-drop.tooltip.hidden
           img(src="/images/magi.png" alt="drop magazine")
+          span.mag-cap
+          span.tooltiptext Фиксированный магазин
         div.mod-revved_up.mod.hidden.tooltip
           img(src="/images/thermite_grenade.png" alt="thermite grenade")
           span.tooltiptext Загрузить зажигательную гранату
+        div.mod-corrupted_stock.mod.tooltip
+          img(src="/images/barrel_stocki.png" alt="corrupted stock")
+          span.tooltiptext Искаженный приклад (-4 патрона, -1 для дробовиков)
       #settings
           #mouse-settings.row
             div
-              input(type='text' id='sens')
+              input(type='text' id='sens' aria-label="Чувствительность мыши")
               span.tooltip.underlined
                 | Чувств.
                 span.tooltiptext
@@ -163,18 +265,18 @@ block content
       #controls-bottom
         #copyright
           div.links
-            a(href="https://github.com/metaflow/apex-recoil" target="_blank")
+            a(href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
               img(src="/GitHub-Mark-Light-32px.png", alt="github")
-            a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank")
+            a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
               img(src="/reddit.png", alt="reddit")
             a(href="/").lang
               | english
             a(href="/zh-CN").lang
               | 中文
             div.vertical
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank")
+              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
                 | Privacy Policy
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank")
+              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
                 | Datenschutzerklärung
               a(href="#cookies")
                 | Cookie settings
@@ -183,14 +285,14 @@ block content
           p
             | This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. 
             | Game content and materials are trademarks and copyrights of 
-            | #[a(href="https://ea.com" target="_blank") Electronic Arts Inc.]              
-            | or #[a(href="https://www.respawn.com/" target="_blank") Respawn Entertainment]. 
+            | #[a(href="https://ea.com" target="_blank" rel="noopener noreferrer") Electronic Arts Inc.]              
+            | or #[a(href="https://www.respawn.com/" target="_blank" rel="noopener noreferrer") Respawn Entertainment]. 
             | Some images and reference materials come from 
-            | #[a(href="https://apexlegends.fandom.com/wiki/" target="_blank") Apex Legends Wiki].
+            | #[a(href="https://apexlegends.fandom.com/wiki/" target="_blank" rel="noopener noreferrer") Apex Legends Wiki].
         #version
           p
             | version #[span#version-value 17]&nbsp;
-            a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank")
+            a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank" rel="noopener noreferrer")
               | what's new
     #workspace
       #detailed-stats.hidden
@@ -202,13 +304,13 @@ block content
           h2 Инструкция
           p #[a(href="https://www.youtube.com/watch?v=tTPKHa4aXug") Видео объяснение (англ.)].
           ul
-            li #[a(href="https://www.google.com/search?q=отключить+Повышение+точности+указателя+windows" target="_blank") Убедитесь, что настройка "повышение точности указателя" выключена].
+            li #[a(href="https://www.google.com/search?q=отключить+Повышение+точности+указателя+windows" target="_blank" rel="noopener noreferrer") Убедитесь, что настройка "повышение точности указателя" выключена].
             li Выставите #[i чувствительность].&nbsp;            
             li Выберите оружие и уровень магазина.
             li Нажмите в обведенной точками области внизу и попробуйте компенсировать отдачу. Чем лучше получается это делать, тем больше очков вы наберете (максимум 100).
           p При наведении на многие настройки и кнопки появится всплывающая подсказка.
           p
-            a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#controller-support" target="_blank") Настройка для игры с контроллером (англ., экспериментально).
+            a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#controller-support" target="_blank" rel="noopener noreferrer") Настройка для игры с контроллером (англ., экспериментально).
           p.action#dismiss-instructions Закрыть инструкцию
       #stage
   #mobile-info 
@@ -220,10 +322,10 @@ block content
     img(src="/trail.png", alt="trail")
     #copyright-mobile
       p
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank")
+        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
           | Privacy Policy
       p
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank")
+        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
           | Datenschutzerklärung
       p
         a(href="#cookies")

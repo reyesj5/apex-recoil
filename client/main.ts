@@ -20,10 +20,11 @@ import { initGame } from './game';
 import { setupEditor } from './editor';
 import { pokeAttrs } from './storage';
 
+const stageContainer = document.getElementById('stage');
 export const stage = new Konva.Stage({
   container: 'stage',
-  width: window.screen.width,
-  height: window.screen.height,
+  width: stageContainer?.clientWidth || window.innerWidth,
+  height: stageContainer?.clientHeight || window.innerHeight,
 });
 
 document.getElementById('stage')?.addEventListener('contextmenu', e => {
@@ -36,13 +37,14 @@ stage.add(layer);
 export function cursor(): Point {
   let pos = stage.getPointerPosition();
   if (pos == null) pos = { x: 0, y: 0 };
-  return new Point(pos);
+  const transform = stage.getAbsoluteTransform().copy().invert();
+  return new Point(transform.point(pos));
 }
 
 if (window.location.hostname.includes('.online')) {
   alert('Apex Legends Recoils is moving to a new domain and .ONLINE will not be available from 10 of April.\n'+
   'Please update your bookmark to apexlegendsrecoils.NET.\nYou will now be redirected.');
-  window.location.href = 'http://apexlegendsrecoils.net' + window.location.pathname;
+  window.location.href = 'https://apexlegendsrecoils.net' + window.location.pathname;
 }
 
 if (window.location.pathname.startsWith('/editor')) {

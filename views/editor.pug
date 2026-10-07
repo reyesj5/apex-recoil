@@ -14,45 +14,702 @@
 //- limitations under the License.
 
 extends layout
+include mixins/icons
+
 block content
   #editor
     #tools
-      input(type="file" id="file-selector" multiple)
-      p#filename
-      p
-        input(type='text' id='threshold')
-        | threshold
-      p
-        input(type='checkbox' id='auto-targets')
-        | auto targets
-      p
-        input(type='text' id='target-from')
-        | target from
-      p
-        input(type='text' id='target-to')
-        | target to
-      button#accept-auto convert auto
-      p
-        input(type='checkbox' id='enable-threshold')
-        | enable threshold
-      p
-        input(type='checkbox' id='connect-hover')
-        | connect on hover
-      p
-        input(type='text' id='weapon')
-        | weapon
-      p
-        input(type='text' id='barrel')
-        | barrel (0..3)
-      p
-        input(type='text' id='stock')
-        | stock (0..3)
-      p
-        input(type='text' id='distance')
-        | raw distance
-      p comment
-        textarea#comment(cols="30", rows="2")
-      button#clear clear
-      p#count
-      #text
-    #stage
+      .nav-bar
+        a(href="/" class="back-link") ← Back to Trainer
+        h2 Recoil Editor & Manager
+      
+      .manager-section
+        h3 Weapon Specs Manager
+        .form-row
+          .form-group(style="flex: 2;")
+            label(for="weapon-select") Select Weapon:
+            select#weapon-select
+          .form-group(style="flex: 1;")
+            label(for="weapon-mode-select") Fire Mode:
+            select#weapon-mode-select
+              option(value="auto") AUTO
+        
+        .form-row
+          .form-group
+            label(for="weapon-rpm") RPM:
+            input(type="number" id="weapon-rpm" step="1" min="100" max="1500")
+          .form-group
+            label(for="weapon-multiplier") Multiplier:
+            input(type="number" id="weapon-multiplier" step="0.01" min="0.1" max="2.0")
+        
+        .mags-group
+          label Magazine Sizes (Tiers 0 - 4):
+          .mags-row
+            .mag-col
+              span.tier-badge.tier-0 Base
+              input(type="number" id="mag-0" min="1" max="100" aria-label="Base magazine capacity")
+            .mag-col
+              span.tier-badge.tier-1 L1
+              input(type="number" id="mag-1" min="1" max="100" aria-label="Level 1 magazine capacity")
+            .mag-col
+              span.tier-badge.tier-2 L2
+              input(type="number" id="mag-2" min="1" max="100" aria-label="Level 2 magazine capacity")
+            .mag-col
+              span.tier-badge.tier-3 L3
+              input(type="number" id="mag-3" min="1" max="100" aria-label="Level 3 magazine capacity")
+            .mag-col
+              span.tier-badge.tier-4(title="Corrupted Magazine") Corrupted
+              input(type="number" id="mag-4" min="1" max="100" aria-label="Corrupted magazine capacity")
+
+        .spec-stats
+          span#spec-shot-info Shots: 0
+          span#spec-interval-info Interval: 0 ms
+          span#spec-samples-info Samples: 1
+          button#reset-samples-btn.icon-btn(type="button" title="Reset sample history to 1 (e.g. after a patch)" aria-label="Reset sample history to 1")
+            +icon('reset')
+
+        .action-row
+          button#save-weapon-btn.primary-btn(type="button")
+            +icon('save')
+            span  Save to specs.json
+          button#reload-specs-btn.secondary-btn(type="button")
+            +icon('refresh')
+            span  Reload
+        
+        #save-status-msg
+
+        details.json-drawer
+          summary
+            +icon('clipboard')
+            span  Paste / Import Discovery JSON
+          textarea#json-import(rows="4" placeholder="Paste discovery spec JSON here...")
+          button#apply-json-btn.small-btn Apply to Selected Weapon
+
+      hr.divider
+
+      .recording-methods-container
+        .recording-method-tabs
+          button#tab-live.method-tab-btn.active(type="button" data-method="live")
+            +icon('video')
+            span  In-Game Live Studio
+          button#tab-offline.method-tab-btn(type="button" data-method="offline")
+            +icon('wall')
+            span  Offline Screenshot
+          button#tab-legacy.method-tab-btn(type="button" data-method="legacy")
+            +icon('crosshair')
+            span  Manual / Legacy
+
+        #method-panel-live.method-panel.capture-studio-section
+          h3
+            +icon('video')
+            span  In-Game Auto-Capture Studio
+          p.section-desc Stand <strong>20 meters</strong> from the target board with a <strong>2x Bruiser</strong> scope. Fire the full spray, allow reload to finish, then re-enter <strong>ADS</strong> and aim at the bullet decals. The studio auto-snaps the decal screenshot when the buffer ends (or click <strong>Snap Wall & Finish</strong>).
+          
+          .capture-controls
+            .action-row
+              button#start-capture-btn.primary-btn(type="button") Connect Game Window
+              button#stop-capture-btn.danger-btn.hidden(type="button")
+                +icon('close')
+                span  Disconnect
+              button#snap-wall-btn.success-btn.hidden(type="button" title="Capture high-res wall screenshot immediately once aimed in ADS [Spacebar]")
+                +icon('camera')
+                span  Snap Wall & Finish (Space)
+              button#manual-record-btn.secondary-btn.hidden(type="button") Manual Spray
+          
+          #capture-status-bar.status-bar
+            span#capture-status-badge.badge.badge-off Not Connected
+            span#trigger-status-badge.badge.badge-off Trigger Idle
+            span#reaim-status-badge.badge.badge-off.hidden Re-Aim: 4.5s
+
+          .calibration-row
+            .calib-item
+              label(for="capture-distance-input") Distance:
+              input(type="number" id="capture-distance-input" value="20" min="5" max="100" step="1")
+              span.unit-label meters
+            .calib-item
+              label(for="capture-optic-select") Optic:
+              select#capture-optic-select
+                option(value="1.0") 1x (Iron Sights / 1x HCOG / 1x Holo)
+                option(value="2.0" selected) 2x (2x HCOG Bruiser) - Standard @ 20m
+                option(value="3.0") 3x (3x HCOG Ranger)
+                option(value="4.0") 4x (2x-4x Variable / Sniper Scope)
+            .calib-item
+              label(for="capture-fov-input") FOV:
+              input(type="number" id="capture-fov-input" value="104" min="70" max="120" step="1")
+              span.unit-label deg
+            .calib-item
+              label(for="capture-hdr-select") Color Fix:
+              select#capture-hdr-select(title="Fix washed-out, over-bright colors when playing with Windows HDR / Auto HDR enabled")
+                option(value="hdr-standard" selected) HDR Fix (Natural)
+                option(value="hdr-vibrant") HDR Fix (Vibrant)
+                option(value="off") Standard (SDR)
+
+          .monitor-panel#monitor-panel.hidden
+            .video-container
+              video#capture-preview-video(autoplay muted playsinline)
+              #rec-indicator.rec-indicator.hidden ● REC (FIRING)
+              #reaim-indicator.reaim-indicator.hidden 🔄 Reload finishing... Re-enter ADS at wall! (4.5s)
+            .audio-meter-wrap
+              .meter-header
+                span Gunfire Audio Sensor:
+                span#audio-level-text 0%
+              .meter-bar
+                #audio-level-fill.meter-fill
+                #trigger-threshold-line.meter-threshold-line
+              .threshold-control
+                label(for="trigger-threshold-slider") Trigger Sensitivity:
+                input(type="range" id="trigger-threshold-slider" min="5" max="80" value="25")
+              
+              .threshold-control
+                label(for="reaim-buffer-slider")
+                  | Reload / Re-Aim Buffer: 
+                  strong#reaim-buffer-val 4.5
+                  | s
+                input(type="range" id="reaim-buffer-slider" min="1.5" max="8.0" step="0.5" value="4.5")
+              
+              .audio-source-control
+                .source-row
+                  label(for="audio-source-select") Audio Input:
+                  select#audio-source-select
+                    option(value="display") 🖥️ System Audio (Screen Share)
+                    option(value="mic-default") 🎤 Default Microphone / Line-In
+                  button#reconnect-audio-btn.small-btn(type="button" title="Reconnect or refresh audio device") 🔄 Reconnect
+              
+              #audio-device-alert.audio-device-alert.hidden
+                span#audio-device-alert-text ⚠️ Audio device changed in Windows. Click Reconnect if quiet.
+                button#dismiss-audio-alert-btn.alert-close-btn(type="button") ✕
+          
+          .samples-manager
+            .samples-header
+              span#samples-counter-label Collected Samples (0)
+              button#clear-samples-btn.small-btn(type="button") 🗑 Clear All
+            
+            .past-sessions-box
+              .box-title-row
+                span 📂 Past Saved Sessions
+                button#refresh-past-sessions-btn.small-btn(type="button" title="Refresh session list") 🔄 Refresh
+              .box-controls-row
+                select#past-session-select
+                  option(value="") -- Select a saved session to load --
+                button#load-past-session-btn.secondary-btn(type="button" disabled title="Load video clips & wall screenshots into sample cards") 📥 Load Session
+              .box-import-row
+                label.file-import-label(for="import-clips-input" title="Import local .webm/.mp4 recordings and companion wall images")
+                  | 📁 Import Local Video(s)
+                  input#import-clips-input.hidden(type="file" accept="video/webm,video/mp4,image/jpeg,image/png" multiple)
+                span.hint-text Load past clips into cards to review & re-analyze
+
+            #samples-list.samples-list
+              p#no-samples-msg.empty-msg No sprays loaded. Fire in-game or load a previous session above!
+            
+            .session-actions
+              button#process-session-btn.analyze-screenshot-btn.primary-btn(type="button" disabled title="Capture recordings first to enable analysis")
+                +icon('bolt')
+                span  Analyze Sprays & Calculate Recoil
+              #session-process-status
+
+        #method-panel-offline.method-panel.hidden
+          h3 🖼️ Saved Wall Screenshot Analysis
+          p.section-desc Upload or choose saved recoil wall screenshots. Multi-selection is supported so you can batch analyze and easily cycle through images on canvas.
+          .calibration-row(style="margin-bottom: 8px;")
+            .calib-item
+              label(for="static-distance-input") 🎯 Distance:
+              input(type="number" id="static-distance-input" value="20" min="5" max="100" step="1")
+              span.unit-label meters
+            .calib-item
+              label(for="static-optic-select") 🔭 Optic:
+              select#static-optic-select
+                option(value="1.0") 1x (Iron Sights / 1x HCOG)
+                option(value="2.0" selected) 2x (2x HCOG Bruiser) - Standard @ 20m
+                option(value="3.0") 3x (3x HCOG Ranger)
+                option(value="4.0") 4x (4x / Sniper)
+            .calib-item
+              label(for="static-fov-input") FOV:
+              input(type="number" id="static-fov-input" value="104" min="70" max="120" step="1")
+              span.unit-label deg
+            .calib-item
+              label(for="static-hdr-select") Color Fix:
+              select#static-hdr-select(title="Fix washed-out, over-bright colors when playing with Windows HDR / Auto HDR enabled")
+                option(value="hdr-standard" selected) HDR Fix (Natural)
+                option(value="hdr-vibrant") HDR Fix (Vibrant)
+                option(value="off") Standard (SDR)
+
+          .server-library-box
+            .box-title-row
+              span
+                +icon('folder')
+                span  Server Screenshots Library
+              button#refresh-saved-screenshots-btn.small-btn(type="button" title="Refresh server screenshots")
+                +icon('refresh')
+                span  Refresh
+            .box-controls-row
+              select#saved-screenshot-select
+                option(value="") -- Select saved screenshot from server --
+              button#load-saved-screenshot-btn.secondary-btn(type="button" disabled)
+                +icon('download')
+                span  Add to Batch
+
+          .screenshot-action-row
+            label.file-import-label(for="wall-screenshot-file-input" title="Select one or multiple screenshots from disk" role="button" tabindex="0")
+              +icon('folder')
+              span  Choose Image(s) (Multi-Select)
+              input#wall-screenshot-file-input.hidden(type="file" accept="image/png,image/jpeg" multiple)
+            button#analyze-wall-file-btn.analyze-screenshot-btn.primary-btn(type="button" disabled title="Select or load screenshots above first to enable analysis")
+              +icon('bolt')
+              span  Analyze Screenshot(s)
+            button#clear-batch-screenshots-btn.small-btn(type="button" title="Clear all loaded screenshots")
+              +icon('trash')
+              span  Clear
+
+          #batch-screenshots-container.batch-screenshots-container.hidden
+            .batch-header
+              span#batch-counter-label Loaded Screenshots (0)
+              span.batch-hint Click any card or use Prev/Next on stage
+            #batch-screenshots-list.batch-screenshots-list
+
+          #wall-file-status
+
+        #method-panel-legacy.method-panel.hidden
+          h3 Image Pattern Extraction (Legacy / Fine-tune)
+          .form-row(style="align-items: center; gap: 8px;")
+            input(type="file" id="file-selector" multiple)
+            button#clear-bg-img-btn.small-btn(type="button" title="Remove background image from canvas")
+              +icon('trash')
+              span  Clear Image
+          p#filename
+          .form-row
+            .form-group
+              label Threshold:
+              input(type='text' id='threshold')
+            .form-group
+              label Distance:
+              input(type='text' id='distance')
+          .form-row
+            label
+              input(type='checkbox' id='auto-targets')
+              | auto targets
+            label
+              input(type='checkbox' id='enable-threshold')
+              | threshold
+            label
+              input(type='checkbox' id='connect-hover')
+              | connect hover
+          .form-row
+            .form-group
+              label Target From:
+              input(type='text' id='target-from')
+            .form-group
+              label Target To:
+              input(type='text' id='target-to')
+          .action-row
+            button#accept-auto.small-btn convert auto
+            button#clear.small-btn clear
+          
+          .form-row
+            .form-group
+              label Barrel (0..3):
+              input(type='text' id='barrel')
+            .form-group
+              label Stock (0..3):
+              input(type='text' id='stock')
+          
+          p Comment:
+            textarea#comment(cols="30", rows="2")
+          p#count
+          #text
+    #stage-container
+      #stage-toolbar.stage-header
+        .stage-header-left
+          button#toggle-sidebar-btn.small-btn(type="button" title="Toggle Left Sidebar [M]" aria-label="Toggle Left Sidebar")
+            span.btn-icon
+              +icon('sidebar')
+            span.btn-label  Sidebar
+          #canvas-status-pill.canvas-status-pill
+            span#canvas-status-weapon.status-tag.weapon-tag 🎯 Weapon
+            span#canvas-status-shots.status-tag.shots-tag 0 shots
+            span#canvas-status-scale.status-tag.scale-tag 100% Scale
+        .stage-header-right
+          button#shortcuts-help-btn.small-btn(type="button" title="Keyboard shortcuts reference [?]" aria-label="Keyboard shortcuts reference")
+            span.btn-icon
+              +icon('shortcuts')
+            span.btn-label  Shortcuts
+          button#toggle-tools-panel-btn.small-btn.panel-toggle-btn.active(type="button" title="Toggle Editing Tools Panel [E]" aria-label="Toggle Editing Tools Panel")
+            span.btn-icon
+              +icon('panel-right')
+            span.btn-label  Editing Tools
+      #stage
+
+    aside#editor-tools-sidebar.editor-tools-sidebar
+      .tools-sidebar-header
+        .sidebar-heading
+          span.heading-icon
+            +icon('tools')
+          h3 Editing Tools
+        button#collapse-tools-sidebar-btn.icon-btn(type="button" title="Collapse Tools Panel [E]" aria-label="Collapse Tools Panel")
+          +icon('chevron-right')
+
+      .tools-sidebar-scroll
+        //- Card 1: Primary Spec Action & History Stack
+        .tool-panel-card.primary-action-card
+          button#save-stage-spec-btn.tool-btn.primary-btn.full-width-btn(type='button', title='Save current weapon spec to specs.json [Ctrl+S]')
+            span.btn-icon
+              +icon('save')
+            span.btn-label  Save Spec
+            span.hotkey-badge Ctrl+S
+          .history-btn-row
+            button#undo-stage-btn.small-btn(type="button" title="Undo last action [Ctrl+Z]" aria-label="Undo" disabled)
+              span.btn-icon
+                +icon('undo')
+              span.btn-label  Undo
+              span.hotkey-badge Ctrl+Z
+            button#redo-stage-btn.small-btn(type="button" title="Redo [Ctrl+Y / Ctrl+Shift+Z]" aria-label="Redo" disabled)
+              span.btn-icon
+                +icon('redo')
+              span.btn-label  Redo
+              span.hotkey-badge Ctrl+Y
+
+        //- Card 2: Canvas Modes
+        .tool-panel-card
+          .panel-card-title
+            +icon('crosshair')
+            span  Canvas Modes
+          .mode-buttons-grid
+            button#pan-mode-toggle-btn.mode-select-btn(type="button" title="Pan canvas [Drag with Right-Click, Middle-Click, or Spacebar]" aria-label="Pan canvas")
+              span.mode-icon
+                +icon('pan')
+              span.mode-text
+                strong.mode-title Pan Canvas
+                small.mode-subtext Drag or Space
+            button#move-all-toggle-btn.mode-select-btn(type="button" title="Drag any point to shift all points together to align with wall decals" aria-label="Align spray pattern")
+              span.mode-icon
+                +icon('align')
+              span.mode-text
+                strong.mode-title Align Spray
+                small.mode-subtext Move all points
+            button#correction-mode-btn.mode-select-btn(type="button" title="Toggle correction mode to manually add or remove bullet holes" aria-label="Correction mode")
+              span.mode-icon
+                +icon('correct')
+              span.mode-text
+                strong.mode-title Correct Shots
+                small.mode-subtext Add / remove holes
+          #shot-correction-status.shot-correction-status.hidden
+          .canvas-quick-row
+            button#recenter-stage-btn.small-btn(type="button" title="Fit & center background and pattern in view" aria-label="Fit pattern to view")
+              span.btn-icon
+                +icon('fit')
+              span.btn-label  Fit & Center
+            button#clear-stage-bg-btn.small-btn(type="button" title="Remove background image from canvas" aria-label="Clear background image")
+              span.btn-icon
+                +icon('trash')
+              span.btn-label  Clear BG
+
+        //- Card 3: Layers & Visibility (Inspection)
+        .tool-panel-card
+          .panel-card-title
+            +icon('layers')
+            span  Layers & Visibility
+          .layer-row
+            .layer-info
+              label.layer-check(title="Toggle background wall image on/off")
+                input(type="checkbox" id="toggle-bg-img" checked)
+                span.check-label Wall Image
+              span#bg-opacity-val.percent-readout 80%
+            .slider-track-wrap
+              input(type="range" id="bg-opacity-slider" min="10" max="100" value="80" aria-label="Background image opacity")
+          .layer-row
+            .layer-info
+              label.layer-check(title="Toggle recoil pattern overlay on/off [P]")
+                input(type="checkbox" id="toggle-pattern" checked)
+                span.check-label Pattern Overlay
+                span.hotkey-badge P
+              span#pattern-opacity-val.percent-readout 100%
+            .slider-track-wrap
+              input(type="range" id="pattern-opacity-slider" min="0" max="100" value="100" aria-label="Recoil pattern overlay opacity")
+          .scale-row
+            .scale-header
+              span.scale-label Visual Scale (FOV):
+              .scale-val-wrap
+                span#scale-adjust-val.percent-readout 100%
+                button#scale-reset-btn.icon-btn(type="button" title="Reset visual scale to 100%" aria-label="Reset visual scale")
+                  +icon('reset')
+            .slider-track-wrap
+              input(type="range" id="scale-adjust-slider" min="80" max="120" value="100" step="1" aria-label="Visual overlay scale")
+
+        //- Card 4: View & Comparison
+        .tool-panel-card
+          .panel-card-title
+            +icon('eye')
+            span  View & Comparison
+          .view-field
+            label.field-label(for="stage-preview-select") Active Inspection View:
+            select#stage-preview-select(aria-label="Select stage overlay view")
+              option(value="spec") Median Calculated Spec
+          #batch-nav-group.batch-nav-row.hidden
+            label.field-label Batch Navigation:
+            .batch-controls
+              button#prev-stage-img-btn.small-btn(type="button" title="Previous image [ [ ]" aria-label="Previous image")
+                +icon('chevron-left')
+                span  Prev
+              span#stage-img-indicator.stage-img-indicator 1/1
+              button#next-stage-img-btn.small-btn(type="button" title="Next image [ ] ]" aria-label="Next image")
+                span Next 
+                +icon('chevron-right')
+          button#compare-stage-btn.small-btn.compare-toggle-btn.full-width-btn(type="button" title="Toggle dual comparison overlay of Saved Spec vs Candidate [O]" aria-label="Compare spec vs candidate")
+            span.btn-icon
+              +icon('compare')
+            span.btn-label  Compare: Spec vs Candidate
+            span.hotkey-badge O
+          #discrepancy-hud.discrepancy-hud.hidden
+            .hud-header
+              span.hud-title
+                +icon('compare')
+                span  Spec vs Candidate Discrepancy
+              .hud-actions
+                button#min-hud-btn.hud-min-btn(type="button" title="Minimize/Maximize HUD" aria-label="Minimize HUD")
+                  +icon('minus')
+                button#close-hud-btn.hud-close-btn(type="button" title="Close comparison overlay" aria-label="Close HUD")
+                  +icon('close')
+            .hud-body
+              .hud-stat-row
+                span.hud-label Shots:
+                span#hud-shots-val.hud-val 35 vs 35
+              .hud-stat-row
+                span.hud-label Mean Delta:
+                span#hud-mean-val.hud-val 2.1 px
+              .hud-stat-row
+                span.hud-label Max Delta:
+                span#hud-max-val.hud-val 5.4 px (#12)
+              .hud-badge-row
+                span#hud-status-badge.hud-badge.safe 🟢 Consistent
+            .hud-legend
+              .legend-item
+                span.legend-dot.spec-dot
+                span Saved Spec (specs.json)
+              .legend-item
+                span.legend-dot.cand-dot
+                span Candidate to Save
+              .legend-item
+                span.legend-line.delta-line
+                span Discrepancy Vector
+
+    #analysis-confirm-modal.modal-overlay.hidden
+      .modal-dialog
+        .modal-header
+          h3
+            +icon('crosshair')
+            span  Confirm Weapon & Analysis Options
+          button#close-confirm-modal-btn.alert-close-btn(type="button" aria-label="Close dialog")
+            +icon('close')
+        .modal-body
+          p.modal-desc Confirm the weapon, fire mode, and storage preference before running discovery:
+          .form-group(style="margin-bottom: 12px;")
+            label(for="modal-weapon-select") Target Weapon:
+            select#modal-weapon-select.modal-select
+          .form-group(style="margin-bottom: 12px;")
+            label(for="modal-mode-select") Fire Mode:
+            select#modal-mode-select.modal-select
+          .modal-checkbox-row
+            label
+              input(type="checkbox" id="modal-save-capture" checked)
+              span
+                +icon('save')
+                span  Save capture files to <code>processing/captures/</code>
+            p.modal-help-text Uncheck this if you are analyzing an existing capture or testing, to prevent duplicating files.
+          .form-group.spec-strategy-group(style="margin-top: 14px; margin-bottom: 8px; border-top: 1px solid #333; padding-top: 12px;")
+            label Spec Integration Mode:
+            .strategy-radios(style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;")
+              label.strategy-radio-label(style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;")
+                input(type="radio" name="modal-analysis-strategy" value="accumulate" checked)
+                div
+                  strong Proportional Accumulation (Refine Spec)
+                  p#strategy-accumulate-desc.modal-help-text(style="margin: 2px 0 0 0; font-size: 11px; color: #aaa;")
+                    | Blends new captures proportionally with the existing spec based on sample history (e.g. 10 prior + 1 new = 10/11 prior + 1/11 new). Reduces noise and increases accuracy.
+              label.strategy-radio-label(style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;")
+                input(type="radio" name="modal-analysis-strategy" value="overwrite")
+                div
+                  strong Fresh Overwrite (New Baseline)
+                  p.modal-help-text(style="margin: 2px 0 0 0; font-size: 11px; color: #aaa;")
+                    | Discard prior recordings and build a completely fresh spec from this batch alone. Ideal after an Apex Legends weapon balance patch.
+        .modal-footer
+          button#cancel-analysis-btn.secondary-btn(type="button") Cancel
+          button#proceed-analysis-btn.primary-btn(type="button")
+            +icon('bolt')
+            span  Confirm & Run Analysis
+
+    #spec-checkpoint-modal.modal-overlay.hidden
+      .modal-dialog.checkpoint-dialog
+        .modal-header
+          h3
+            +icon('shield')
+            span  Spec Safety Verification & Checkpoint
+          button#close-checkpoint-modal-btn.alert-close-btn(type="button" aria-label="Close dialog")
+            +icon('close')
+        .modal-body
+          p.modal-desc Inspect discrepancies between the <strong>Saved Baseline Spec</strong> and the <strong>Candidate to be Saved</strong> before committing to <code>specs.json</code>:
+          #checkpoint-alert-box.checkpoint-alert-box
+          .checkpoint-stats-grid
+            .checkpoint-card
+              span.card-title Saved Spec (specs.json)
+              .card-metric
+                span.metric-label Shots:
+                strong#cp-saved-shots 35
+              .card-metric
+                span.metric-label Sample History:
+                span#cp-saved-samples 10 samples
+            .checkpoint-card
+              span.card-title Candidate to Save
+              .card-metric
+                span.metric-label Shots:
+                strong#cp-cand-shots 35
+              .card-metric
+                span.metric-label Target Sample Size:
+                span#cp-cand-samples 11 samples (Proportional)
+          .checkpoint-discrepancy-table
+            table
+              tbody
+                tr
+                  td
+                    strong Shot Count Match
+                    p.table-desc Compares detected shots against expected magazine capacity
+                  td#cp-match-status
+                    span.status-badge.safe 35 / 35 Matched
+                tr
+                  td
+                    strong Mean Trajectory Deviation
+                    p.table-desc Average distance between corresponding shots across pattern
+                  td#cp-mean-status
+                    span.status-badge.safe 2.1 px (0.7 mickeys)
+                tr
+                  td
+                    strong Maximum Single-Shot Deviation
+                    p.table-desc Largest outlier deflection point in candidate
+                  td#cp-max-status
+                    span.status-badge.safe 5.4 px at Shot #12
+          #checkpoint-warnings-list.checkpoint-warnings-list.hidden
+            h4
+              +icon('alert')
+              span  Discrepancy Warnings:
+            ul#cp-warnings-ul
+        .modal-footer
+          button#inspect-overlay-btn.secondary-btn(type="button")
+            +icon('eye')
+            span  Inspect Dual Overlay on Canvas
+          button#cancel-checkpoint-btn.secondary-btn(type="button") Cancel
+          button#confirm-checkpoint-save-btn.primary-btn(type="button")
+            +icon('save')
+            span  Confirm & Save Spec to specs.json
+
+    #shortcuts-modal.modal-overlay.hidden
+      .modal-dialog.shortcuts-dialog
+        .modal-header
+          h3
+            +icon('shortcuts')
+            span  Keyboard Shortcuts & Controls Reference
+          button#close-shortcuts-modal-btn.alert-close-btn(type="button" aria-label="Close dialog")
+            +icon('close')
+        .modal-body
+          table.shortcuts-table
+            tbody
+              tr
+                td.key-cell
+                  kbd Ctrl
+                  span.plus  + 
+                  kbd S
+                td
+                  strong Save Spec
+                  p.shortcut-desc Save current weapon recoil pattern and settings to specs.json.
+              tr
+                td.key-cell
+                  kbd M
+                td
+                  strong Toggle Left Sidebar
+                  p.shortcut-desc Collapse or expand the weapon manager and recording studio to maximize canvas work area.
+              tr
+                td.key-cell
+                  kbd E
+                td
+                  strong Toggle Editing Tools Panel
+                  p.shortcut-desc Collapse or expand the right-hand editing tools panel.
+              tr
+                td.key-cell
+                  kbd P
+                td
+                  strong Toggle Pattern Overlay
+                  p.shortcut-desc Show or hide the recoil pattern overlay to inspect wall decals without visual obstruction.
+              tr
+                td.key-cell
+                  kbd Space
+                  span.plus  (hold)
+                td
+                  strong Pan Canvas
+                  p.shortcut-desc Temporarily activates the grab hand to pan the canvas stage.
+              tr
+                td.key-cell
+                  kbd Space
+                  span.plus  (tap)
+                td
+                  strong Snap Wall Screenshot
+                  p.shortcut-desc In In-Game Live Studio recording, immediately captures the wall decal image without waiting for timer.
+              tr
+                td.key-cell
+                  kbd Mouse Wheel
+                td
+                  strong Zoom Canvas
+                  p.shortcut-desc Zoom in and out centered on the cursor position.
+              tr
+                td.key-cell
+                  kbd [
+                  span.plus  / 
+                  kbd ]
+                td
+                  strong Previous / Next Screenshot
+                  p.shortcut-desc Cycle through batch screenshots or session trials on the canvas.
+              tr
+                td.key-cell
+                  kbd Left Click
+                td
+                  strong Add Bullet Hole
+                  p.shortcut-desc When <code>Correct</code> mode is ON, adds a bullet point at clicked position.
+              tr
+                td.key-cell
+                  kbd Right Click
+                td
+                  strong Remove Bullet Hole
+                  p.shortcut-desc When <code>Correct</code> mode is ON, deletes the clicked point.
+              tr
+                td.key-cell
+                  span.action-badge Align / Move All
+                td
+                  strong Align Spray Pattern
+                  p.shortcut-desc Drag all pattern dots together to align onto wall decals.
+              tr
+                td.key-cell
+                  kbd Ctrl
+                  span.plus  + 
+                  kbd Z
+                td
+                  strong Undo
+                  p.shortcut-desc Undo previous point placement, deletion, or alignment move.
+              tr
+                td.key-cell
+                  kbd Ctrl
+                  span.plus  + 
+                  kbd Y
+                  span.plus  / 
+                  kbd ⇧Z
+                td
+                  strong Redo
+                  p.shortcut-desc Redo previously undone action.
+              tr
+                td.key-cell
+                  kbd O
+                td
+                  strong Compare Overlay
+                  p.shortcut-desc Toggle dual-curve comparison overlay of Current Spec vs Candidate.
+              tr
+                td.key-cell
+                  kbd ?
+                td
+                  strong Shortcuts Guide
+                  p.shortcut-desc Opens this shortcuts reference dialog.
+        .modal-footer
+          button#close-shortcuts-modal-footer-btn.primary-btn(type="button") Got it!
