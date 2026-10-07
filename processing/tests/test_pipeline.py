@@ -169,5 +169,34 @@ def test_pipeline_proportional_accumulation():
 
     # Shot 1: (9 * 10.0 + 1 * 21.0) / 10 = (90 + 21) / 10 = 11.1
     assert round(merged_spec["x"][1], 2) == 11.1
+    # Verify JSON serializability (no circular reference)
+    dumped = json.dumps(merged_spec)
+    assert dumped is not None
+
+
+def test_pipeline_overwrite_json_serializable():
+    pipeline = RecoilPipeline()
+    new_trials = [
+        {"x": [0.0, 21.0, 31.0], "y": [0.0, -21.0, -31.0]},
+        {"x": [0.0, 22.0, 30.0], "y": [0.0, -20.0, -32.0]}
+    ]
+
+    spec, conv = pipeline.aggregate_and_build_spec(
+        trials=new_trials,
+        weapon_name="havoc_tc",
+        rpm=672.0,
+        multiplier=0.73,
+        merge_strategy="overwrite"
+    )
+
+    assert spec["merge_strategy"] == "overwrite"
+    assert spec["sample_count"] == 2
+    assert "standalone_batch_spec" in spec
+    # Crucial test: must not raise ValueError: Circular reference detected
+    dumped = json.dumps(spec)
+    parsed = json.loads(dumped)
+    assert parsed["name"] == "havoc_tc"
+    assert parsed["standalone_batch_spec"]["name"] == "havoc_tc"
+
 
 

@@ -334,7 +334,12 @@ function setupSidebarToggle() {
 
   function setSidebarCollapsed(collapsed: boolean) {
     panel.classList.toggle('collapsed', collapsed);
-    btn.innerText = collapsed ? '▶ Sidebar' : '◀ Sidebar';
+    const label = btn.querySelector('.btn-label');
+    if (label) {
+      label.textContent = collapsed ? ' Show' : ' Sidebar';
+    } else {
+      btn.innerText = collapsed ? '▶ Sidebar' : '◀ Sidebar';
+    }
     btn.title = collapsed ? 'Expand Sidebar Menu [M]' : 'Collapse Sidebar Menu [M]';
     try {
       localStorage.setItem('editor_sidebar_collapsed', collapsed ? 'true' : 'false');
@@ -368,6 +373,62 @@ function setupSidebarToggle() {
     setSidebarCollapsed(true);
   }
 }
+
+function setupToolsSidebarToggle() {
+  const toggleBtn = document.getElementById('toggle-tools-panel-btn');
+  const collapseBtn = document.getElementById('collapse-tools-sidebar-btn');
+  const sidebarEl = document.getElementById('editor-tools-sidebar');
+  if (!sidebarEl) return;
+
+  const panel = sidebarEl;
+
+  function setToolsCollapsed(collapsed: boolean) {
+    panel.classList.toggle('collapsed', collapsed);
+    if (toggleBtn) {
+      toggleBtn.classList.toggle('active', !collapsed);
+      const label = toggleBtn.querySelector('.btn-label');
+      if (label) {
+        label.textContent = collapsed ? ' Show Tools [E]' : ' Editing Tools [E]';
+      }
+      toggleBtn.title = collapsed ? 'Expand Editing Tools Panel [E]' : 'Collapse Editing Tools Panel [E]';
+    }
+    try {
+      localStorage.setItem('editor_tools_collapsed', collapsed ? 'true' : 'false');
+    } catch (e) {}
+    setTimeout(() => {
+      handleStageResize();
+    }, 260);
+  }
+
+  toggleBtn?.addEventListener('click', () => {
+    const isCollapsed = sidebarEl.classList.contains('collapsed');
+    setToolsCollapsed(!isCollapsed);
+  });
+
+  collapseBtn?.addEventListener('click', () => {
+    setToolsCollapsed(true);
+  });
+
+  window.addEventListener('keydown', (e) => {
+    const target = e.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+      return;
+    }
+    if ((e.key === 'e' || e.key === 'E') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const isCollapsed = sidebarEl.classList.contains('collapsed');
+      setToolsCollapsed(!isCollapsed);
+    }
+  });
+
+  let savedCollapsed = false;
+  try {
+    savedCollapsed = localStorage.getItem('editor_tools_collapsed') === 'true';
+  } catch (e) {}
+  if (savedCollapsed) {
+    setToolsCollapsed(true);
+  }
+}
+
 
 function setupRecordingMethodTabs() {
   const tabs = document.querySelectorAll<HTMLButtonElement>('.method-tab-btn');
@@ -558,6 +619,7 @@ export function setupEditor() {
   setupControls();
   setupStageToolbarControls();
   setupSidebarToggle();
+  setupToolsSidebarToggle();
   setupRecordingMethodTabs();
   setupAnalysisConfirmModal();
   setupOfflineScreenshotAnalysis();
@@ -747,7 +809,10 @@ function setupStageToolbarControls() {
     isMoveAllActive = !isMoveAllActive;
     if (moveAllBtn) {
       moveAllBtn.classList.toggle('active', isMoveAllActive);
-      moveAllBtn.innerText = isMoveAllActive ? '✥ Move All: ON' : '✥ Move All (Align)';
+      const sub = moveAllBtn.querySelector('.mode-subtext');
+      if (sub) {
+        sub.textContent = isMoveAllActive ? 'Active (ON)' : 'Move all points';
+      }
     }
   });
 
@@ -755,7 +820,10 @@ function setupStageToolbarControls() {
     isPanModeActive = !isPanModeActive;
     if (panModeBtn) {
       panModeBtn.classList.toggle('active', isPanModeActive);
-      panModeBtn.innerText = isPanModeActive ? '✋ Pan Canvas: ON' : '✋ Pan Canvas';
+      const sub = panModeBtn.querySelector('.mode-subtext');
+      if (sub) {
+        sub.textContent = isPanModeActive ? 'Active (ON)' : 'Drag or Space';
+      }
     }
     const stageContainer = document.getElementById('stage');
     if (stageContainer) stageContainer.style.cursor = isPanModeActive ? 'grab' : 'crosshair';
@@ -765,11 +833,13 @@ function setupStageToolbarControls() {
   const correctionBtn = document.getElementById('correction-mode-btn') as HTMLButtonElement | null;
   correctionBtn?.addEventListener('click', () => {
     isCorrectionModeActive = !isCorrectionModeActive;
-    correctionBtn.classList.toggle('active', isCorrectionModeActive);
-    const correctSvg = '<svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>';
-    correctionBtn.innerHTML = isCorrectionModeActive
-      ? `<span class="btn-icon">${correctSvg}</span><span class="btn-label"> ON</span>`
-      : `<span class="btn-icon">${correctSvg}</span><span class="btn-label"> Correct</span>`;
+    if (correctionBtn) {
+      correctionBtn.classList.toggle('active', isCorrectionModeActive);
+      const sub = correctionBtn.querySelector('.mode-subtext');
+      if (sub) {
+        sub.textContent = isCorrectionModeActive ? 'Active (ON)' : 'Add / remove holes';
+      }
+    }
     const stageEl = document.getElementById('stage');
     if (stageEl && !isPanModeActive && !isSpacePressed) {
       stageEl.style.cursor = isCorrectionModeActive ? 'copy' : 'crosshair';
@@ -900,6 +970,8 @@ function setupStageToolbarControls() {
     activeScaleFactor = factor;
     if (scaleVal) scaleVal.innerText = `${Math.round(factor * 100)}%`;
     if (scaleSlider) scaleSlider.value = String(Math.round(factor * 100));
+    const canvasScaleTag = document.getElementById('canvas-status-scale');
+    if (canvasScaleTag) canvasScaleTag.innerText = `${Math.round(factor * 100)}% Scale`;
     try {
       if (factor === 1.0) {
         localStorage.removeItem('editor:scale_factor');
@@ -997,6 +1069,8 @@ function setupStageToolbarControls() {
 
   // Canvas Panning: Right-click (button 2), Middle-click (button 1), Alt+drag, Space+drag, or Pan Mode
   let panRaf: number | null = null;
+  let targetPanX = 0;
+  let targetPanY = 0;
   stage.on('mousedown', (e) => {
     if (e.evt.button === 1 || e.evt.button === 2 || e.evt.altKey || isSpacePressed || isPanModeActive) {
       isPanning = true;
@@ -1008,13 +1082,13 @@ function setupStageToolbarControls() {
 
   window.addEventListener('mousemove', (e) => {
     if (isPanning) {
-      const nextX = e.clientX - panStart.x;
-      const nextY = e.clientY - panStart.y;
+      targetPanX = e.clientX - panStart.x;
+      targetPanY = e.clientY - panStart.y;
       if (panRaf === null) {
         panRaf = requestAnimationFrame(() => {
           panRaf = null;
           if (isPanning) {
-            stage.position({ x: nextX, y: nextY });
+            stage.position({ x: targetPanX, y: targetPanY });
             stage.batchDraw();
           }
         });
@@ -2848,6 +2922,17 @@ function loadWeaponIntoManager(name: string) {
   const interval = w.rpm ? Math.round(60000 / w.rpm) : 0;
   if (intervalInfo) intervalInfo.innerText = `Interval: ${interval} ms`;
   if (samplesInfo) samplesInfo.innerText = `Samples: ${w.sample_count || 1}`;
+
+  const canvasWeaponTag = document.getElementById('canvas-status-weapon');
+  if (canvasWeaponTag) {
+    const modeSel = document.getElementById('weapon-mode-select') as HTMLSelectElement | null;
+    const mode = modeSel ? ` (${modeSel.value.toUpperCase()})` : '';
+    canvasWeaponTag.innerText = `🎯 ${w.name.toUpperCase()}${mode}`;
+  }
+  const canvasShotsTag = document.getElementById('canvas-status-shots');
+  if (canvasShotsTag) canvasShotsTag.innerText = `${shotCount} shots`;
+  const canvasScaleTag = document.getElementById('canvas-status-scale');
+  if (canvasScaleTag) canvasScaleTag.innerText = `${Math.round(activeScaleFactor * 100)}% Scale`;
 
   if (statusMsg) {
     statusMsg.innerText = '';

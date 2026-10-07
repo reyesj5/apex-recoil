@@ -48,7 +48,9 @@ This document outlines the architectural milestones, completed implementations, 
   - 1:1 Recoil Game Scale Calibration & True Muscle Memory Guarantee: calibrated canvas overlay mapping with Source Engine 1080p 1x geometric constant ($K_{px\_to\_mouse} = 3.36$ or $0.2976$ px/mickey) and restored `havoc_tc` in `client/specs.json` with canonical 35-round recoil and full ground loot mag progression `[18, 21, 25, 29, 35]`, guaranteeing identical in-game mouse counter-aiming.
   - One-click session analysis calling `POST /api/discovery/process-session`.
   - Shot Count Mismatch Detection & Manual Correction Mode: compares detected bullet holes against expected magazine size, flags mismatches with amber badges on batch cards and dropdown entries, and provides a `🔧 Correct Shots` toolbar toggle for manually adding/removing bullet holes with a live shot counter status bar.
-  - Recoil Editor Usability, High-Performance Overhaul (60–144Hz), Zoom-Adaptive Markers, Undo/Redo & Smart Sequential Insertion:
+  - Recoil Editor Usability, Dedicated Collapsible Right Editing Tools Sidebar & High-Performance Overhaul (60–144Hz):
+    - Dedicated Collapsible Right Editing Tools Panel: eliminated horizontal overcrowding and scrolling from `#stage-toolbar`, reorganizing tools into 4 vertical cards (Actions & History, Canvas Modes, Layers & Visibility, View & Comparison) with `[E]` keyboard shortcut and `localStorage` persistence.
+    - Minimal Canvas Header: replaced top clutter with a clean 44px bar displaying sidebar toggles, shortcuts trigger `[?]`, and live status tags (`🎯 Weapon • Shots • Scale`).
     - Zero `shadowBlur` rasterization: eliminated all Canvas 2D CPU Gaussian blur passes across markers, lines, candidate overlays, and discrepancy vectors, yielding silky 144 FPS canvas rendering.
     - Decoupled dragmove I/O: replaced continuous `localStorage.setItem` writes and DOM textarea re-serialization during point dragging with instantaneous memory-only line updates (< 0.05ms) and deferred persistence on `dragend`.
     - `requestAnimationFrame`-throttled panning & debounced wheel zoom marker re-scaling.
@@ -135,9 +137,10 @@ All 31 weapons in [client/specs.json](file:///c:/Users/micro.VADER/Documents/Pro
   - `spec_manager.py`: Added in-memory caching to `load_specs`; handled `common_len == 0` in `diff_weapon_spec` returning `EMPTY_PATTERN` status without crashing.
   - `aggregator.py`: Guarded `mean_recoil` against empty trials; synchronized `time_points` array length to `max_len` in `weighted_merge_recoil`.
   - `cli.py`: Enforced strict 55-element bounds in `cmd_export_arduino` to match Arduino firmware memory alignment.
-  - `pipeline.py`: Removed unreachable dead branch and hoisted `tone_map_hdr_image` to module top level.
-  - `shot_detector.py`: Added `min_rpm` sanity validation.
-  - Expanded automated test suite from 19 to 30 unit tests with 100% pass rate.
+  - `pipeline.py`: Eliminated self-referencing circular dictionary cycle in `aggregate_and_build_spec` when using `overwrite` strategy (`batch_spec["standalone_batch_spec"] = copy.deepcopy(batch_spec)`), preventing `ValueError: Circular reference detected` during JSON serialization.
+  - `cli.py`: Attached `traceback.print_exc(file=sys.stderr)` in `cmd_session` ensuring complete Python tracebacks are emitted to stderr on failure.
+  - `app.js`: Enhanced Express discovery endpoints to extract structured error messages from `stdoutData` when child processes exit with code 1.
+  - Expanded automated test suite from 30 to 31 unit tests with 100% pass rate.
 - [x] **Client Math & State Engine ([client/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/))**:
   - `point.ts`: Corrected `Point.atan2()` argument order to standard `Math.atan2(this.y, this.x)`; added docstrings and aliases `scale`, `scaleX`, `scaleY`.
   - `storage.ts`: Activated attribute updates before invoking `poke()` in `resumeAttrUpdates()` to prevent dropped updates.

@@ -226,9 +226,20 @@ app.post('/api/discovery/process-session', async function(req, res) {
     if (res.headersSent) return;
 
     if (code !== 0) {
+      var errDetail = stderrData;
+      if (stdoutData) {
+        try {
+          var parsed = JSON.parse(stdoutData.trim());
+          if (parsed && parsed.error) {
+            errDetail = parsed.error + (stderrData ? '\n' + stderrData : '');
+          }
+        } catch (_) {
+          if (!errDetail) errDetail = stdoutData;
+        }
+      }
       return res.status(500).json({
         success: false,
-        error: 'Discovery process exited with code ' + code + ': ' + stderrData
+        error: 'Discovery process exited with code ' + code + (errDetail ? ': ' + errDetail : '')
       });
     }
 
@@ -473,7 +484,18 @@ app.post('/api/discovery/process-static-image', async function(req, res) {
     if (res.headersSent) return;
 
     if (code !== 0) {
-      return res.status(500).json({ success: false, error: 'Analysis failed: ' + stderrData });
+      var errDetail = stderrData;
+      if (stdoutData) {
+        try {
+          var parsed = JSON.parse(stdoutData.trim());
+          if (parsed && parsed.error) {
+            errDetail = parsed.error + (stderrData ? '\n' + stderrData : '');
+          }
+        } catch (_) {
+          if (!errDetail) errDetail = stdoutData;
+        }
+      }
+      return res.status(500).json({ success: false, error: 'Analysis failed (code ' + code + ')' + (errDetail ? ': ' + errDetail : '') });
     }
     try {
       var raw = stdoutData.trim();

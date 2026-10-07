@@ -5,6 +5,7 @@ Command-line interface for Apex Legends Recoil Discovery.
 import argparse
 import json
 import sys
+import traceback
 from pathlib import Path
 from typing import Optional, Tuple
 from tabulate import tabulate
@@ -265,6 +266,7 @@ def cmd_session(args):
         result["success"] = True
         print(json.dumps(result))
     except Exception as e:
+        traceback.print_exc(file=sys.stderr)
         print(json.dumps({"success": False, "error": str(e)}))
         sys.exit(1)
 

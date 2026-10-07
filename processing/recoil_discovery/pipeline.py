@@ -10,6 +10,7 @@ import base64
 from collections import deque
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
+import copy
 import cv2
 import numpy as np
 
@@ -383,7 +384,7 @@ class RecoilPipeline:
                 existing_weight=existing_sample_count,
                 new_weight=len(trials)
             )
-            merged_spec["standalone_batch_spec"] = batch_spec
+            merged_spec["standalone_batch_spec"] = copy.deepcopy(batch_spec)
             merged_spec["existing_sample_count"] = existing_sample_count
             merged_spec["new_sample_count"] = len(trials)
             merged_spec["total_sample_count"] = existing_sample_count + len(trials)
@@ -392,7 +393,8 @@ class RecoilPipeline:
                 merged_spec["mags"] = existing_spec["mags"]
             return merged_spec, convergence
         else:
-            batch_spec["standalone_batch_spec"] = batch_spec
+            standalone_copy = copy.deepcopy(batch_spec)
+            batch_spec["standalone_batch_spec"] = standalone_copy
             batch_spec["existing_sample_count"] = 0
             batch_spec["new_sample_count"] = len(trials)
             batch_spec["total_sample_count"] = len(trials)
