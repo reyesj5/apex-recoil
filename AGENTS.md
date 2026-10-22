@@ -34,7 +34,7 @@ Every AI agent working in this codebase must execute the following 4 steps after
 
 ### Step 1: Automated Testing & Validation
 
-Never consider a task complete without executing and passing these checks:
+Never consider a task complete without executing and passing these checks. Use pnpm, not npm: `package.json` pins pnpm 12 and npm refuses to run here (`EBADDEVENGINES`).
 
 1. **Python Unit Tests & Shadow Parity**:
    ```bash
@@ -53,20 +53,20 @@ Never consider a task complete without executing and passing these checks:
 
 3. **Node.js Automated Test Suites**:
    ```bash
-   pnpm build && pnpm test   # or: npm run build && npm test
+   pnpm build && pnpm test
    ```
    *Requirement:* All 41 tests must pass across database, queue, storage, and API suites. Without a prior build the bundle-split test is skipped. Tests must never write to `data/recoil.db` or `client/specs.json` (use the `RECOIL_*` path variables).
    If you touched the job queue, storage, uploads or discovery endpoints, also run the Redis/S3/end-to-end suites: `docker compose up -d && pnpm test:services` (55 tests in total).
-   If you migrated styles from `style.scss` to Tailwind, capture `node scripts/style-snapshot.mjs` before and after and compare: there must be no differences.
+   If you restyled without meaning to change the look (moving CSS from `client/styles/*.css` into Tailwind utilities, renaming classes), capture `node scripts/style-snapshot.mjs` before and after and compare: there must be no differences.
 
 4. **TypeScript Typecheck**:
    ```bash
-   pnpm tsc    # or: npm run tsc / cmd /c npm run tsc
+   pnpm tsc
    ```
    *Requirement:* 0 TypeScript compilation errors.
 
 5. **Asset & Bundle Verification**:
-   If SCSS, TypeScript, or static bundling logic was altered, verify that `pnpm build` (or `npm run build`) or `pnpm static` (or `npm run static`) succeeds without crashing.
+   If CSS, TypeScript, or static bundling logic was altered, verify that `pnpm build` or `pnpm static` succeeds without crashing.
 
 ---
 

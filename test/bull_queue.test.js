@@ -1,5 +1,5 @@
 // Integration tests for the Redis/BullMQ job queue. Requires a Redis server:
-//   docker compose up -d redis && npm run test:services
+//   docker compose up -d redis && pnpm test:services
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
@@ -8,7 +8,7 @@ const { spawn } = require('child_process');
 const { once } = require('events');
 
 const redisUrl = process.env.TEST_REDIS_URL;
-const skip = !redisUrl && 'set TEST_REDIS_URL (npm run test:services) to run the Redis/BullMQ tests';
+const skip = !redisUrl && 'set TEST_REDIS_URL (pnpm test:services) to run the Redis/BullMQ tests';
 
 const py = (code) => ['-c', code];
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

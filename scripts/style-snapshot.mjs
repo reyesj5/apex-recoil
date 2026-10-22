@@ -7,7 +7,7 @@
 //
 // `capture` loads /, /ru, /zh-CN and /editor at desktop and phone widths. `--hover` forces
 // :hover on matching elements for an extra pass. Needs Node 22+ (built-in WebSocket) and Chrome
-// (CHROME_PATH, or the default install location). Start the app first (npm run build && npm start).
+// (CHROME_PATH, or the default install location). Start the app first (pnpm build && pnpm start).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

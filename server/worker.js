@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * Standalone analysis worker for the Redis/BullMQ queue (`npm run worker`).
+ * Standalone analysis worker for the Redis/BullMQ queue (`pnpm worker`).
  * Runs on any machine with Python and the processing/ requirements installed. Workers on a
  * different machine than the API need STORAGE_PROVIDER=s3 so they can fetch job inputs.
  * Uses the same environment variables as the server (REDIS_URL, STORAGE_PROVIDER, S3_*, PYTHON,

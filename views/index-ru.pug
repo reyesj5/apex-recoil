@@ -17,13 +17,13 @@ extends layout
 include mixins/icons
 
 block content
-  #game
-    #control
+  #game(class="flex flex-row h-full mobile:hidden")
+    #control(class="flex flex-col min-w-[315px] max-w-[315px] bg-menu")
       h1 Отдача оружия в Apex Legends
-      p.description Практическое обучение
-      p#sensitivity-warning.hidden
+      p(class="px-1 text-center") Практическое обучение
+      p#sensitivity-warning.hidden(class="p-2 text-center text-error")
         | Активная зона слишком мала! Может быть расширить окно? #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#mouse-sensitivity" target="_blank") еще (англ.)] 
-      #top-links
+      #top-links(class="flex justify-around px-3 py-1")
         p#show-instructions-btn.action
           | Инструкции
         a(href="/editor")
@@ -34,15 +34,15 @@ block content
         a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank" rel="noopener noreferrer")
           +icon('heart')
           |  Поддержать
-      #score
-        div#stats-graph-btn.tooltip.btn(aria-label="Показать график статистики")
+      #score(class="flex flex-row px-2 py-1")
+        div#stats-graph-btn.tooltip.btn(class="mr-1" aria-label="Показать график статистики")
           img(src="/outline_insert_chart_white_48dp.png" alt="show graph")
           .tooltiptext Статистика
-        div#stats-wrap
+        div#stats-wrap(class="m-auto text-right")
           p#score-stats
-      #weapon-filter-bar
+      #weapon-filter-bar(class="flex flex-col gap-[5px] px-[6px] py-1 mb-1")
         input#weapon-search-input(type="text" placeholder="Поиск оружия..." autocomplete="off" aria-label="Поиск оружия")
-        .weapon-category-pills(role="tablist" aria-label="Категории оружия")
+        .weapon-category-pills(class="flex flex-wrap gap-[3px]" role="tablist" aria-label="Категории оружия")
           button.cat-pill.active(type="button" data-category="all") Все
           button.cat-pill(type="button" data-category="ar") AR
           button.cat-pill(type="button" data-category="smg") SMG
@@ -51,7 +51,7 @@ block content
           button.cat-pill(type="button" data-category="sniper") Снайпер.
           button.cat-pill(type="button" data-category="shotgun") Дробов.
           button.cat-pill(type="button" data-category="pistol") Пистол.
-      #weapon-select.grid
+      #weapon-select(class="flex flex-row flex-wrap justify-between")
         div.flatline.btn(data-weapon="flatline" data-category="ar")
           img(src="/images/flatline.png", alt="flatline")
           p.name Флэтлайн
@@ -161,7 +161,7 @@ block content
         div.fire-mode-hint.tooltip
           span.fire-mode-key [B]
           span.tooltiptext Переключить режим огня [B]
-      #mag-select.button-row
+      #mag-select.button-row(class="justify-start")
         div.mag-0.tooltip
           img(src="/images/magi.png" alt="no magazine")
           span.mag-cap
@@ -192,21 +192,21 @@ block content
         div.mod-corrupted_stock.mod.tooltip
           img(src="/images/barrel_stocki.png" alt="corrupted stock")
           span.tooltiptext Искаженный приклад (-4 патрона, -1 для дробовиков)
-      #settings
-          #mouse-settings.row
+      #settings(class="pt-1 pr-1 pb-0 pl-2 *:pt-1")
+          #mouse-settings(class="flex items-center justify-between pr-[10px]")
             div
-              input(type='text' id='sens' aria-label="Чувствительность мыши")
+              input(class="w-[5ch]" type='text' id='sens' aria-label="Чувствительность мыши")
               span.tooltip.underlined
                 | Чувств.
                 span.tooltiptext
                   | Например: если чувствительность в игре 3 и ADS<br/>
                   | 1.2 впишите сюда 3 * 1.2 = 3.6
             div.scale-x-wrapper
-              input(type='text' id='scale-x')
+              input(class="w-[5ch]" type='text' id='scale-x')
               span
                 | x&nbsp;
             div
-              input(type='text' id='scale-y')
+              input(class="w-[5ch]" type='text' id='scale-y')
               span
                 | масшт.
             #invert-y-btn.btn
@@ -222,20 +222,20 @@ block content
             #mode-moving.btn.tooltip
               div Движущаяся
               span.tooltiptext Клавиша D
-          div.row
+          div(class="flex items-center justify-between")
             .tooltip
               img(src="/outline_run_circle_white_24dp.png" alt="target control")
               span.tooltiptext
                 | Скорость цели
             input.slider#target-speed(type='range' min="1" max="600" step="1")
-            #target-speed-value.value
+            #target-speed-value(class="grow text-center")
           #recoil-mode.button-row
             .center-text Отдача:
-            #recoil-weapon.btn.tooltip
+            #recoil-weapon.btn.tooltip(class="w-[90px]")
               div Оружия
               span.tooltiptext
                 | Отдача применяется к курсору, цель неподвижна
-            #recoil-target.btn.tooltip
+            #recoil-target.btn.tooltip(class="w-[90px]")
               div Цели
               span.tooltiptext
                 | Отдача применяется к цели, как в игре
@@ -247,60 +247,60 @@ block content
               div Точки
             #trace-2.btn
               div Линии
-          .row
+          div(class="flex items-center justify-between")
             .tooltip
               img(src="/outline_slow_motion_video_white_24dp.png" alt="speed control").tooltip
               span.tooltiptext
                 | Скорость стрельбы. Сделайте меньше, если не успеваете
             input.slider#speed(type='range' min="10" max="100" step="10")
-            #speed-value.value
-          #sound-control.row
-            #toggle-mute.tooltip
+            #speed-value(class="grow text-center")
+          #sound-control(class="flex items-center justify-between")
+            #toggle-mute.tooltip(class="cursor-pointer")
               img(src="/volume_up_white_24dp.svg"  alt="sound is not muted")#unmuted
               img(src="/volume_off_white_24dp.svg" alt="sound is muted")#muted.hidden
               span.tooltiptext
                 | Громкость звука (нажмите, чтобы выключить звук)
             input.slider#volume(type='range' min="0" max="100")
-            .value
-      #controls-bottom
-        #copyright(class="tw:mb-1 tw:text-[0.8em]")
-          div(class="tw:flex tw:flex-row tw:text-[0.7em]")
-            a(class="tw:m-0.5" href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
-              img(class="tw:border-b tw:border-b-transparent tw:pb-0.5 tw:hover:border-b-foreground" src="/GitHub-Mark-Light-32px.png", alt="github")
-            a(class="tw:m-0.5" href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
-              img(class="tw:border-b tw:border-b-transparent tw:pb-0.5 tw:hover:border-b-foreground" src="/reddit.png", alt="reddit")
-            a(href="/" class="tw:mx-1 tw:my-auto tw:text-[15px]")
+            div(class="grow text-center")
+      #controls-bottom(class="mt-auto px-1 pt-1 pb-2")
+        #copyright(class="mb-1 text-[0.8em]")
+          div(class="flex flex-row text-[0.7em]")
+            a(class="m-0.5" href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
+              img(class="border-b border-b-transparent pb-0.5 hover:border-b-foreground" src="/GitHub-Mark-Light-32px.png", alt="github")
+            a(class="m-0.5" href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
+              img(class="border-b border-b-transparent pb-0.5 hover:border-b-foreground" src="/reddit.png", alt="reddit")
+            a(href="/" class="mx-1 my-auto text-[15px]")
               | english
-            a(href="/zh-CN" class="tw:mx-1 tw:my-auto tw:text-[15px]")
+            a(href="/zh-CN" class="mx-1 my-auto text-[15px]")
               | 中文
-            div(class="tw:flex tw:flex-col tw:items-end tw:grow")
-              a(class="tw:m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
+            div(class="flex flex-col items-end grow")
+              a(class="m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
                 | Privacy Policy
-              a(class="tw:m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
+              a(class="m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
                 | Datenschutzerklärung
-              a(class="tw:m-0.5" href="#cookies")
+              a(class="m-0.5" href="#cookies")
                 | Cookie settings
           p
             | 2024 by Mikhail equanimity_rulez Goncharov.
           p
             | This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. 
             | Game content and materials are trademarks and copyrights of 
-            | #[a(class="tw:m-0.5" href="https://ea.com" target="_blank" rel="noopener noreferrer") Electronic Arts Inc.]              
-            | or #[a(class="tw:m-0.5" href="https://www.respawn.com/" target="_blank" rel="noopener noreferrer") Respawn Entertainment]. 
+            | #[a(class="m-0.5" href="https://ea.com" target="_blank" rel="noopener noreferrer") Electronic Arts Inc.]              
+            | or #[a(class="m-0.5" href="https://www.respawn.com/" target="_blank" rel="noopener noreferrer") Respawn Entertainment]. 
             | Some images and reference materials come from 
-            | #[a(class="tw:m-0.5" href="https://apexlegends.fandom.com/wiki/" target="_blank" rel="noopener noreferrer") Apex Legends Wiki].
-        #version(class="tw:text-right tw:text-[0.8em]")
+            | #[a(class="m-0.5" href="https://apexlegends.fandom.com/wiki/" target="_blank" rel="noopener noreferrer") Apex Legends Wiki].
+        #version(class="text-right text-[0.8em]")
           p
             | version #[span#version-value 17]&nbsp;
             a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank" rel="noopener noreferrer")
               | what's new
-    #workspace
-      #detailed-stats.hidden
+    #workspace(class="grow overflow-hidden")
+      #detailed-stats.hidden(class="bg-menu p-2")
         div Ось Y логарифмическая поскольку разница между 40 и 50 очками меньше, чем между 80 и 90.
-        #plotly_area
+        #plotly_area(class="h-[300px]")
         div
           p.action#hide-stats Скрыть график
-      #instructions.hidden
+      #instructions.hidden(class="bg-menu px-5 py-3")
           h2 Инструкция
           p #[a(href="https://www.youtube.com/watch?v=tTPKHa4aXug") Видео объяснение (англ.)].
           ul
@@ -313,14 +313,14 @@ block content
             a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#controller-support" target="_blank" rel="noopener noreferrer") Настройка для игры с контроллером (англ., экспериментально).
           p.action#dismiss-instructions Закрыть инструкцию
       #stage
-  #mobile-info 
+  #mobile-info(class="text-center desktop:hidden mobile:block mobile:relative mobile:h-full")
     h1 Apex Legends Recoil Patterns
     p Привет! Этот сайт позволят практиковать отдачу оружия в игре Apex Legends.
       | Размер экрана устройства должен быть больше чем 900 пикселей.
     br
     p Увидимся!
-    img(src="/trail.png", alt="trail")
-    #copyright-mobile
+    img(class="mobile:py-4" src="/trail.png", alt="trail")
+    #copyright-mobile(class="mobile:absolute mobile:bottom-[50px] mobile:text-[0.8em]")
       p
         a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
           | Privacy Policy

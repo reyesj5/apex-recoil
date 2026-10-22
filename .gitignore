@@ -1,3 +1,4 @@
+# Output of the old Gulp build, no longer generated; still ignored for older clones
 public/
 static/
 dist/

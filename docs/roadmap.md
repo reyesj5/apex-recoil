@@ -16,8 +16,8 @@ This document outlines the architectural milestones, completed implementations, 
 | **M6: Weapon Arsenal & Attachments** | ✅ Completed | All 31 Apex weapons supported with official SVGs, 5-tier specs, and Corrupted Stock attachment. |
 | **M7: Full-Stack Hardening & Robustness** | ✅ Completed | Comprehensive senior review covering 25 fixes across security, correctness, error handling, and performance. |
 | **M8: UI/UX Modernization & Polish** | ✅ Completed | Google Fonts, instant weapon search & category pills, live mag capacities, toolbar ergonomics, corrupted mag SVG. |
-| **M9: CI/CD Pipeline Automation** | 🟡 Implemented, awaiting first run | `.github/workflows/ci.yml`: typecheck, Vite build, Node tests and static build (Node 20/22); integration job with Redis + S3 (compose.yaml); pytest, spec verify and shadow parity (Python 3.12). Dry-run locally from a clean copy; not yet run on GitHub. |
-| **M10: Platform & Architectural Overhaul** | 🟡 In Progress | Done: streaming ingestion, in-process or Redis/BullMQ job queue, Vite 8 route bundles, lossless SQLite spec store, local or S3 capture storage with direct uploads, full-document shadow parity. Open: migrating the remaining components to Tailwind (3.4, foundation in place), further `editor.ts` decomposition. |
+| **M9: CI/CD Pipeline Automation** | ✅ Completed | `.github/workflows/ci.yml`: typecheck, Vite build, Node tests and static build (Node 20/22); integration job with Redis + S3 (compose.yaml); pytest, spec verify and shadow parity (Python 3.12). First GitHub run (PR #2, 2026-10-22) passed all four jobs. |
+| **M10: Platform & Architectural Overhaul** | ✅ Completed | Streaming ingestion, in-process or Redis/BullMQ job queue, Vite 8 route bundles, lossless SQLite spec store, local or S3 capture storage with direct uploads, full-document shadow parity, the Recoil Editor split into modules, and all styling in Tailwind 4 (no Sass). Optional: a warm Python worker. |
 
 ---
 
@@ -207,13 +207,13 @@ Tracked and executed in alignment with the master [Architectural Migration Plan]
   - [x] Implement Server-Sent Events (SSE) progress streaming (`GET /api/discovery/jobs/:id/events`) and polling fallback (`GET /api/discovery/jobs/:id`).
   - [x] Add worker concurrency control, 120s task timeouts, process kill guards, and automatic temp-folder cleanup.
   - [x] Persistent queue with Redis/BullMQ (`REDIS_URL`): jobs survive restarts, standalone workers (`npm run worker`), crash recovery, cross-process cancellation ([server/bull_queue.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/bull_queue.js)).
-- [ ] **Phase 3: Modern Frontend Architecture & Component Decomposition**:
-  - [x] Set up Vite 8 bundler with entries `trainer`, `editor`, legacy `bundle` router, `style` and `tailwind`, plus `theme.json` → `theme.scss` / `theme-tokens.css` generation (`vite.config.mjs`).
+- [x] **Phase 3: Modern Frontend Architecture & Component Decomposition**:
+  - [x] Set up Vite 8 bundler with entries `trainer`, `editor`, legacy `bundle` router and `tailwind`, plus `theme.json` → `theme-tokens.css` generation (`vite.config.mjs`).
   - [x] Separate public Aim Trainer into its own route bundle (`client/trainer_main.ts` + shared stage in `client/stage.ts`): 89 kB gzip without editor code (<150KB budget).
   - [x] Decompose [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) into reusable modules: [`types.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/types.ts), [`utils.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/utils.ts), and [`DiscrepancyInspector.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/analysis/DiscrepancyInspector.ts) (now used by `editor.ts`).
-  - [ ] Continue decomposing `client/editor.ts` (~5,200 lines): capture studio, weapon manager, canvas tools.
-  - [x] Tailwind 4 foundation next to the SCSS: `tw:`-prefixed utilities, theme.json palette tokens, computed-style snapshot tool ([scripts/style-snapshot.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/style-snapshot.mjs)); trainer footer migrated with zero computed-style change.
-  - [ ] Migrate the remaining components from [style.scss](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss) to Tailwind (tooltips, buttons, modals, then `#game` and `#editor`), preserving WCAG AA/AAA tokens; then remove the SCSS and the prefix.
+  - [x] Split the rest of `client/editor.ts` (5,153 lines) into [client/modules/editor/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/editor/): state, layout, toolbar, canvas, calibration, overlays, weapon manager, capture studio, screenshots, sessions and the analysis dialog; `editor.ts` is a ~100-line entry.
+  - [x] Tailwind 4 foundation: theme.json palette tokens, computed-style snapshot tool ([scripts/style-snapshot.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/style-snapshot.mjs)); trainer footer migrated with zero computed-style change.
+  - [x] Move all styles to Tailwind: `style.scss`/`reset.scss` ported to [client/styles/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/) without Sass, app CSS in a cascade layer below the utilities, trainer and editor page layout as utilities, no `tw:` prefix, WCAG AA/AAA tokens preserved. No preflight (it would restyle images, links, borders and form controls); stateful widgets stay component CSS.
 - [x] **Phase 4: Database Layer & Persistent Asset Storage**:
   - [x] Deploy SQLite relational schema in [`server/db.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/db.js) and [`processing/recoil_discovery/db.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/db.py) with versioned, lossless weapon specs (`spec_json`, `sort_order`), `spec_revisions` audit logs, and import of external `specs.json` edits before every read/write.
   - [x] Persist session metadata in `discovery_sessions`, merged into the session list (from capture storage) served to the editor.
@@ -236,6 +236,12 @@ Tracked and executed in alignment with the master [Architectural Migration Plan]
   - [x] Redis/BullMQ queue (2.4), S3 storage with direct uploads (4.3), `compose.yaml` services, `.env.example`, `npm run worker`, `npm run test:services`.
   - [x] Tailwind 4 foundation and first migrated component (3.4), verified with computed-style snapshots.
   - [x] CI integration job; decoder BGR re-decode (1.4) measured and dropped (+22% CPU for ~130 MB).
+- [x] **Phase 9: Editor Modules, Tailwind Migration & First CI Run (2026-10-22)**:
+  - [x] First CI run on GitHub (PR #2): web (Node 20/22), integration (Redis/BullMQ + S3) and processing jobs all passed.
+  - [x] Recoil Editor split into modules (3.3), verified with a scripted 33-step editor session giving identical DOM, canvas and storage.
+  - [x] All styles in Tailwind 4 without Sass (3.4), verified with zero computed-style differences on 142 recorded page states.
+  - [x] pnpm 12 only: pinned under `devEngines` (npm refuses to run), settings in `pnpm-workspace.yaml` (`allowBuilds`), `package-lock.json` removed, CI on `pnpm/action-setup@v6`; dependencies deduplicated.
+  - [x] Removed the stale `public/` folder (old Gulp and tsc output that Express still served); `tsc` only typechecks.
 
 ---
 
@@ -258,20 +264,20 @@ Every code change in this repository MUST satisfy the following quality gates be
 
 3. **Node.js Automated Test Suites**:
    ```bash
-   pnpm build && pnpm test   # or: npm run build && npm test
+   pnpm build && pnpm test
    ```
    *Requirement: 41/41 tests passing across database, job queue, storage, and API (the bundle-split test is skipped without a build). With `docker compose up -d`, `pnpm test:services` also runs the Redis, S3 and end-to-end suites (55/55).*
 
 4. **TypeScript Typecheck**:
    ```bash
-   pnpm tsc    # or: npm run tsc / cmd /c npm run tsc
+   pnpm tsc
    ```
    *Requirement: 0 type errors.*
 
 5. **Static Asset Build (Vite 8)**:
    ```bash
-   pnpm build   # or: npm run build
-   pnpm static  # or: npm run static
+   pnpm build
+   pnpm static
    ```
    *Requirement: Successful compilation of styles and route bundles, and of the static site.*
 

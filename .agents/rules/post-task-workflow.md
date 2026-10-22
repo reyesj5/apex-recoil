@@ -21,7 +21,7 @@ Whenever completing ANY coding, debugging, refactoring, or documentation task in
   Ensure all weapons pass schema verification.
 - **TypeScript**: If TypeScript/JavaScript files were modified:
   ```bash
-  npm run tsc
+  pnpm tsc
   ```
   Ensure 0 type errors.
 

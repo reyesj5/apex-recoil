@@ -1,0 +1,10 @@
+# pnpm settings (since pnpm 11 they live here; the "pnpm" field of package.json is not read)
+
+# Dependencies whose install scripts may run. A dependency with an install script that is not
+# listed fails the install (ERR_PNPM_IGNORED_BUILDS) until it is added here.
+allowBuilds:
+  esbuild: true
+  sqlite3: true
+  # Its install script only compiles when no prebuilt binary exists; the prebuilt one comes from
+  # the platform package (@msgpackr-extract/msgpackr-extract-<os>-<arch>)
+  msgpackr-extract: false

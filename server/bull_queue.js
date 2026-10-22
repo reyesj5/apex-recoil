@@ -7,7 +7,7 @@
  * waitForJob and 'job:completed' / 'job:failed' events), but queued and running jobs survive API
  * restarts (a job interrupted by a crash is picked up again once its lock expires) and any
  * number of workers can process them: the API runs an embedded worker unless
- * RECOIL_EMBEDDED_WORKER=false, and `npm run worker` (server/worker.js) starts more. Workers on
+ * RECOIL_EMBEDDED_WORKER=false, and `pnpm worker` (server/worker.js) starts more. Workers on
  * other machines need object storage (STORAGE_PROVIDER=s3) so they can read the job inputs.
  *
  * Results (~1 MB with preview frames) are stored under their own Redis key with a TTL rather

@@ -29,8 +29,8 @@ This document establishes the master architectural blueprint, execution roadmap,
 | Phase | Focus Area | Status | Deliverables | Verification Gate |
 | :--- | :--- | :---: | :--- | :--- |
 | **Phase 1** | **Stabilization & Memory Hardening** | 🟢 Complete | Streaming multipart uploads, async fs calls, atomic JSON writes, streaming video decoder | Decoder buffer no longer grows with clip length (328 MB peak on a 5 s 1080p clip vs 632 MB+ before); event-loop stalls not measured |
-| **Phase 2** | **Compute Worker Service & Async Queue** | 🟢 Complete | In-process `JobQueue` (default) or Redis/BullMQ (`REDIS_URL`): persistent jobs, embedded or standalone workers (`npm run worker`), crash recovery, cross-process cancellation, SSE progress. Each job still starts a fresh Python process (no warm OpenCV daemon) | Integration tests on Redis, including a worker killed mid-job; dispatch latency not measured |
-| **Phase 3** | **Modern Frontend Architecture** | 🟡 In Progress (3.4 started) | Vite bundler, route bundles (`trainer.js` vs `editor.js`), editor analysis modules; Tailwind 4 (prefixed `tw:`) next to the SCSS with theme.json tokens, first component migrated. React is not used | Trainer route 89 kB gzip (< 150 kB); migrated markup verified with zero computed-style change; Lighthouse not measured |
+| **Phase 2** | **Compute Worker Service & Async Queue** | 🟢 Complete | In-process `JobQueue` (default) or Redis/BullMQ (`REDIS_URL`): persistent jobs, embedded or standalone workers (`pnpm worker`), crash recovery, cross-process cancellation, SSE progress. Each job still starts a fresh Python process (no warm OpenCV daemon) | Integration tests on Redis, including a worker killed mid-job; dispatch latency not measured |
+| **Phase 3** | **Modern Frontend Architecture** | 🟢 Complete | Vite bundler, route bundles (`trainer.js` vs `editor.js`), Recoil Editor split into modules (`client/modules/editor/`); all styling in Tailwind 4 without Sass: page layout as utilities, stateful widgets as CSS in a cascade layer below the utilities, colors from theme.json. React is not used | Trainer route 89 kB gzip (< 150 kB); style migration verified with zero computed-style change (snapshot tool plus scripted editor and trainer sessions); editor refactor verified with an identical scripted session; Lighthouse not measured |
 | **Phase 4** | **Database & Asset Storage Layer** | 🟢 Complete | SQLite versioned, lossless spec store kept in sync with `specs.json`; session metadata index; local or S3-compatible capture storage (AWS SDK v3) with direct browser uploads via presigned PUT | Byte-identical `specs.json` round trip, no lost updates between writers; S3 tested against SeaweedFS |
 | **Phase 5** | **Shadow Parity, Benchmarks & Cutover** | 🟢 Complete | Full-document shadow parity, legacy Gulp removed, static site build restored, CI with Redis + S3 integration job | 100% field-level parity across all 31 weapons |
 
@@ -123,7 +123,7 @@ This document establishes the master architectural blueprint, execution roadmap,
   - With the in-process queue, jobs live in server memory: a restart loses queued and running jobs (the client reports this instead of polling forever). See 2.4 for the persistent queue.
 - [x] **2.4 Persistent Queue & Remote Workers (Redis/BullMQ, [`server/bull_queue.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/bull_queue.js))**:
   - With `REDIS_URL` set, [`server/jobs.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/jobs.js) selects `BullJobQueue` (BullMQ 6 + ioredis 6), which has the same interface as the in-process queue; both run jobs through [`server/job_processor.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/job_processor.js) and [`server/analysis_runner.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/analysis_runner.js).
-  - The API runs an embedded worker unless `RECOIL_EMBEDDED_WORKER=false`; `npm run worker` ([`server/worker.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/worker.js)) starts more, on any machine with Python. Job inputs are a local folder or, with S3 storage, an object prefix that remote workers download.
+  - The API runs an embedded worker unless `RECOIL_EMBEDDED_WORKER=false`; `pnpm worker` ([`server/worker.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/worker.js)) starts more, on any machine with Python. Job inputs are a local folder or, with S3 storage, an object prefix that remote workers download.
   - Queued jobs survive restarts; a job whose worker dies is retried by another worker once its lock expires (about a minute with BullMQ's default 30 s lock and stalled-check intervals). Completions missed while the API was down are replayed at startup so saved sessions still get indexed.
   - Cancellation of a running job is relayed to whichever worker holds it (Redis pub/sub + `Worker.cancelJob`); queued jobs are removed. Results (~1 MB with preview frames) are stored under their own key with a 1 h TTL instead of in BullMQ's event stream.
   - Tests: [`test/bull_queue.test.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/test/bull_queue.test.js) against Redis, including a worker process killed mid-job.
@@ -134,8 +134,8 @@ This document establishes the master architectural blueprint, execution roadmap,
 *Goal: Replace legacy Gulp/Browserify/Pug with Vite + React/TypeScript + Tailwind CSS and route-level code splitting.*
 
 - [x] **3.1 Modern Bundler Setup (Vite + TypeScript)**:
-  - `vite.config.mjs` builds the route entries `trainer` and `editor`, a legacy `bundle` router, `style` (SCSS) and `tailwind`, and regenerates `theme.scss` and `client/styles/theme-tokens.css` from `theme.json` (formerly gulp's json-sass task).
-  - `npm run build` (production) and `npm run watch` (rebuild on change, used by `npm run dev`).
+  - `vite.config.mjs` builds the route entries `trainer` and `editor`, a legacy `bundle` router and `tailwind` (all styles), and regenerates `client/styles/theme-tokens.css` from `theme.json`: the palette plus the background shades and alpha variants that Sass used to compute.
+  - `pnpm build` (production) and `pnpm watch` (rebuild on change, used by `pnpm dev`).
 - [x] **3.2 Core Aim Trainer Bundle Separation**:
   - The shared Konva stage lives in [`client/stage.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/stage.ts) (previously `game.ts`/`editor.ts` imported it from `main.ts`, which pulled the whole editor into every entry).
   - `views/layout.pug` loads `/trainer.js`; `views/editor.pug` loads `/editor.js`. `/bundle.js` remains as a small router for cached pages.
@@ -145,14 +145,21 @@ This document establishes the master architectural blueprint, execution roadmap,
     - [`client/modules/types.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/types.ts): Shared TypeScript interfaces (`Edge`, `SessionTrialData`, `ActiveSessionData`, `DiscrepancyReport`, etc.).
     - [`client/modules/utils.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/utils.ts): Binary conversions (`blobToBase64`, `dataUrlToBlob`), tone mapping, and async SSE streaming.
     - [`client/modules/analysis/DiscrepancyInspector.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/analysis/DiscrepancyInspector.ts): Scaling calculations and vector discrepancy reporting.
-  - `client/editor.ts` delegates capture scaling and discrepancy reports to `DiscrepancyInspector.ts` through thin wrappers that pass the editor's zoom, FOV, canvas scale and merge strategy. `editor.ts` is still ~5,200 lines; further decomposition (capture studio, weapon manager, canvas tools) is open.
-- [ ] **3.4 Responsive UI & Modern Design Tokens** — in progress:
-  - Goal: migrate styling from the 3,600-line [`style.scss`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss) to Tailwind CSS utilities, preserving all WCAG AA/AAA high-contrast tokens, tactile button affordances, and vector icons. Pages are server-rendered pug without a component framework, so "scoped CSS modules" become utilities in the markup plus `@utility` definitions in `tailwind.css` for repeated patterns.
-  - [x] Tailwind 4 next to the SCSS: [`client/styles/tailwind.css`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/tailwind.css) is built to `dist/tailwind.css` and linked after `style.css`. No preflight; utilities are unlayered and prefixed `tw:`. Without the prefix, 58 utilities were generated from existing class names, two of them (`.grid`, `.hidden`) overriding legacy rules.
-  - [x] Design tokens: the palette comes only from `theme.json`, via generated [`client/styles/theme-tokens.css`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/theme-tokens.css), e.g. `tw:text-foreground` and `tw:bg-score-7`. `--spacing` is 4px because `html` is 14px. `hover:` behaves like the SCSS `:hover`.
-  - [x] Verification: [`scripts/style-snapshot.mjs`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/style-snapshot.mjs) records every element's computed style and box on `/`, `/ru`, `/zh-CN`, `/editor` at desktop and phone widths, with forced `:hover` on chosen selectors. A migration must compare with no differences; two captures of the same build agree exactly.
-  - [x] First component: the trainer footer (`#copyright`, `#version`) in `index.pug`, `index-ru.pug` and `index-zh-CN.pug`. Its SCSS was removed, with zero computed-style differences across all 14 page states.
-  - [ ] Remaining components, smallest and most self-contained first (tooltips, buttons, modals), then the trainer (`#game`, ~450 lines of SCSS) and the editor (`#editor`, ~1,750 lines, plus HTML strings in `editor.ts`). Remove `style.scss` and `reset.scss` (replaced by Tailwind's preflight) once empty, then drop the `tw:` prefix.
+  - `client/editor.ts` delegates capture scaling and discrepancy reports to `DiscrepancyInspector.ts` through thin wrappers that pass the editor's zoom, FOV, canvas scale and merge strategy.
+  - The editor itself is split into [`client/modules/editor/`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/editor/): `state.ts` (shared state and settings; the seven variables that several modules reassign go through setters), `layout.ts`, `toolbar.ts`, `canvas.ts`, `calibration.ts` (the `DiscrepancyInspector.ts` wrappers), `overlays.ts`, `weapon_manager.ts`, `capture_studio.ts`, `screenshots.ts`, `sessions.ts` and `analysis_confirm.ts`. [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) is a ~100-line entry that wires them together.
+  - All 191 top-level statements moved unchanged. A scripted 33-step editor session (point editing, undo/redo, weapon manager, tabs, dialogs, screenshot import, a real clip analysis and its result views) gives identical DOM, canvas shapes and storage before and after. `capture_studio.ts` (~1,300 lines) is the largest module.
+- [x] **3.4 Responsive UI & Modern Design Tokens**:
+  - Goal: migrate styling from the 3,600-line `style.scss` to Tailwind CSS, preserving all WCAG AA/AAA high-contrast tokens, tactile button affordances, and vector icons. Pages are server-rendered pug without a component framework, so "scoped CSS modules" become utilities in the markup plus Tailwind-built CSS for repeated patterns.
+  - [x] Tailwind 4 foundation: [`client/styles/tailwind.css`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/tailwind.css) is built to `dist/tailwind.css`. While the SCSS remained, utilities were prefixed `tw:` (unprefixed, 58 utilities were generated from existing class names, two of them, `.grid` and `.hidden`, overriding legacy rules).
+  - [x] Design tokens: the palette comes only from `theme.json`, via generated [`client/styles/theme-tokens.css`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/theme-tokens.css) (e.g. `text-foreground`, `bg-score-7`, `bg-menu`), including the background shades and alpha variants Sass used to compute. `--spacing` is 4px because `html` is 14px. `hover:` behaves like CSS `:hover`.
+  - [x] Verification: [`scripts/style-snapshot.mjs`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/style-snapshot.mjs) records every element's computed style and box on `/`, `/ru`, `/zh-CN`, `/editor` at desktop and phone widths, with forced `:hover`. A migration must compare with no differences; two captures of the same build agree exactly. Each step below was also checked with scripted editor and trainer sessions (not in the repo) that record computed styles in every state they reach: dialogs, analysis results, selected tiles, all three languages, phone width, and forced `:hover`, `:focus`, `:focus-visible` and `:active`. 142 states, no differences.
+  - [x] First component: the trainer footer (`#copyright`, `#version`) in `index.pug`, `index-ru.pug` and `index-zh-CN.pug`.
+  - [x] Sass removed: `style.scss` and `reset.scss` were ported to plain CSS in [`client/styles/`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/) (`base.css`, `components.css`, `trainer.css`, `editor.css`) with the same selectors and order, using CSS nesting and theme tokens instead of Sass variables and color functions. `theme.scss` and the `sass` dependency are gone, and pages load one stylesheet.
+  - [x] Cascade layers: the app CSS shares one layer, `app`, below Tailwind's `utilities` layer, so a utility class always overrides it while the app CSS keeps its original cascade. Splitting the reset into Tailwind's usual `base` layer would have let its `!important` focus ring override the analyze buttons' `!important` glow.
+  - [x] Page layout as utilities: the trainer (`#game`, the control panel, settings rows, workspace panels and the phone notice, in all three templates) and the editor skeleton (`#editor`, `#stage-container`). Custom `mobile:`/`desktop:` variants reproduce the original 768/769 px breakpoints exactly (Tailwind's own `max-[768px]` excludes 768 px).
+  - [x] No prefix: utilities are plain (`flex`, `mt-2`). The legacy `.grid` class would have become Tailwind's `display: grid`, so it was replaced by flex utilities; `.hidden` stays, because the app's `display: none !important` wins.
+  - Decided: no Tailwind preflight. It would restyle images (block, `max-width: 100%`), links (no underline), borders (`border-style: solid` everywhere) and form controls. `base.css` keeps the original reset, which Tailwind does not require.
+  - Decided: the stateful widgets (weapon tiles, category pills, fire-mode and magazine selectors, buttons, tooltips, dialogs, the capture studio, the HUD) stay component CSS in the `app` layer. As utilities they would become long lists of arbitrary values, repeated in three templates and in the markup built by `client/modules/editor/`, and some computed values would change (for example, a two-property transition becomes a single one). Moving more of them into utilities is optional.
 
 ---
 
@@ -197,7 +204,7 @@ This document establishes the master architectural blueprint, execution roadmap,
 - [x] **5.3 Decommissioning Legacy Tooling**:
   - Removed `gulpfile.js`, Browserify, Tsify, Watchify, Gulp plugins, and legacy build dependencies (and their stale entries in `package-lock.json`).
   - Replaced build infrastructure with standalone Vite 8 (`npm run build`, `npm run dev`).
-  - Configured Express in [`app.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) to serve Vite production bundles (`dist/trainer.js`, `dist/editor.js`, `dist/chunks/`, `dist/style.css`) and static directories directly.
+  - Configured Express in [`app.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) to serve Vite production bundles (`dist/trainer.js`, `dist/editor.js`, `dist/chunks/`, `dist/tailwind.css`) and static directories directly.
   - `npm run static` ([`scripts/build-static.mjs`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/build-static.mjs)) again produces the deployable `static/` site: Vite bundles, `etc/`, `assets/` and the four pug pages rendered to HTML.
   - CI ([`.github/workflows/ci.yml`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/.github/workflows/ci.yml)) replaces the Gulp workflow: typecheck, build, Node tests and static build on Node 20/22; an integration job running all Node suites against the `compose.yaml` Redis and S3 services; pytest, `verify` and shadow parity on Python 3.12. All three jobs were dry-run locally from a clean copy of the tree.
 
@@ -216,16 +223,16 @@ python -m recoil_discovery.shadow_parity
 cd processing && python -m recoil_discovery.cli verify
 
 # 3. Node.js Tests (41/41; run the build first so the bundle-split test is not skipped)
-pnpm build && pnpm test    # or: npm run build && npm test
+pnpm build && pnpm test
 # Plus the Redis, S3 and end-to-end suites (55/55 in total), against compose.yaml services:
 docker compose up -d && pnpm test:services
 
 # 4. TypeScript Typecheck (0 compilation errors)
-pnpm tsc     # or: npm run tsc / cmd /c npm run tsc
+pnpm tsc
 
 # 5. Production Asset Build & Static Site (Vite 8)
-pnpm build   # or: npm run build
-pnpm static  # or: npm run static
+pnpm build
+pnpm static
 
 # 6. Memory Footprint (manual)
 # Peak decoder allocations stay constant with clip length: 328 MB on a 5 s 1080p clip
@@ -273,11 +280,15 @@ An audit of Phases 1–5 found the dashboard overstated several items and that a
 - Decided: the decoder BGR re-decode (1.4) is not worth its CPU cost.
 - Correction: an earlier version of this log said `client/storage.ts` registers every attribute twice. That was a misreading of overlapping output; there is a single `allAttributes.push`, and a browser check confirms one keydown handler per numeric input.
 
+**Follow-up (2026-10-22)**
+- Done: the first CI run on GitHub passed all four jobs (PR #2); the Recoil Editor is split into modules (3.3); all styling is in Tailwind without Sass, with the page layout as utilities and no prefix (3.4).
+- Decided: no Tailwind preflight, and the stateful widgets stay component CSS (see 3.4).
+- Done: pnpm 12 only (pinned under `devEngines`, npm refuses to run, settings in `pnpm-workspace.yaml`), `package-lock.json` removed, dependencies deduplicated; the stale `public/` folder (old Gulp and tsc output still served by Express) removed, and `tsc` only typechecks.
+
 **Still open**
-- 3.4: migrating the remaining components to Tailwind.
-- Further `editor.ts` decomposition (capture studio, weapon manager, canvas tools).
 - A warm Python worker (keeping OpenCV loaded between jobs) if the per-job start-up time (~1–3 s) matters.
-- Confirm the first CI run on GitHub.
+- Optional: moving more widget CSS into utilities; splitting `capture_studio.ts` further.
+- Measured (2026-10-22): with Tailwind's preflight enabled below the app CSS, about 210 elements per desktop page change size or position (form controls switch from the browser's Arial to Inter with a different line height, labels shrink from 20 to 14 px), links lose their underline and images get `max-width: 100%`. Preflight therefore fits the end of a full utility migration, with those changes made or accepted on purpose.
 
 ---
 

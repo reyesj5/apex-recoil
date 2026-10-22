@@ -17,13 +17,13 @@ extends layout
 include mixins/icons
 
 block content
-  #game
-    #control
+  #game(class="flex flex-row h-full mobile:hidden")
+    #control(class="flex flex-col min-w-[315px] max-w-[315px] bg-menu")
       h1 Apex Legends Recoil Patterns
-      p.description Learn and practice spray/recoil patterns
-      p#sensitivity-warning.hidden
+      p(class="px-1 text-center") Learn and practice spray/recoil patterns
+      p#sensitivity-warning.hidden(class="p-2 text-center text-error")
         | Active area is too small! #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#mouse-sensitivity" target="_blank" rel="noopener noreferrer") how to fix] 
-      #top-links
+      #top-links(class="flex justify-around px-3 py-1")
         p#show-instructions-btn.action
           | Show instructions
         a(href="/editor")
@@ -34,15 +34,15 @@ block content
         a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank" rel="noopener noreferrer")
           +icon('heart')
           |  Support
-      #score
-        div#stats-graph-btn.tooltip.btn(aria-label="Show historical stats graph")
+      #score(class="flex flex-row px-2 py-1")
+        div#stats-graph-btn.tooltip.btn(class="mr-1" aria-label="Show historical stats graph")
           img(src="/outline_insert_chart_white_48dp.png" alt="show graph")
           .tooltiptext Show historical graph
-        div#stats-wrap
+        div#stats-wrap(class="m-auto text-right")
           p#score-stats
-      #weapon-filter-bar
+      #weapon-filter-bar(class="flex flex-col gap-[5px] px-[6px] py-1 mb-1")
         input#weapon-search-input(type="text" placeholder="Search weapon..." autocomplete="off" aria-label="Search weapon")
-        .weapon-category-pills(role="tablist" aria-label="Weapon categories")
+        .weapon-category-pills(class="flex flex-wrap gap-[3px]" role="tablist" aria-label="Weapon categories")
           button.cat-pill.active(type="button" data-category="all") All
           button.cat-pill(type="button" data-category="ar") AR
           button.cat-pill(type="button" data-category="smg") SMG
@@ -51,7 +51,7 @@ block content
           button.cat-pill(type="button" data-category="sniper") Snip
           button.cat-pill(type="button" data-category="shotgun") Shot
           button.cat-pill(type="button" data-category="pistol") Pist
-      #weapon-select.grid
+      #weapon-select(class="flex flex-row flex-wrap justify-between")
         div.flatline.btn(data-weapon="flatline" data-category="ar")
           img(src="/images/flatline.png", alt="flatline")
           p.name Flatline
@@ -161,7 +161,7 @@ block content
         div.fire-mode-hint.tooltip
           span.fire-mode-key [B]
           span.tooltiptext Toggle Fire Mode [B]
-      #mag-select.button-row
+      #mag-select.button-row(class="justify-start")
         div.mag-0.tooltip
           img(src="/images/magi.png" alt="no magazine")
           span.mag-cap
@@ -192,21 +192,21 @@ block content
         div.mod-corrupted_stock.mod.tooltip
           img(src="/images/barrel_stocki.png" alt="corrupted stock")
           span.tooltiptext Corrupted Stock (-4 ammo, -1 for shotguns)
-      #settings
-          #mouse-settings.row
+      #settings(class="pt-1 pr-1 pb-0 pl-2 *:pt-1")
+          #mouse-settings(class="flex items-center justify-between pr-[10px]")
             div
-              input(type='text' id='sens' aria-label="Mouse Sensitivity")
+              input(class="w-[5ch]" type='text' id='sens' aria-label="Mouse Sensitivity")
               span.tooltip.underlined
                 | Sensitivity
                 span.tooltiptext
                   | Example: for mouse sensitivity 3 and ADS<br/>
                   | multiplier 1.2 set this to 3 * 1.2 = 3.6
             div.scale-x-wrapper
-              input(type='text' id='scale-x' aria-label="Scale X")
+              input(class="w-[5ch]" type='text' id='scale-x' aria-label="Scale X")
               span
                 | x&nbsp;
             div
-              input(type='text' id='scale-y' aria-label="Scale Y")
+              input(class="w-[5ch]" type='text' id='scale-y' aria-label="Scale Y")
               span
                 | scale
             #invert-y-btn.btn(role="button" title="Invert vertical mouse recoil aim")
@@ -222,21 +222,21 @@ block content
             #mode-moving.btn.tooltip
               div Moving target
               span.tooltiptext hotkey [d]
-          div.row
+          div(class="flex items-center justify-between")
             .tooltip
               img(src="/outline_run_circle_white_24dp.png" alt="target control")
               span.tooltiptext
                 | Target move speed
             input.slider#target-speed(type='range' min="1" max="600" step="1" aria-label="Target speed")
-            #target-speed-value.value
+            #target-speed-value(class="grow text-center")
           #recoil-mode.button-row
             .center-text Recoil:
-            #recoil-weapon.btn.tooltip
+            #recoil-weapon.btn.tooltip(class="w-[90px]")
               div Weapon
               span.tooltiptext
                 | Apply recoil to the weapon and<br/>
                 | keep target still (or move smoothly)
-            #recoil-target.btn.tooltip
+            #recoil-target.btn.tooltip(class="w-[90px]")
               div Target
               span.tooltiptext
                 | Apply recoil to the target.<br/>
@@ -249,60 +249,60 @@ block content
               div Path-dots
             #trace-2.btn
               div Path-lines
-          .row
+          div(class="flex items-center justify-between")
             .tooltip
               img(src="/outline_slow_motion_video_white_24dp.png" alt="speed control").tooltip
               span.tooltiptext
                 | Firing speed. Reduce it if you struggle to follow the pattern
             input.slider#speed(type='range' min="10" max="100" step="10" aria-label="Firing speed")
-            #speed-value.value
-          #sound-control.row
-            #toggle-mute.tooltip(role="button" aria-label="Toggle sound mute")
+            #speed-value(class="grow text-center")
+          #sound-control(class="flex items-center justify-between")
+            #toggle-mute.tooltip(class="cursor-pointer" role="button" aria-label="Toggle sound mute")
               img(src="/volume_up_white_24dp.svg" alt="sound is not muted")#unmuted
               img(src="/volume_off_white_24dp.svg" alt="sound is muted")#muted.hidden
               span.tooltiptext
                 | Sound volume (click to mute)
             input.slider#volume(type='range' min="0" max="100" aria-label="Volume")
-            .value
-      #controls-bottom
-        #copyright(class="tw:mb-1 tw:text-[0.8em]")
-          div(class="tw:flex tw:flex-row tw:text-[0.7em]")
-            a(class="tw:m-0.5" href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
-              img(class="tw:border-b tw:border-b-transparent tw:pb-0.5 tw:hover:border-b-foreground" src="/GitHub-Mark-Light-32px.png", alt="github")
-            a(class="tw:m-0.5" href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
-              img(class="tw:border-b tw:border-b-transparent tw:pb-0.5 tw:hover:border-b-foreground" src="/reddit.png", alt="reddit")
-            a(href="/ru" class="tw:mx-1 tw:my-auto tw:text-[15px]")
+            div(class="grow text-center")
+      #controls-bottom(class="mt-auto px-1 pt-1 pb-2")
+        #copyright(class="mb-1 text-[0.8em]")
+          div(class="flex flex-row text-[0.7em]")
+            a(class="m-0.5" href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
+              img(class="border-b border-b-transparent pb-0.5 hover:border-b-foreground" src="/GitHub-Mark-Light-32px.png", alt="github")
+            a(class="m-0.5" href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
+              img(class="border-b border-b-transparent pb-0.5 hover:border-b-foreground" src="/reddit.png", alt="reddit")
+            a(href="/ru" class="mx-1 my-auto text-[15px]")
               | русский
-            a(href="/zh-CN" class="tw:mx-1 tw:my-auto tw:text-[15px]")
+            a(href="/zh-CN" class="mx-1 my-auto text-[15px]")
               | 中文
-            div(class="tw:flex tw:flex-col tw:items-end tw:grow")
-              a(class="tw:m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
+            div(class="flex flex-col items-end grow")
+              a(class="m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
                 | Privacy Policy
-              a(class="tw:m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
+              a(class="m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
                 | Datenschutzerklärung
-              a(class="tw:m-0.5" href="#cookies")
+              a(class="m-0.5" href="#cookies")
                 | Cookie settings
           p
             | 2026 by Mikhail equanimity_rulez Goncharov.
           p
             | This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. 
             | Game content and materials are trademarks and copyrights of 
-            | #[a(class="tw:m-0.5" href="https://ea.com" target="_blank" rel="noopener noreferrer") Electronic Arts Inc.]              
-            | or #[a(class="tw:m-0.5" href="https://www.respawn.com/" target="_blank" rel="noopener noreferrer") Respawn Entertainment]. 
+            | #[a(class="m-0.5" href="https://ea.com" target="_blank" rel="noopener noreferrer") Electronic Arts Inc.]              
+            | or #[a(class="m-0.5" href="https://www.respawn.com/" target="_blank" rel="noopener noreferrer") Respawn Entertainment]. 
             | Some images and reference materials come from 
-            | #[a(class="tw:m-0.5" href="https://apexlegends.fandom.com/wiki/" target="_blank" rel="noopener noreferrer") Apex Legends Wiki].
-        #version(class="tw:text-right tw:text-[0.8em]")
+            | #[a(class="m-0.5" href="https://apexlegends.fandom.com/wiki/" target="_blank" rel="noopener noreferrer") Apex Legends Wiki].
+        #version(class="text-right text-[0.8em]")
           p
             | version #[span#version-value 17]&nbsp;
             a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank" rel="noopener noreferrer")
               | what's new
-    #workspace
-      #detailed-stats.hidden
+    #workspace(class="grow overflow-hidden")
+      #detailed-stats.hidden(class="bg-menu p-2")
         div Note that the Y-scale for the score is logarithmic as it's quite easy to improve from score 40 to 50 but much harder from 90 to 92.
-        #plotly_area
+        #plotly_area(class="h-[300px]")
         div
           p.action#hide-stats Dismiss graph
-      #instructions.hidden
+      #instructions.hidden(class="bg-menu px-5 py-3")
           h2 Instructions
           p #[a(href="/ru") Russian version].#[a(href="/zh-CN") Chinese version].
           p Check out an #[a(href="https://www.youtube.com/watch?v=tTPKHa4aXug" target="_blank" rel="noopener noreferrer") overview on YouTube].
@@ -316,7 +316,7 @@ block content
           p Hover over options to see hints (if any).
           p.action#dismiss-instructions Dismiss instructions
       #stage
-  #mobile-info
+  #mobile-info(class="text-center desktop:hidden mobile:block mobile:relative mobile:h-full")
     h1 Apex Legends Recoil Patterns
     p Hi! Thanks for checking out this little app to practice recoil patterns. It's meant to be used on the desktop browser with a mouse or controller. 
       | The screen width of your device must be greater than 768 pixels. 
@@ -325,8 +325,8 @@ block content
       | and #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer") FAQ].
     br
     p Cheers!
-    img(src="/trail.png", alt="trail")
-    #copyright-mobile
+    img(class="mobile:py-4" src="/trail.png", alt="trail")
+    #copyright-mobile(class="mobile:absolute mobile:bottom-[50px] mobile:text-[0.8em]")
       p
         a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
           | Privacy Policy

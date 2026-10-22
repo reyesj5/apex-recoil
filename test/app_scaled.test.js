@@ -1,6 +1,6 @@
 // End-to-end tests for the scaled mode: Redis/BullMQ job queue + S3 capture storage, running
 // the real discovery CLI. Requires Redis, an S3-compatible server and the Python requirements:
-//   docker compose up -d && npm run test:services
+//   docker compose up -d && pnpm test:services
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('http');
@@ -12,7 +12,7 @@ const { spawnSync } = require('child_process');
 
 const redisUrl = process.env.TEST_REDIS_URL;
 const s3Endpoint = process.env.TEST_S3_ENDPOINT;
-const skip = (!redisUrl || !s3Endpoint) && 'set TEST_REDIS_URL and TEST_S3_ENDPOINT (npm run test:services) to run the scaled-mode tests';
+const skip = (!redisUrl || !s3Endpoint) && 'set TEST_REDIS_URL and TEST_S3_ENDPOINT (pnpm test:services) to run the scaled-mode tests';
 
 const run = crypto.randomBytes(3).toString('hex');
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apex_scaled_test_'));

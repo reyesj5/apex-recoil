@@ -1,5 +1,28 @@
 # v260922
 
+- **pnpm 12 Only, Deduplicated Dependencies & Old Build Folder Removed (M10, 2026-10-22)**:
+  - **pnpm 12, no npm ([package.json](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/package.json), [pnpm-workspace.yaml](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/pnpm-workspace.yaml))**:
+    - `package.json` pins pnpm 12.14.0 under `devEngines.packageManager`, replacing the `packageManager` pin on 10.8.1. Any pnpm 11 or newer switches to that version; npm refuses to install or run scripts (`EBADDEVENGINES`). `package-lock.json` is gone.
+    - The list of dependencies allowed to run install scripts moved from the `pnpm` field of `package.json`, which pnpm no longer reads, to `allowBuilds` in `pnpm-workspace.yaml`: esbuild and sqlite3 build, and msgpackr-extract keeps using its prebuilt binary. A new dependency with an install script now fails the install until it is listed there.
+    - `pnpm-lock.yaml` also pins pnpm itself, with a checksum for each platform's binary.
+    - CI installs pnpm with `pnpm/action-setup@v6`, which added pnpm 12 support in v6.1.
+    - Docs, code comments and test messages use pnpm commands.
+  - **Deduplicated dependencies**: semver 7.7.3 merged into 7.8.5. pnpm 12's first full resolution also links `debug`'s optional `supports-color` peer and records `libc` for platform-specific packages; no other version changed.
+  - **Old `public/` build folder removed**: Express served it after `dist/`, so it still answered with the Gulp build's `style.css`, `bundle.js` and compiled JavaScript from October 6–7. Its 190 files were copies of `assets/` and `etc/` (tracked in git) or obsolete build output, so nothing was lost. `tsconfig.json` now sets `noEmit`, since `pnpm tsc` kept writing compiled JavaScript into `public/javascripts`; Vite bundles the code and tsc only typechecks.
+
+- **Tailwind Migration, Editor Modules & First CI Run (M10, 2026-10-22)**:
+  - **All styles in Tailwind, no Sass ([client/styles/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/))**:
+    - `style.scss`, `reset.scss`, `theme.scss` and the `sass` dependency are gone. Their rules are plain CSS in `base.css`, `components.css`, `trainer.css` and `editor.css`, using CSS nesting and `theme.json` tokens; `theme-tokens.css` now also carries the shades and alpha variants Sass used to compute.
+    - Pages load a single stylesheet, `tailwind.css` (90.5 kB; previously 106 kB of `style.css` plus 1 kB).
+    - The app CSS sits in one cascade layer below Tailwind's utilities, so a utility class always overrides it.
+    - The page layout of the trainer (all three languages) and the editor is Tailwind utilities in the templates; the stateful widgets (tiles, pills, buttons, dialogs, capture studio, HUD) stay component CSS.
+    - Utilities have no `tw:` prefix anymore. The legacy `.grid` class, which would have turned into Tailwind's `display: grid`, became flex utilities.
+    - No Tailwind preflight: it would restyle images, links, borders and form controls, so the original reset stays.
+    - Nothing looks different: the computed style and position of every element are identical before and after on all pages at desktop and phone widths, through a scripted editor session (including a real analysis and its results) and a trainer session in all three languages, with forced hover, focus and active states.
+  - **Recoil Editor split into modules ([client/modules/editor/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/editor/))**: the 5,153-line `client/editor.ts` is now a ~100-line entry plus 11 modules (state, layout, toolbar, canvas, calibration, overlays, weapon manager, capture studio, screenshots, sessions, analysis dialog). The code moved unchanged; only the 36 assignments to seven shared variables go through setters in `state.ts`. A scripted editor session gives identical DOM, canvas shapes and storage before and after.
+  - **CI**: the first run on GitHub (PR #2) passed all four jobs.
+  - Tests: 41 Node tests (the stylesheet test now checks `tailwind.css` and its cascade layers), plus 14 Redis/S3/end-to-end tests with `pnpm test:services`; 43 Python tests.
+
 - **Scaled Mode: Redis/BullMQ Queue, S3 Capture Storage & Tailwind Foundation (M10, 2026-10-21)**:
   - **Persistent job queue ([server/bull_queue.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/bull_queue.js))**: with `REDIS_URL` set, analysis jobs go through BullMQ instead of the in-process queue.
     - Queued jobs survive server restarts. A job whose worker dies is retried by another worker, and the editor's progress stream, status and cancel endpoints work unchanged.

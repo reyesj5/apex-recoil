@@ -60,29 +60,27 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
 ## Running Locally
 
 ### 1. Prerequisites
-* **Node.js** 20.19+ or 22.12+ (required by Vite 8) & **npm** / **pnpm**
+* **Node.js** 20.19+ or 22.12+ (required by Vite 8)
+* **pnpm** 12 ([installation](https://pnpm.io/installation)). pnpm 11 and newer switch to the version pinned in `package.json` (`devEngines`) on their own; npm is not supported and stops with `EBADDEVENGINES`.
 * **Python 3.10+** (for the automated discovery engine)
 
 ### 2. Frontend & Web Server
 From the repository root:
 ```bash
-# Install dependencies
-pnpm install            # or: npm install
+# Install dependencies (pnpm-workspace.yaml lists the native builds allowed to run: esbuild, sqlite3)
+pnpm install
 
-# Rebuild native sqlite3 bindings if prompted (pnpm v10+)
-pnpm rebuild sqlite3    # or: pnpm approve-builds
-
-# Build assets (Vite 8 production build: trainer.js, editor.js, style.css)
-pnpm build              # or: npm run build
+# Build assets (Vite 8 production build: trainer.js, editor.js, tailwind.css)
+pnpm build
 
 # Run Node test suites (41 tests across database, queue, storage, and API; build first)
-pnpm test               # or: npm test
+pnpm test
 
 # Typecheck TypeScript
-pnpm tsc                # or: npm run tsc
+pnpm tsc
 
 # Start development server
-pnpm dev                # or: npm run dev
+pnpm dev
 ```
 
 Open your browser to:
@@ -102,7 +100,7 @@ pnpm dev                      # the server runs one embedded worker
 pnpm worker                   # optional: more workers (other machines need S3 storage)
 
 # Run every Node suite, including the Redis, S3 and end-to-end tests (55 tests)
-pnpm test:services            # or: npm run test:services
+pnpm test:services
 ```
 With S3 storage the editor uploads recordings straight to the bucket; the bucket must allow `PUT` from the app's origin (CORS). `S3_AUTO_CREATE_BUCKET=true` creates the bucket and that rule for development.
 
@@ -144,7 +142,7 @@ Detailed documentation is available in [docs/capture.md](./docs/capture.md).
 
 Deployment is fully static:
 ```bash
-pnpm static  # or: npm run static
+pnpm static
 ```
 This builds the Vite bundles, copies `etc/` and `assets/`, and renders the pages (`index.html`, `index-ru.html`, `index-zh-CN.html`, `editor.html`) into `./static`. Copy its contents to your web server directory (e.g. Nginx / Apache / S3). The Recoil Editor's capture and spec-saving features need the Node server and are not available on a static host.
 

@@ -120,9 +120,9 @@ describe('AssetStorageService (Local & S3 Abstraction)', () => {
 });
 
 // Integration tests against an S3-compatible server:
-//   docker compose up -d s3 && npm run test:services
+//   docker compose up -d s3 && pnpm test:services
 const s3Endpoint = process.env.TEST_S3_ENDPOINT;
-describe('AssetStorageService on S3 (SeaweedFS/MinIO/AWS)', { skip: !s3Endpoint && 'set TEST_S3_ENDPOINT (npm run test:services) to run the S3 tests' }, () => {
+describe('AssetStorageService on S3 (SeaweedFS/MinIO/AWS)', { skip: !s3Endpoint && 'set TEST_S3_ENDPOINT (pnpm test:services) to run the S3 tests' }, () => {
   const bucket = `apex-test-${Date.now().toString(36)}`;
   let s3Storage;
   let tempDir;

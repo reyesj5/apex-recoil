@@ -13,7 +13,7 @@ When a gun gets a balance update (e.g. mag size changed, RPM tweaked) or you wan
 ### Running Locally
 1. Start the development server:
    ```bash
-   pnpm dev  # or: npm run dev
+   pnpm dev
    ```
 2. Open your browser to: **`http://localhost:3000/editor`**
 

@@ -1,6 +1,6 @@
 # Optional backing services for the scalable mode (see .env.example):
 #   - redis: BullMQ job queue (REDIS_URL), so analysis jobs survive restarts and can run on
-#     separate worker processes or machines (`npm run worker`)
+#     separate worker processes or machines (`pnpm worker`)
 #   - s3:    S3-compatible object storage for captures (STORAGE_PROVIDER=s3). SeaweedFS is used
 #            because MinIO no longer publishes community container images.
 # Without these services the app keeps its default mode: in-process queue + local captures folder.

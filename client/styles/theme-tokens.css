@@ -31,4 +31,22 @@
   --color-score-8: rgb(96, 134, 45);
   --color-score-9: rgb(64, 115, 38);
   --color-score-10: rgb(32, 96, 32);
+  /* Derived shades and alpha variants */
+  --color-menu: #171717;
+  --color-panel: #1a1a1a;
+  --color-modal: #1f1f1f;
+  --color-background-a95: rgba(18, 18, 18, 0.95);
+  --color-active-a20: rgba(249, 199, 79, 0.2);
+  --color-active-a30: rgba(249, 199, 79, 0.3);
+  --color-active-a40: rgba(249, 199, 79, 0.4);
+  --color-active-a50: rgba(249, 199, 79, 0.5);
+  --color-active-a60: rgba(249, 199, 79, 0.6);
+  --color-active-a70: rgba(249, 199, 79, 0.7);
+  --color-attachment-1-a50: rgba(168, 168, 168, 0.5);
+  --color-attachment-2-a50: rgba(81, 168, 214, 0.5);
+  --color-attachment-3-a50: rgba(178, 55, 200, 0.5);
+  --color-attachment-4-a40: rgba(230, 57, 70, 0.4);
+  --color-attachment-4-a50: rgba(230, 57, 70, 0.5);
+  --color-attachment-4-a60: rgba(230, 57, 70, 0.6);
+  --color-attachment-4-a85: rgba(230, 57, 70, 0.85);
 }

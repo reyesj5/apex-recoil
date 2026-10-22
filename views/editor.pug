@@ -17,7 +17,7 @@ extends layout
 include mixins/icons
 
 block content
-  #editor
+  #editor(class="flex flex-row h-screen overflow-hidden")
     #tools
       .nav-bar
         a(href="/" class="back-link") ← Back to Trainer
@@ -318,7 +318,7 @@ block content
             textarea#comment(cols="30", rows="2")
           p#count
           #text
-    #stage-container
+    #stage-container(class="relative flex flex-1 flex-col min-w-0 min-h-0 h-screen overflow-hidden bg-[#11141c]")
       #stage-toolbar.stage-header
         .stage-header-left
           button#toggle-sidebar-btn.small-btn(type="button" title="Toggle Left Sidebar [M]" aria-label="Toggle Left Sidebar")

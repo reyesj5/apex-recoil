@@ -227,24 +227,25 @@ describe('API Endpoints (SQLite Specs & Versioning)', () => {
     assert.doesNotMatch(editor, /src="\/trainer\.js"/);
   });
 
-  test('serves Vite bundles with the trainer split from the editor', { skip: !fs.existsSync(path.join(distDir, 'trainer.js')) && 'run `npm run build` first' }, async () => {
+  test('serves Vite bundles with the trainer split from the editor', { skip: !fs.existsSync(path.join(distDir, 'trainer.js')) && 'run `pnpm build` first' }, async () => {
     const trainerRes = await fetch(`${baseUrl}/trainer.js`);
     assert.equal(trainerRes.status, 200);
     const editorRes = await fetch(`${baseUrl}/editor.js`);
     assert.equal(editorRes.status, 200);
 
-    const styleRes = await fetch(`${baseUrl}/style.css`);
-    assert.equal(styleRes.status, 200);
-    const styleText = await styleRes.text();
-    assert.ok(styleText.length > 10000, 'Expected style.css to contain compiled CSS');
-
-    // Tailwind layer for migrated components; utilities are prefixed (tw:) so legacy class
-    // names never match them
-    const tailwindRes = await fetch(`${baseUrl}/tailwind.css`);
-    assert.equal(tailwindRes.status, 200);
-    const tailwindText = await tailwindRes.text();
-    assert.match(tailwindText, /\.tw\\:mb-1/);
-    assert.doesNotMatch(tailwindText, /(^|[}\s,])\.(grid|hidden|flex|border)\s*\{/);
+    // A single stylesheet: the app's CSS in the `app` cascade layer, then Tailwind's utilities in
+    // the later `utilities` layer, so a utility class always overrides the app CSS
+    const cssRes = await fetch(`${baseUrl}/tailwind.css`);
+    assert.equal(cssRes.status, 200);
+    const css = await cssRes.text();
+    assert.ok(css.length > 50000, 'Expected tailwind.css to contain all compiled styles');
+    const appLayer = css.indexOf('@layer app{');
+    const utilitiesLayer = css.indexOf('@layer utilities{');
+    assert.ok(appLayer >= 0 && utilitiesLayer > appLayer, 'Expected the app layer before the utilities layer');
+    assert.match(css.slice(appLayer, utilitiesLayer), /#editor/);
+    assert.match(css.slice(appLayer, utilitiesLayer), /#game/);
+    // Unprefixed utilities used by the templates (e.g. the trainer footer's mb-1)
+    assert.match(css.slice(utilitiesLayer), /\.mb-1\{/);
 
     const plotlyRes = await fetch(`${baseUrl}/plotly-cartesian.min.js`);
     assert.equal(plotlyRes.status, 200);
