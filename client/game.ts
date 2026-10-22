@@ -16,7 +16,7 @@
 
 import { Howl } from "howler";
 import Konva from "konva";
-import { cursor, layer, stage } from "./main";
+import { cursor, layer, stage } from "./stage";
 import { resumeAttrUpdates, suspendAttrUpdates, BooleanAttribute, NumericAttribute, StringAttribute, watch, initAttributes } from './storage';
 import { Point } from "./point";
 import specs from './specs.json';
@@ -854,8 +854,8 @@ function weaponControls() {
       time_points: s.time_points,
       x: s.x,
       y: s.y,
-      mods: s.mods,
-      ping_points: s.ping_points,
+      mods: (s as any).mods,
+      ping_points: (s as any).ping_points,
     });
     const d = (document.querySelector(`#weapon-select [data-weapon="${s.name}"]`) ||
                document.querySelector(`#weapon-select .${CSS.escape(s.name)}`)) as HTMLDivElement;

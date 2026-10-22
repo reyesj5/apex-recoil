@@ -36,12 +36,13 @@ Every AI agent working in this codebase must execute the following 4 steps after
 
 Never consider a task complete without executing and passing these checks:
 
-1. **Python Unit Tests**:
+1. **Python Unit Tests & Shadow Parity**:
    ```bash
    cd processing
    python -m pytest tests
+   python -m recoil_discovery.shadow_parity
    ```
-   *Requirement:* All unit tests must pass with 0 errors.
+   *Requirement:* All 43 unit tests must pass with 0 errors, and all 31 weapons must pass full-document shadow parity (0.000000 coordinate drift, identical fields and order). Tests run on temp databases; only the `shadow_parity` command reads `data/recoil.db`.
 
 2. **Recoil Spec Schema Verification**:
    ```bash
@@ -50,14 +51,22 @@ Never consider a task complete without executing and passing these checks:
    ```
    *Requirement:* Must run whenever `client/specs.json` or spec-related logic is modified. All weapons must show `Status: OK`.
 
-3. **TypeScript Typecheck**:
+3. **Node.js Automated Test Suites**:
    ```bash
-   npm run tsc   # or: cmd /c npm run tsc
+   pnpm build && pnpm test   # or: npm run build && npm test
+   ```
+   *Requirement:* All 41 tests must pass across database, queue, storage, and API suites. Without a prior build the bundle-split test is skipped. Tests must never write to `data/recoil.db` or `client/specs.json` (use the `RECOIL_*` path variables).
+   If you touched the job queue, storage, uploads or discovery endpoints, also run the Redis/S3/end-to-end suites: `docker compose up -d && pnpm test:services` (55 tests in total).
+   If you migrated styles from `style.scss` to Tailwind, capture `node scripts/style-snapshot.mjs` before and after and compare: there must be no differences.
+
+4. **TypeScript Typecheck**:
+   ```bash
+   pnpm tsc    # or: npm run tsc / cmd /c npm run tsc
    ```
    *Requirement:* 0 TypeScript compilation errors.
 
-4. **Asset & Bundle Verification**:
-   If Gulp, SCSS, or static bundling logic was altered, verify that `npx gulp public` or `npm run static` succeeds without crashing.
+5. **Asset & Bundle Verification**:
+   If SCSS, TypeScript, or static bundling logic was altered, verify that `pnpm build` (or `npm run build`) or `pnpm static` (or `npm run static`) succeeds without crashing.
 
 ---
 

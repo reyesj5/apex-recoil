@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
 /**
+ * Optional settings from .env in the working directory (see .env.example).
+ */
+
+if (require('fs').existsSync('.env')) process.loadEnvFile('.env');
+
+/**
  * Module dependencies.
  */
 

@@ -14,10 +14,11 @@ All submissions, including submissions by project members, require review. We us
 ## Quality Gates & Testing
 
 Before submitting a pull request, ensure all quality gates pass:
-1. **Python Unit Tests:** `cd processing && python -m pytest tests`
+1. **Python Unit Tests & Shadow Parity:** `cd processing && python -m pytest tests && python -m recoil_discovery.shadow_parity`
 2. **Schema Verification:** `cd processing && python -m recoil_discovery.cli verify`
-3. **TypeScript Typecheck:** `npm run tsc`
-4. **Static Build:** `npm run static`
+3. **Node.js Test Suites:** `pnpm test` (or: `npm test`); with `docker compose up -d`, `pnpm test:services` also runs the Redis, S3 and end-to-end suites
+4. **TypeScript Typecheck:** `pnpm tsc` (or: `npm run tsc`)
+5. **Static & Bundle Build:** `pnpm build` (or: `npm run build` / `pnpm static`)
 
 ## Project Roadmap & AI Guidelines
 

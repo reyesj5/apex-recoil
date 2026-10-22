@@ -2415,41 +2415,7 @@ input[type="text"], input[type="number"] {
   cursor: pointer;
 }
 
-#copyright {
-  
-  .links {
-    font-size: 0.7em;
-    flex-direction: row;
-    display: flex;
-    .vertical {
-      flex-direction: column;
-      display: flex;
-      align-items: flex-end;
-      flex-grow: 1;
-    }
-    .lang {
-      font-size: 15px;
-      margin: auto 4px;
-    }
-  }
-  a {
-    margin: 2px;
-    img {
-      border-bottom: 1px solid transparent;
-      padding-bottom: 2px;
-      &:hover {
-        border-bottom: 1px solid $foreground;
-      }
-    }
-  }
-  font-size: 0.8em;
-  margin-bottom: 4px;
-}
-
-#version {
-  text-align: right;
-  font-size: 0.8em;
-}
+// #copyright and #version are styled with Tailwind utilities in views/index*.pug
 
 #mobile-info {
   text-align: center;

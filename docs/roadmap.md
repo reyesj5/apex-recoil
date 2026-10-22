@@ -16,7 +16,8 @@ This document outlines the architectural milestones, completed implementations, 
 | **M6: Weapon Arsenal & Attachments** | ✅ Completed | All 31 Apex weapons supported with official SVGs, 5-tier specs, and Corrupted Stock attachment. |
 | **M7: Full-Stack Hardening & Robustness** | ✅ Completed | Comprehensive senior review covering 25 fixes across security, correctness, error handling, and performance. |
 | **M8: UI/UX Modernization & Polish** | ✅ Completed | Google Fonts, instant weapon search & category pills, live mag capacities, toolbar ergonomics, corrupted mag SVG. |
-| **M9: CI/CD Pipeline Automation** | 🟡 Next Priority | GitHub Actions workflow running both Python pytest and TypeScript typecheck on push. |
+| **M9: CI/CD Pipeline Automation** | 🟡 Implemented, awaiting first run | `.github/workflows/ci.yml`: typecheck, Vite build, Node tests and static build (Node 20/22); integration job with Redis + S3 (compose.yaml); pytest, spec verify and shadow parity (Python 3.12). Dry-run locally from a clean copy; not yet run on GitHub. |
+| **M10: Platform & Architectural Overhaul** | 🟡 In Progress | Done: streaming ingestion, in-process or Redis/BullMQ job queue, Vite 8 route bundles, lossless SQLite spec store, local or S3 capture storage with direct uploads, full-document shadow parity. Open: migrating the remaining components to Tailwind (3.4, foundation in place), further `editor.ts` decomposition. |
 
 ---
 
@@ -182,10 +183,59 @@ All 31 weapons in [client/specs.json](file:///c:/Users/micro.VADER/Documents/Pro
 ---
 
 ### Milestone 9: CI/CD Pipeline Automation
-- [ ] **GitHub Actions Workflow**:
-  - Run `python -m pytest tests` on pull requests modifying `processing/`.
-  - Run `python -m recoil_discovery.cli verify` on changes to `client/specs.json`.
-  - Run `npm run tsc` and `gulp public` to ensure frontend builds cleanly.
+- [x] **GitHub Actions Workflow** ([.github/workflows/ci.yml](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/.github/workflows/ci.yml), replaces the Gulp workflow):
+  - Run `python -m pytest tests`, `python -m recoil_discovery.cli verify` and `python -m recoil_discovery.shadow_parity` (full-document parity) on every push/PR to `main`.
+  - Run `pnpm exec tsc --noEmit`, `pnpm build`, `pnpm test` and `pnpm static` on Node 20.x and 22.x.
+  - Integration job: `docker compose up` (Redis + SeaweedFS) and `pnpm test:services`, covering BullMQ, S3 and end-to-end analysis with the real Python CLI.
+- [x] Dry run of all three jobs from a clean copy of the tree (fresh `pnpm install`, fresh Python venv): all green.
+- [ ] Confirm the first workflow run on GitHub (opencv system libraries, sqlite3 native build).
+- [ ] Optional: path filters so Python-only and client-only changes skip the other job.
+
+---
+
+### Milestone 10: Modern Platform & Architectural Overhaul (M10)
+Tracked and executed in alignment with the master [Architectural Migration Plan](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/migration-plan.md):
+
+- [x] **Phase 1: Stabilization & Memory Hardening**:
+  - [x] Switch 150MB Base64 JSON ingestion to streaming `multipart/form-data` with `multer` and binary `FormData` uploads.
+  - [x] Replace synchronous `fs.readdirSync` and `fs.statSync` with async `fs.promises` in [app.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) with 60s memory caching.
+  - [x] Add atomic temp-file swap (`fs.rename` / `Path.replace()`) to [client/specs.json](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json).
+  - [x] Refactor Python video decoder ([pipeline.py](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py)) to keep only the last 21 frames instead of accumulating full-clip arrays (peak 328 MB on a 5 s 1080p clip, constant with clip length).
+- [x] **Phase 2: Compute Worker Service & Asynchronous Job Architecture**:
+  - [x] Establish dedicated asynchronous JobQueue service ([server/job_queue.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/job_queue.js)) with unit testing ([test/job_queue.test.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/test/job_queue.test.js)).
+  - [x] Transition `POST /api/discovery/process-session` and `process-static-image` to asynchronous job dispatch (`202 Accepted` + `job_id`).
+  - [x] Implement Server-Sent Events (SSE) progress streaming (`GET /api/discovery/jobs/:id/events`) and polling fallback (`GET /api/discovery/jobs/:id`).
+  - [x] Add worker concurrency control, 120s task timeouts, process kill guards, and automatic temp-folder cleanup.
+  - [x] Persistent queue with Redis/BullMQ (`REDIS_URL`): jobs survive restarts, standalone workers (`npm run worker`), crash recovery, cross-process cancellation ([server/bull_queue.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/bull_queue.js)).
+- [ ] **Phase 3: Modern Frontend Architecture & Component Decomposition**:
+  - [x] Set up Vite 8 bundler with entries `trainer`, `editor`, legacy `bundle` router, `style` and `tailwind`, plus `theme.json` → `theme.scss` / `theme-tokens.css` generation (`vite.config.mjs`).
+  - [x] Separate public Aim Trainer into its own route bundle (`client/trainer_main.ts` + shared stage in `client/stage.ts`): 89 kB gzip without editor code (<150KB budget).
+  - [x] Decompose [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) into reusable modules: [`types.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/types.ts), [`utils.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/utils.ts), and [`DiscrepancyInspector.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/analysis/DiscrepancyInspector.ts) (now used by `editor.ts`).
+  - [ ] Continue decomposing `client/editor.ts` (~5,200 lines): capture studio, weapon manager, canvas tools.
+  - [x] Tailwind 4 foundation next to the SCSS: `tw:`-prefixed utilities, theme.json palette tokens, computed-style snapshot tool ([scripts/style-snapshot.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/style-snapshot.mjs)); trainer footer migrated with zero computed-style change.
+  - [ ] Migrate the remaining components from [style.scss](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss) to Tailwind (tooltips, buttons, modals, then `#game` and `#editor`), preserving WCAG AA/AAA tokens; then remove the SCSS and the prefix.
+- [x] **Phase 4: Database Layer & Persistent Asset Storage**:
+  - [x] Deploy SQLite relational schema in [`server/db.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/db.js) and [`processing/recoil_discovery/db.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/db.py) with versioned, lossless weapon specs (`spec_json`, `sort_order`), `spec_revisions` audit logs, and import of external `specs.json` edits before every read/write.
+  - [x] Persist session metadata in `discovery_sessions`, merged into the session list (from capture storage) served to the editor.
+  - [x] `AssetStorageService` ([`server/storage.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/storage.js)) with local and S3-compatible providers (AWS SDK v3); all capture I/O in `app.js` goes through it.
+  - [x] Direct browser uploads to S3 via presigned PUT + signed grants, media streamed by the API at `/captures`, `tmp/` cleanup; tested against SeaweedFS ([compose.yaml](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/compose.yaml)) and in headless Chrome.
+- [x] **Phase 5: Shadow Parity, Benchmarking & Decommissioning**:
+  - [x] Execute automated shadow validation suite ensuring 100% field-level parity (all fields, order, coordinates) across all 31 weapons ([`processing/recoil_discovery/shadow_parity.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/shadow_parity.py)).
+  - [x] Validate microcontroller firmware alignment ([`arduino_mouse/src/recoil.inc`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/arduino_mouse/src/recoil.inc)).
+  - [x] Decommissioned legacy Gulp, Browserify, Tsify, Watchify, and Gulp build configs in favor of pure Vite 8 standalone pipeline; `npm run static` restored via [`scripts/build-static.mjs`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/build-static.mjs).
+- [x] **Phase 6: Frontend Runtime Module Resolution & Weapon Manager Polish**:
+  - [x] Load the Vite ES modules with `type="module"` in [`views/layout.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/layout.pug) (now per route: `/trainer.js`, `/editor.js`).
+  - [x] Persist `mods` and `ping_points` in SQLite schema ([`server/db.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/db.js)) and deduplicate active specs, maintaining 100% parity across layers with zero drift.
+  - [x] Implement "+ New Weapon" creation flow and automatic canvas synchronization in Recoil Editor ([`views/editor.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug), [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts)).
+- [x] **Phase 7: Migration Audit & Hardening (2026-10-19)** — details in the [Audit Log](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/migration-plan.md):
+  - [x] Isolate API tests from `data/recoil.db` / `client/specs.json`; make `DatabaseService.init()` idempotent; prune test rows from the local database (backup in `data/recoil.pre-audit-cleanup.db`).
+  - [x] Lossless, order-preserving, transactional spec store in Node and Python; import external `specs.json` edits before saves; full-document shadow parity.
+  - [x] Fix past-session loading, route bundle wiring, static site build, CI, stale `package-lock.json`, HDR blue channel, zero-frame `NameError`, job-queue completion/kill/progress bugs, upload temp-file leaks, single-screenshot analysis scope, and S3 fake success.
+  - [x] End-to-end checks: headless Chrome loads `/` and `/editor` with no errors; upload → JobQueue → Python CLI → SSE → session index verified with a synthetic spray clip.
+- [x] **Phase 8: Scaled Mode & Styling Foundation (2026-10-21)**:
+  - [x] Redis/BullMQ queue (2.4), S3 storage with direct uploads (4.3), `compose.yaml` services, `.env.example`, `npm run worker`, `npm run test:services`.
+  - [x] Tailwind 4 foundation and first migrated component (3.4), verified with computed-style snapshots.
+  - [x] CI integration job; decoder BGR re-decode (1.4) measured and dropped (+22% CPU for ~130 MB).
 
 ---
 
@@ -193,27 +243,35 @@ All 31 weapons in [client/specs.json](file:///c:/Users/micro.VADER/Documents/Pro
 
 Every code change in this repository MUST satisfy the following quality gates before merging:
 
-1. **Python Unit Tests**:
+1. **Python Unit Tests & Shadow Parity**:
    ```bash
    cd processing && python -m pytest tests
+   python -m recoil_discovery.shadow_parity
    ```
-   *Requirement: 30/30 tests passing.*
+   *Requirement: 43/43 pytest tests passing and 31/31 weapons at full-document parity (0 drift).*
 
 2. **Schema Verification**:
    ```bash
    cd processing && python -m recoil_discovery.cli verify
    ```
-   *Requirement: All weapons pass array length, mag size, and RPM checks.*
+   *Requirement: All 31 weapons pass array length, mag size, and RPM checks.*
 
-3. **TypeScript Typecheck**:
+3. **Node.js Automated Test Suites**:
    ```bash
-   cmd /c npm run tsc
+   pnpm build && pnpm test   # or: npm run build && npm test
+   ```
+   *Requirement: 41/41 tests passing across database, job queue, storage, and API (the bundle-split test is skipped without a build). With `docker compose up -d`, `pnpm test:services` also runs the Redis, S3 and end-to-end suites (55/55).*
+
+4. **TypeScript Typecheck**:
+   ```bash
+   pnpm tsc    # or: npm run tsc / cmd /c npm run tsc
    ```
    *Requirement: 0 type errors.*
 
-4. **Static Asset Build**:
+5. **Static Asset Build (Vite 8)**:
    ```bash
-   npx gulp public
+   pnpm build   # or: npm run build
+   pnpm static  # or: npm run static
    ```
-   *Requirement: Successful compilation of styles and client bundle.*
+   *Requirement: Successful compilation of styles and route bundles, and of the static site.*
 

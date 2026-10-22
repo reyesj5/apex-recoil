@@ -27,7 +27,9 @@ block content
         h3 Weapon Specs Manager
         .form-row
           .form-group(style="flex: 2;")
-            label(for="weapon-select") Select Weapon:
+            .label-row(style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;")
+              label(for="weapon-select") Select Weapon:
+              button#add-weapon-btn.small-btn(type="button" title="Add a new custom weapon spec") + New Weapon
             select#weapon-select
           .form-group(style="flex: 1;")
             label(for="weapon-mode-select") Fire Mode:
@@ -713,3 +715,6 @@ block content
                   p.shortcut-desc Opens this shortcuts reference dialog.
         .modal-footer
           button#close-shortcuts-modal-footer-btn.primary-btn(type="button") Got it!
+
+block scripts
+  script(type="module" src='/editor.js')

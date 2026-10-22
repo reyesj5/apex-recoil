@@ -1,6 +1,6 @@
 # Deploy a code
 
-1. `npm run static`
+1. `pnpm static` (or: `npm run static`)
 
 2.  scp -r -i <id_rsa> .\static\* root@46.101.102.179:/var/www/html
 

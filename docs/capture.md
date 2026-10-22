@@ -13,7 +13,7 @@ When a gun gets a balance update (e.g. mag size changed, RPM tweaked) or you wan
 ### Running Locally
 1. Start the development server:
    ```bash
-   npm run dev
+   pnpm dev  # or: npm run dev
    ```
 2. Open your browser to: **`http://localhost:3000/editor`**
 
@@ -37,7 +37,7 @@ When a gun gets a balance update (e.g. mag size changed, RPM tweaked) or you wan
 * **Analysis Confirmation & Tagging:**
   * Before analyzing any recording session or uploaded wall screenshot, the studio prompts an **Analysis Confirmation** dialog.
   * You can confirm or change the target **Weapon** and **Fire Mode** (preventing unintentional overwrites to the default R-99).
-  * Choose whether to **Save capture to library** (`processing/captures/`). If loading a screenshot extracted from an existing video capture session, leave this unchecked to prevent duplicating files on disk while still performing full analysis and canvas overlay alignment.
+  * Choose whether to **Save capture to library** (`processing/captures/`, or the S3 bucket when the server runs with `STORAGE_PROVIDER=s3`). If loading a screenshot extracted from an existing video capture session, leave this unchecked to prevent duplicating files on disk while still performing full analysis and canvas overlay alignment.
 
 ---
 

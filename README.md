@@ -51,28 +51,38 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
    - **Dynamic Target Board Isolation & Morphological Black Top-Hat Filtering**: isolates bullet decals on the white target board while completely rejecting dark frame pillars, vertical seams, and weapon sights.
    - Automatic acoustic and visual rate of fire (RPM) measurement ($\text{RPM} = 60000 / \text{median}(\Delta t_{\text{ms}})$).
    - Multi-spray median-delta integration and convergence scoring ($rc\_score$).
-   - Comprehensive test suite with 27 automated unit tests.
+   - SQLite persistence layer with versioned, lossless specs (kept in sync with `client/specs.json`), audit history, and full-document shadow parity verification.
+   - Optional scaled mode: Redis/BullMQ job queue with standalone workers, and S3-compatible capture storage with direct browser uploads.
+   - Comprehensive test suite with 43 Python unit tests and 55 Node.js tests (14 of them need Redis/S3, see below).
 
 ---
 
 ## Running Locally
 
 ### 1. Prerequisites
-* **Node.js** (v18+ recommended) & **npm** / **pnpm**
+* **Node.js** 20.19+ or 22.12+ (required by Vite 8) & **npm** / **pnpm**
 * **Python 3.10+** (for the automated discovery engine)
 
 ### 2. Frontend & Web Server
 From the repository root:
 ```bash
 # Install dependencies
-pnpm install  # or: npm install
+pnpm install            # or: npm install
 
-# Build assets
-pnpm tsc
-npx gulp public
+# Rebuild native sqlite3 bindings if prompted (pnpm v10+)
+pnpm rebuild sqlite3    # or: pnpm approve-builds
+
+# Build assets (Vite 8 production build: trainer.js, editor.js, style.css)
+pnpm build              # or: npm run build
+
+# Run Node test suites (41 tests across database, queue, storage, and API; build first)
+pnpm test               # or: npm test
+
+# Typecheck TypeScript
+pnpm tsc                # or: npm run tsc
 
 # Start development server
-npm run dev
+pnpm dev                # or: npm run dev
 ```
 
 Open your browser to:
@@ -80,6 +90,21 @@ Open your browser to:
 * Recoil Editor & Auto-Capture Studio: **`http://localhost:3000/editor`**
 
 > **Note on Port Collisions:** If port 3000 is already in use by another local process, the server automatically retries and binds to **`http://localhost:3001`**.
+
+> **Data & configuration:** weapon specs are versioned in `data/recoil.db` (SQLite) and exported to `client/specs.json`, which the trainer bundle imports. Editing `specs.json` directly (or through the Python CLI) is fine: the server imports those edits as new versions before its next read or write. Settings come from environment variables or a `.env` file; see [.env.example](./.env.example).
+
+#### Optional: scaled mode (Redis job queue + S3 storage)
+By default analysis jobs run inside the server process and captures are stored in `processing/captures`. To let jobs survive restarts, run them on separate workers, or keep captures in object storage:
+```bash
+docker compose up -d          # Redis + an S3-compatible server (SeaweedFS), see compose.yaml
+cp .env.example .env          # then uncomment REDIS_URL and/or the STORAGE_PROVIDER=s3 block
+pnpm dev                      # the server runs one embedded worker
+pnpm worker                   # optional: more workers (other machines need S3 storage)
+
+# Run every Node suite, including the Redis, S3 and end-to-end tests (55 tests)
+pnpm test:services            # or: npm run test:services
+```
+With S3 storage the editor uploads recordings straight to the bucket; the bucket must allow `PUT` from the app's origin (CORS). `S3_AUTO_CREATE_BUCKET=true` creates the bucket and that rule for development.
 
 ### 3. Python Recoil Discovery Pipeline
 From the `processing/` directory:
@@ -89,8 +114,11 @@ cd processing
 # Install dependencies
 pip install -r requirements.txt
 
-# Run automated test suite
+# Run automated test suite (43 tests)
 python -m pytest tests
+
+# Run shadow parity suite (SQLite vs specs.json, every field; --no-sync to only report drift)
+python -m recoil_discovery.shadow_parity
 
 # Run discovery CLI commands
 python -m recoil_discovery.cli verify
@@ -110,17 +138,15 @@ When recording sprays in the Apex Legends Firing Range for discovery:
 
 Detailed documentation is available in [docs/capture.md](./docs/capture.md).
 
-Detailed documentation is available in [docs/capture.md](./docs/capture.md).
-
 ---
 
 ## Static Production Deployment
 
 Deployment is fully static:
 ```bash
-npm run static
+pnpm static  # or: npm run static
 ```
-Copy the contents of `./static` to your web server directory (e.g. Nginx / Apache / S3).
+This builds the Vite bundles, copies `etc/` and `assets/`, and renders the pages (`index.html`, `index-ru.html`, `index-zh-CN.html`, `editor.html`) into `./static`. Copy its contents to your web server directory (e.g. Nginx / Apache / S3). The Recoil Editor's capture and spec-saving features need the Node server and are not available on a static host.
 
 ---
 
@@ -129,6 +155,7 @@ Copy the contents of `./static` to your web server directory (e.g. Nginx / Apach
 Contributions, balance patch updates, and recoil submissions are welcome!
 * [Contributing Guidelines](./docs/contributing.md)
 * [Implementation Plan & Roadmap](./docs/roadmap.md)
+* [Architectural Migration Plan](./docs/migration-plan.md)
 * [Live Weapons Wiki & Patch Reference](./docs/weapons-wiki-stats.md)
 * [AI Agent Guidelines](./AGENTS.md)
 * [Release Notes](./docs/release-notes.md)

@@ -1,61 +1,70 @@
 {
   "name": "app",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "nodemon ./bin/www",
-    "watch": "gulp watch",
+    "build": "vite build",
+    "watch": "vite build --watch",
     "tsc": "tsc",
     "dev": "npm-run-all -p -r start watch",
-    "static": "gulp static"
+    "static": "node scripts/build-static.mjs",
+    "test": "node --test test/*.test.js",
+    "worker": "node server/worker.js",
+    "test:services": "node --env-file=test/services.env --test test/*.test.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1140.0",
+    "@aws-sdk/s3-request-presigner": "3.1140.0",
     "@types/express": "~4.17.21",
     "@types/howler": "~2.2.11",
     "@types/json-diff": "~1.0.3",
+    "@types/multer": "1.4.12",
     "@types/stats-lite": "~2.2.2",
-    "browserify-breakdown": "~1.0.4",
+    "bullmq": "6.3.11",
     "cookie-parser": "~1.4.6",
     "debug": "~4.3.4",
     "express": "~4.18.3",
-    "gulp-clean-css": "~4.3.0",
-    "gulp-concat": "~2.6.1",
-    "gulp-uglify": "~3.0.2",
     "hotkeys-js": "~3.13.7",
     "howler": "~2.2.4",
     "http-errors": "~2.0.0",
+    "ioredis": "6.0.0",
     "json-diff": "~1.0.6",
-    "json-sass": "~1.3.5",
     "konva": "~9.3.6",
     "morgan": "~1.10.0",
-    "node-compass": "0.2.4",
+    "multer": "1.4.5-lts.1",
     "pug": "~3.0.2",
+    "sqlite3": "^6.0.1",
     "stats-lite": "~2.2.0",
     "ts-assert-exists": "~1.0.5",
-    "tslib": "~2.6.2",
-    "vinyl-buffer": "~1.0.1"
+    "tslib": "~2.6.2"
   },
   "devDependencies": {
-    "browser-sync": "~3.0.2",
-    "browserify": "~17.0.0",
-    "fancy-log": "~2.0.0",
-    "gulp": "~4.0.2",
-    "gulp-clean": "~0.4.0",
-    "gulp-livereload": "~4.0.2",
-    "gulp-pug": "^5.0.0",
-    "gulp-sass": "~5.1.0",
-    "gulp-sourcemaps": "~3.0.0",
-    "gulp-typescript": "~6.0.0-alpha.1",
-    "gulp-util": "~3.0.8",
-    "gulp-wait": "0.0.2",
+    "@tailwindcss/vite": "4.3.3",
+    "esbuild": "^0.28.2",
     "nodemon": "~3.1.0",
     "npm-run-all": "~4.1.5",
     "sass": "~1.72.0",
-    "tsify": "~5.0.4",
+    "tailwindcss": "4.3.3",
     "typescript": "~5.4.2",
-    "vinyl-source-stream": "~2.0.0",
-    "watchify": "~4.0.0",
-    "webpack-bundle-size-analyzer": "~3.1.0"
+    "vite": "^8.3.3"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "app.js",
+      "bin/",
+      "server/"
+    ],
+    "ext": "js"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sqlite3"
+    ],
+    "ignoredBuiltDependencies": [
+      "msgpackr-extract"
+    ]
   },
   "packageManager": "pnpm@10.8.1+sha512.c50088ba998c67b8ca8c99df8a5e02fd2ae2e2b29aaf238feaa9e124248d3f48f9fb6db2424949ff901cffbb5e0f0cc1ad6aedb602cd29450751d11c35023677"
 }

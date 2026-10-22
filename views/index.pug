@@ -265,33 +265,33 @@ block content
             input.slider#volume(type='range' min="0" max="100" aria-label="Volume")
             .value
       #controls-bottom
-        #copyright
-          div.links
-            a(href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
-              img(src="/GitHub-Mark-Light-32px.png", alt="github")
-            a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
-              img(src="/reddit.png", alt="reddit")
-            a(href="/ru").lang
+        #copyright(class="tw:mb-1 tw:text-[0.8em]")
+          div(class="tw:flex tw:flex-row tw:text-[0.7em]")
+            a(class="tw:m-0.5" href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
+              img(class="tw:border-b tw:border-b-transparent tw:pb-0.5 tw:hover:border-b-foreground" src="/GitHub-Mark-Light-32px.png", alt="github")
+            a(class="tw:m-0.5" href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
+              img(class="tw:border-b tw:border-b-transparent tw:pb-0.5 tw:hover:border-b-foreground" src="/reddit.png", alt="reddit")
+            a(href="/ru" class="tw:mx-1 tw:my-auto tw:text-[15px]")
               | русский
-            a(href="/zh-CN").lang
+            a(href="/zh-CN" class="tw:mx-1 tw:my-auto tw:text-[15px]")
               | 中文
-            div.vertical
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
+            div(class="tw:flex tw:flex-col tw:items-end tw:grow")
+              a(class="tw:m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
                 | Privacy Policy
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
+              a(class="tw:m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
                 | Datenschutzerklärung
-              a(href="#cookies")
+              a(class="tw:m-0.5" href="#cookies")
                 | Cookie settings
           p
             | 2026 by Mikhail equanimity_rulez Goncharov.
           p
             | This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. 
             | Game content and materials are trademarks and copyrights of 
-            | #[a(href="https://ea.com" target="_blank" rel="noopener noreferrer") Electronic Arts Inc.]              
-            | or #[a(href="https://www.respawn.com/" target="_blank" rel="noopener noreferrer") Respawn Entertainment]. 
+            | #[a(class="tw:m-0.5" href="https://ea.com" target="_blank" rel="noopener noreferrer") Electronic Arts Inc.]              
+            | or #[a(class="tw:m-0.5" href="https://www.respawn.com/" target="_blank" rel="noopener noreferrer") Respawn Entertainment]. 
             | Some images and reference materials come from 
-            | #[a(href="https://apexlegends.fandom.com/wiki/" target="_blank" rel="noopener noreferrer") Apex Legends Wiki].
-        #version
+            | #[a(class="tw:m-0.5" href="https://apexlegends.fandom.com/wiki/" target="_blank" rel="noopener noreferrer") Apex Legends Wiki].
+        #version(class="tw:text-right tw:text-[0.8em]")
           p
             | version #[span#version-value 17]&nbsp;
             a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank" rel="noopener noreferrer")

@@ -1,5 +1,6 @@
 public/
 static/
+dist/
 
 # Logs
 logs
@@ -106,6 +107,10 @@ processing/data/
 processing/output/
 processing/runs/
 data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 *.webm
 *.mp4
 

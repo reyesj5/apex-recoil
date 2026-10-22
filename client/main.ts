@@ -14,43 +14,11 @@
  * limitations under the License.
  */
 
-import Konva from 'konva';
-import { Point } from './point';
-import { initGame } from './game';
-import { setupEditor } from './editor';
-import { pokeAttrs } from './storage';
-
-const stageContainer = document.getElementById('stage');
-export const stage = new Konva.Stage({
-  container: 'stage',
-  width: stageContainer?.clientWidth || window.innerWidth,
-  height: stageContainer?.clientHeight || window.innerHeight,
-});
-
-document.getElementById('stage')?.addEventListener('contextmenu', e => {
-  e.preventDefault();
-});
-
-export const layer = new Konva.Layer();
-stage.add(layer);
-
-export function cursor(): Point {
-  let pos = stage.getPointerPosition();
-  if (pos == null) pos = { x: 0, y: 0 };
-  const transform = stage.getAbsoluteTransform().copy().invert();
-  return new Point(transform.point(pos));
-}
-
-if (window.location.hostname.includes('.online')) {
-  alert('Apex Legends Recoils is moving to a new domain and .ONLINE will not be available from 10 of April.\n'+
-  'Please update your bookmark to apexlegendsrecoils.NET.\nYou will now be redirected.');
-  window.location.href = 'https://apexlegendsrecoils.net' + window.location.pathname;
-}
-
+// Legacy single entry (/bundle.js) for pages or cached HTML that predate the route
+// bundles: loads only the bundle for the current route. Pages normally load
+// /trainer.js or /editor.js directly (see views/layout.pug).
 if (window.location.pathname.startsWith('/editor')) {
-  setupEditor();
+  import('./editor_main');
 } else {
-  initGame();
+  import('./trainer_main');
 }
-pokeAttrs();
-stage.batchDraw();

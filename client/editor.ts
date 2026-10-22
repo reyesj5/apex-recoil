@@ -16,16 +16,33 @@
 
 import Konva from "konva";
 import { MagInfo, Weapon, getWeaponModeConfig } from "./game";
-import { cursor, layer, stage } from "./main";
+import { cursor, layer, stage } from "./stage";
 import { NumericAttribute, StringAttribute, BooleanAttribute, watch, initAttributes } from './storage';
 import { PlainPoint, Point } from "./point";
 import specs from './specs.json';
 
-interface Edge {
-  from: string;
-  to: string;
-  line: Konva.Line;
-};
+import {
+  Edge,
+  SessionTrialData,
+  ActiveSessionData,
+  DiscrepancyReport,
+  BatchScreenshotItem,
+  RecordedSample
+} from './modules/types';
+import {
+  blobToBase64,
+  dataUrlToBlob,
+  escapeHtml,
+  applyHdrToneMappingToCanvas,
+  toneMapImageIfNeeded,
+  pollOrStreamJobResult,
+  submitDiscoveryJob,
+  DiscoveryUpload
+} from './modules/utils';
+import {
+  computeCaptureToSpecScale as computeCaptureScaleUtil,
+  computeDiscrepancyReport as computeReportUtil
+} from './modules/analysis/DiscrepancyInspector';
 let points = new Map<string, Konva.Circle>();
 let edges: Edge[] = [];
 const anchors = new Set<string>();
@@ -54,69 +71,7 @@ const aConnectHover = new BooleanAttribute('connect-hover', NS, true);
 const aComment =  new StringAttribute('comment', NS, '');
 const aHdrMode = new StringAttribute('hdr-mode', NS, 'hdr-standard');
 
-interface SessionTrialData {
-  source: string;
-  shots: number;
-  x: number[];
-  y: number[];
-  raw_x?: number[];
-  raw_y?: number[];
-  frame_points?: [number, number][];
-  origin?: [number, number];
-  frame_image?: string;
-  frame_width?: number;
-  frame_height?: number;
-  rpm?: number;
-}
 
-interface ActiveSessionData {
-  spec: any;
-  baseline_spec?: any;
-  candidate_spec?: any;
-  standalone_batch_spec?: any;
-  merge_strategy?: string;
-  sample_count?: number;
-  existing_sample_count?: number;
-  new_sample_count?: number;
-  preview_image?: string;
-  preview_points?: [number, number][];
-  preview_origin?: [number, number];
-  frame_width?: number;
-  frame_height?: number;
-  individual_trials?: SessionTrialData[];
-  zoom: number;
-  multiplier?: number;
-}
-
-interface DiscrepancyReport {
-  weapon: string;
-  baselineShots: number;
-  candidateShots: number;
-  shotCountMatches: boolean;
-  shotCountDelta: number;
-  meanDeviationPx: number;
-  maxDeviationPx: number;
-  maxDeviationShotIdx: number;
-  meanDeviationMickeys: number;
-  maxDeviationMickeys: number;
-  hasMajorDiscrepancy: boolean;
-  hasDifferences: boolean;
-  warnings: string[];
-  status: 'safe' | 'warning' | 'danger';
-  savedSamplesText: string;
-  candidateSamplesText: string;
-}
-
-interface BatchScreenshotItem {
-  id: string;
-  name: string;
-  dataUrl: string;
-  source: string;
-  sourceUrl?: string;
-  status: 'pending' | 'analyzing' | 'done' | 'error';
-  shots?: number;
-  expectedShots?: number;
-}
 
 let batchScreenshots: BatchScreenshotItem[] = [];
 let savedScreenshotsLibrary: any[] = [];
@@ -131,73 +86,7 @@ let isMoveAllActive = false;
 let currentBgImageObj: Konva.Image | null = null;
 let currentLoadedRawBgUrl = '';
 
-function applyHdrToneMappingToCanvas(canvas: HTMLCanvasElement, mode: string): void {
-  if (mode === 'off') return;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imgData.data;
 
-  const isVibrant = mode === 'hdr-vibrant';
-  const gamma = isVibrant ? 1.75 : 1.6;
-  const exposure = isVibrant ? 0.80 : 0.85;
-  const contrast = isVibrant ? 1.30 : 1.20;
-  const satBoost: number = isVibrant ? 1.40 : 1.25;
-
-  const lut = new Uint8Array(256);
-  for (let i = 0; i < 256; i++) {
-    let f = (i / 255.0) * exposure;
-    f = Math.pow(Math.min(1.0, Math.max(0.0, f)), gamma);
-    f = (f - 0.5) * contrast + 0.5;
-    lut[i] = Math.min(255, Math.max(0, Math.round(f * 255.0)));
-  }
-
-  const len = data.length;
-  for (let i = 0; i < len; i += 4) {
-    let r = lut[data[i]];
-    let g = lut[data[i + 1]];
-    let b = lut[data[i + 2]];
-
-    if (satBoost !== 1.0) {
-      const y = 0.299 * r + 0.587 * g + 0.114 * b;
-      r = Math.min(255, Math.max(0, Math.round(y + (r - y) * satBoost)));
-      g = Math.min(255, Math.max(0, Math.round(y + (g - y) * satBoost)));
-      b = Math.min(255, Math.max(0, Math.round(y + (b - y) * satBoost)));
-    }
-
-    data[i] = r;
-    data[i + 1] = g;
-    data[i + 2] = b;
-  }
-
-  ctx.putImageData(imgData, 0, 0);
-}
-
-function toneMapImageIfNeeded(imgDataUrl: string, hdrMode: string): Promise<string> {
-  return new Promise((resolve) => {
-    if (hdrMode === 'off' || !imgDataUrl) {
-      resolve(imgDataUrl);
-      return;
-    }
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth || img.width;
-      canvas.height = img.naturalHeight || img.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve(imgDataUrl);
-        return;
-      }
-      ctx.drawImage(img, 0, 0);
-      applyHdrToneMappingToCanvas(canvas, hdrMode);
-      resolve(canvas.toDataURL('image/jpeg', 0.95));
-    };
-    img.onerror = () => resolve(imgDataUrl);
-    img.src = imgDataUrl;
-  });
-}
 
 function updateVideoHdrFilter(): void {
   const previewVideo = document.getElementById('capture-preview-video') as HTMLVideoElement | null;
@@ -1629,56 +1518,20 @@ export function getActiveCaptureDecals(trialIndex?: number | null): { points: [n
 /**
  * Computes the empirical scaling factor (in screenshot pixels per 1x spec unit)
  * mapping canonical spec coordinates directly to the screenshot wall decals.
- * Uses least-squares regression between capture decal displacements and spec displacements.
+ * Defaults to the active session's spec; the math lives in modules/analysis/DiscrepancyInspector.ts.
  */
 export function computeCaptureToSpecScale(
   captureDecals: { points: [number, number][], origin: [number, number] } | null,
   referenceSpec?: any
 ): number | null {
-  if (!captureDecals || !captureDecals.points || captureDecals.points.length < 2) {
-    return null;
-  }
   const spec = referenceSpec || activeSessionData?.candidate_spec || activeSessionData?.spec || activeSessionData?.baseline_spec;
-  if (!spec || !spec.x || !spec.y || spec.x.length < 2) {
-    return null;
-  }
-
-  const mult = spec.multiplier || 1.0;
-  const numPoints = Math.min(captureDecals.points.length, spec.x.length);
-  if (numPoints < 2) return null;
-
-  let dotProduct = 0;
-  let specNormSq = 0;
-  let sumCapDist = 0;
-  let sumSpecDist = 0;
-
-  for (let i = 1; i < numPoints; i++) {
-    const capDx = captureDecals.points[i][0] - captureDecals.origin[0];
-    const capDy = captureDecals.points[i][1] - captureDecals.origin[1];
-
-    const specDx = (spec.raw_1x_x && spec.raw_1x_x[i] !== undefined)
-      ? spec.raw_1x_x[i]
-      : (mult ? spec.x[i] / mult : spec.x[i]);
-    const specDy = (spec.raw_1x_y && spec.raw_1x_y[i] !== undefined)
-      ? spec.raw_1x_y[i]
-      : (mult ? spec.y[i] / mult : spec.y[i]);
-
-    dotProduct += (capDx * specDx + capDy * specDy);
-    specNormSq += (specDx * specDx + specDy * specDy);
-
-    sumCapDist += Math.hypot(capDx, capDy);
-    sumSpecDist += Math.hypot(specDx, specDy);
-  }
-
-  if (specNormSq > 0.0001 && dotProduct > 0.0001) {
-    return dotProduct / specNormSq;
-  }
-  if (sumSpecDist > 0.0001 && sumCapDist > 0.0001) {
-    return sumCapDist / sumSpecDist;
-  }
-  return null;
+  return computeCaptureScaleUtil(captureDecals, spec);
 }
 
+/**
+ * Discrepancy report using the editor's current optic zoom, background height, FOV and
+ * canvas scale (see modules/analysis/DiscrepancyInspector.ts).
+ */
 function computeDiscrepancyReport(
   baselineSpec: any,
   candidateSpec: any,
@@ -1686,117 +1539,12 @@ function computeDiscrepancyReport(
   imgH?: number,
   captureScaleOverride?: number
 ): DiscrepancyReport {
-  const weapon = baselineSpec?.name || candidateSpec?.name || 'WEAPON';
-  const baselineShots = baselineSpec?.x?.length || 0;
-  const candidateShots = candidateSpec?.x?.length || 0;
-  const shotCountDelta = candidateShots - baselineShots;
-  const shotCountMatches = (baselineShots === candidateShots);
-
   const z = zoom || activeOpticZoom || 2.0;
   const h = imgH || currentBgImageObj?.height() || 1080;
   const mouseToPx = (captureScaleOverride && captureScaleOverride > 0)
     ? captureScaleOverride
     : getMouseToPixelScale(h, z);
-
-  const bMult = baselineSpec?.multiplier || 1.0;
-  const cMult = candidateSpec?.multiplier || 1.0;
-
-  const commonLen = Math.min(baselineShots, candidateShots);
-  let sumDevMickeys = 0;
-  let maxDevMickeys = 0;
-  let maxDevIdx = 0;
-  let hasDifferences = (baselineShots !== candidateShots);
-
-  for (let i = 0; i < commonLen; i++) {
-    const bx = (baselineSpec.raw_1x_x && baselineSpec.raw_1x_x[i] !== undefined)
-      ? baselineSpec.raw_1x_x[i]
-      : (bMult ? baselineSpec.x[i] / bMult : baselineSpec.x[i]);
-    const by = (baselineSpec.raw_1x_y && baselineSpec.raw_1x_y[i] !== undefined)
-      ? baselineSpec.raw_1x_y[i]
-      : (bMult ? baselineSpec.y[i] / bMult : baselineSpec.y[i]);
-
-    const cx = (candidateSpec.raw_1x_x && candidateSpec.raw_1x_x[i] !== undefined)
-      ? candidateSpec.raw_1x_x[i]
-      : (cMult ? candidateSpec.x[i] / cMult : candidateSpec.x[i]);
-    const cy = (candidateSpec.raw_1x_y && candidateSpec.raw_1x_y[i] !== undefined)
-      ? candidateSpec.raw_1x_y[i]
-      : (cMult ? candidateSpec.y[i] / cMult : candidateSpec.y[i]);
-
-    const dM = Math.hypot(cx - bx, cy - by);
-    if (dM > 0.05) hasDifferences = true;
-    sumDevMickeys += dM;
-    if (dM > maxDevMickeys) {
-      maxDevMickeys = dM;
-      maxDevIdx = i;
-    }
-  }
-
-  const meanDevMickeys = commonLen > 0 ? (sumDevMickeys / commonLen) : 0;
-  const meanDeviationPx = meanDevMickeys * mouseToPx;
-  const maxDeviationPx = maxDevMickeys * mouseToPx;
-
-  const warnings: string[] = [];
-
-  if (baselineShots > 0 && candidateShots < baselineShots) {
-    warnings.push(`⚠️ Shot count truncation: Candidate has ${candidateShots} shots, but saved spec has ${baselineShots} shots (${baselineShots - candidateShots} missing shots). Saving will shorten the compensation curve.`);
-  } else if (baselineShots > 0 && candidateShots > baselineShots) {
-    warnings.push(`⚠️ Extra shots detected: Candidate has ${candidateShots} shots, but saved spec has ${baselineShots} shots (${candidateShots - baselineShots} additional shots).`);
-  }
-
-  if (meanDeviationPx > 22.0) {
-    warnings.push(`⚠️ High average deflection error: ${meanDeviationPx.toFixed(1)}px (${meanDevMickeys.toFixed(1)} mickeys). Pattern deviates heavily from baseline.`);
-  }
-
-  if (maxDeviationPx > 42.0) {
-    warnings.push(`⚠️ Large outlier deflection at Shot #${maxDevIdx + 1}: ${maxDeviationPx.toFixed(1)}px (${maxDevMickeys.toFixed(1)} mickeys) deviation from baseline.`);
-  }
-
-  if (commonLen >= 5 && baselineSpec.y && candidateSpec.y) {
-    const baseEndY = baselineSpec.y[commonLen - 1];
-    const candEndY = candidateSpec.y[commonLen - 1];
-    if ((baseEndY < 0 && candEndY > 0) || (baseEndY > 0 && candEndY < 0)) {
-      warnings.push(`🚨 Inverted recoil direction! Vertical progression is opposite to saved baseline. Check camera tracking.`);
-    }
-  }
-
-  let status: 'safe' | 'warning' | 'danger' = 'safe';
-  const hasMajorDiscrepancy = warnings.length > 0 || !shotCountMatches || meanDeviationPx > 20;
-
-  if (warnings.some(w => w.startsWith('🚨') || w.includes('truncation')) || meanDeviationPx > 30 || Math.abs(shotCountDelta) >= 3) {
-    status = 'danger';
-  } else if (hasMajorDiscrepancy) {
-    status = 'warning';
-  } else {
-    status = 'safe';
-  }
-
-  const savedSamples = baselineSpec?.sample_count || 1;
-  const candSamples = candidateSpec?.sample_count || (savedSamples + 1);
-  const isAccumulate = activeSessionData?.merge_strategy === 'accumulate';
-
-  const savedSamplesText = `${savedSamples} sample${savedSamples === 1 ? '' : 's'}`;
-  const candidateSamplesText = isAccumulate
-    ? `${candSamples} samples (Proportional Refinement)`
-    : `${candidateSpec?.new_sample_count || 1} sample (Fresh Overwrite)`;
-
-  return {
-    weapon,
-    baselineShots,
-    candidateShots,
-    shotCountMatches,
-    shotCountDelta,
-    meanDeviationPx,
-    maxDeviationPx,
-    maxDeviationShotIdx: maxDevIdx,
-    meanDeviationMickeys: meanDevMickeys,
-    maxDeviationMickeys: maxDevMickeys,
-    hasMajorDiscrepancy,
-    hasDifferences,
-    warnings,
-    status,
-    savedSamplesText,
-    candidateSamplesText
-  };
+  return computeReportUtil(baselineSpec, candidateSpec, z, h, mouseToPx, activeSessionData?.merge_strategy ?? '');
 }
 
 function syncSpecFromPoints() {
@@ -2854,6 +2602,49 @@ function initWeaponManagerUI() {
   document.getElementById('save-weapon-btn')?.addEventListener('click', () => saveCurrentWeaponSpec());
   document.getElementById('reload-specs-btn')?.addEventListener('click', reloadSpecsFromServer);
   document.getElementById('apply-json-btn')?.addEventListener('click', applyJsonToWeapon);
+  document.getElementById('add-weapon-btn')?.addEventListener('click', () => {
+    const rawName = prompt('Enter a unique identifier for the new weapon (e.g. "car_smg", "prowler_burst"):');
+    if (!rawName) return;
+    const cleanName = rawName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    if (!cleanName) {
+      alert('Invalid weapon name.');
+      return;
+    }
+    const existing = loadedSpecsList.find(s => s.name === cleanName);
+    if (existing) {
+      alert(`Weapon "${cleanName}" already exists. Selecting it now.`);
+      if (sel) {
+        sel.value = cleanName;
+        loadWeaponIntoManager(cleanName);
+      }
+      return;
+    }
+    const newSpec = {
+      name: cleanName,
+      rpm: 600,
+      multiplier: 0.73,
+      sample_count: 1,
+      mags: [
+        { size: 20, audio: `${cleanName}_20` },
+        { size: 24, audio: `${cleanName}_24` },
+        { size: 27, audio: `${cleanName}_27` },
+        { size: 30, audio: `${cleanName}_30` }
+      ],
+      x: [0],
+      y: [0],
+      time_points: [0]
+    };
+    loadedSpecsList.push(newSpec);
+    savedBaselineSpecs.set(cleanName, JSON.parse(JSON.stringify(newSpec)));
+    populateDropdown();
+    if (sel) sel.value = cleanName;
+    loadWeaponIntoManager(cleanName, true);
+    const statusMsg = document.getElementById('save-status-msg');
+    if (statusMsg) {
+      statusMsg.innerText = `Created new weapon "${cleanName.toUpperCase()}". Add points or adjust parameters, then click "Save to specs.json".`;
+      statusMsg.className = 'info';
+    }
+  });
   document.getElementById('reset-samples-btn')?.addEventListener('click', () => {
     const sel = document.getElementById('weapon-select') as HTMLSelectElement | null;
     const name = sel?.value;
@@ -2878,7 +2669,7 @@ function initWeaponManagerUI() {
   }
 }
 
-function loadWeaponIntoManager(name: string) {
+function loadWeaponIntoManager(name: string, preserveStatusMsg = false) {
   const w = loadedSpecsList.find(s => s.name === name);
   if (!w) return;
 
@@ -2934,7 +2725,7 @@ function loadWeaponIntoManager(name: string) {
   const canvasScaleTag = document.getElementById('canvas-status-scale');
   if (canvasScaleTag) canvasScaleTag.innerText = `${Math.round(activeScaleFactor * 100)}% Scale`;
 
-  if (statusMsg) {
+  if (statusMsg && !preserveStatusMsg) {
     statusMsg.innerText = '';
     statusMsg.className = '';
   }
@@ -3138,6 +2929,8 @@ function saveCurrentWeaponSpec(forceSave?: boolean | Event) {
   const w = loadedSpecsList.find(s => s.name === name);
   if (!w) return;
 
+  syncSpecFromPoints();
+
   const baseline = savedBaselineSpecs.get(name) || w;
   const candidate = activeSessionData?.spec || w;
   const report = computeDiscrepancyReport(baseline, candidate);
@@ -3208,7 +3001,7 @@ function saveCurrentWeaponSpec(forceSave?: boolean | Event) {
           stageSaveBtn.style.background = '';
         }, 2000);
       }
-      loadWeaponIntoManager(name);
+      loadWeaponIntoManager(name, true);
     } else {
       if (statusMsg) {
         statusMsg.innerText = `❌ Error: ${data.error || 'Failed to save'}`;
@@ -3299,16 +3092,7 @@ function applyJsonToWeapon() {
   }
 }
 
-interface RecordedSample {
-  id: string;
-  name: string;
-  blob: Blob;
-  objectUrl: string;
-  durationSec: number;
-  timestamp: Date;
-  screenshotData?: string;
-  screenshotUrl?: string;
-}
+
 
 let captureStream: MediaStream | null = null;
 let activeAudioStream: MediaStream | null = null;
@@ -3359,25 +3143,7 @@ function setAudioPreviewPlaying(isPlaying: boolean) {
 let reRecordSlotIndex: number | null = null;
 const capturedSamples: RecordedSample[] = [];
 
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      resolve(reader.result as string);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
 
-function escapeHtml(str: string): string {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
 
 function showAudioDeviceAlert(message: string) {
   const alertBox = document.getElementById('audio-device-alert');
@@ -4444,21 +4210,6 @@ async function executeProcessSessionSprays(weapon: string, mode: string, saveCap
   }
 
   try {
-    const samplesPayload = [];
-    for (let i = 0; i < capturedSamples.length; i++) {
-      const b = capturedSamples[i].blob;
-      const base64 = await blobToBase64(b);
-      samplesPayload.push({
-        name: `spray_${i + 1}.webm`,
-        data: base64,
-        screenshot: capturedSamples[i].screenshotData || ''
-      });
-    }
-
-    if (statusBox) {
-      statusBox.innerText = `Tracking bullet decals and calculating median pattern...`;
-    }
-
     let shotsToRequest: number | undefined = undefined;
     const mag4 = document.getElementById('mag-4') as HTMLInputElement | null;
     const mag3 = document.getElementById('mag-3') as HTMLInputElement | null;
@@ -4480,25 +4231,38 @@ async function executeProcessSessionSprays(weapon: string, mode: string, saveCap
     const targetW = loadedSpecsList.find(s => s.name === weapon || (weapon === 'havoc' && s.name === 'havoc_tc') || (weapon === 'havoc_tc' && s.name === 'havoc'));
     const existingSamples = targetW?.sample_count || 1;
 
-    const res = await fetch('/api/discovery/process-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        weapon,
-        mode,
-        save_capture: saveCapture,
-        strategy: strategy,
-        existing_samples: existingSamples,
-        shots: shotsToRequest,
-        rpm: rpmInput && rpmInput.value ? Number(rpmInput.value) : undefined,
-        multiplier: multInput && multInput.value ? Number(multInput.value) : 0.73,
-        distance: distVal,
-        zoom: zoomVal,
-        fov: fovVal,
-        hdr: hdrVal,
-        samples: samplesPayload
-      })
-    });
+    const fields: Record<string, string> = {
+      weapon,
+      mode,
+      save_capture: String(saveCapture),
+      strategy,
+      existing_samples: String(existingSamples),
+      distance: String(distVal),
+      zoom: String(zoomVal),
+      fov: String(fovVal),
+      hdr: hdrVal
+    };
+    if (shotsToRequest) fields.shots = String(shotsToRequest);
+    if (rpmInput && rpmInput.value) fields.rpm = rpmInput.value;
+    if (multInput && multInput.value) fields.multiplier = multInput.value;
+
+    const uploads: DiscoveryUpload[] = [];
+    for (let i = 0; i < capturedSamples.length; i++) {
+      const sample = capturedSamples[i];
+      const videoFilename = `spray_${String(i + 1).padStart(2, '0')}.webm`;
+      uploads.push({ field: 'videos', blob: sample.blob, name: videoFilename });
+      if (sample.screenshotData) {
+        const wallBlob = dataUrlToBlob(sample.screenshotData);
+        const wallFilename = `spray_${String(i + 1).padStart(2, '0')}_wall.jpg`;
+        uploads.push({ field: 'screenshots', blob: wallBlob, name: wallFilename });
+      }
+    }
+
+    if (statusBox) {
+      statusBox.innerText = `Tracking bullet decals and calculating median pattern...`;
+    }
+
+    const res = await submitDiscoveryJob('/api/discovery/process-session', 'session', fields, uploads);
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
@@ -4512,10 +4276,12 @@ async function executeProcessSessionSprays(weapon: string, mode: string, saveCap
       throw new Error(errMsg);
     }
 
-    const data = await res.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Session processing failed');
+    const initialData = await res.json();
+    if (!initialData.success) {
+      throw new Error(initialData.error || 'Session processing failed');
     }
+
+    const data = await pollOrStreamJobResult(initialData, statusBox, 'Tracking bullet decals and calculating median pattern...');
 
     const spec = data.spec;
     const conv = data.convergence || {};
@@ -4982,30 +4748,28 @@ async function executeBatchScreenshotAnalysis(weapon: string, mode: string, save
   }
 
   try {
-    const payloadImages = batchScreenshots.map(b => ({
-      name: b.name,
-      data: b.dataUrl
+    const fields: Record<string, string> = {
+      weapon,
+      mode,
+      save_capture: String(saveCapture),
+      strategy,
+      existing_samples: String(existingSamples),
+      distance: String(distVal),
+      zoom: String(zoomVal),
+      fov: String(fovVal),
+      hdr: hdrVal
+    };
+    if (shotsToRequest) fields.shots = String(shotsToRequest);
+    if (rpmInput && rpmInput.value) fields.rpm = rpmInput.value;
+    if (multInput && multInput.value) fields.multiplier = multInput.value;
+
+    const uploads: DiscoveryUpload[] = batchScreenshots.map((b, idx) => ({
+      field: 'images',
+      blob: dataUrlToBlob(b.dataUrl),
+      name: b.name || `spray_${String(idx + 1).padStart(2, '0')}_wall.jpg`
     }));
 
-    const res = await fetch('/api/discovery/process-static-image', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        weapon,
-        mode,
-        save_capture: saveCapture,
-        strategy: strategy,
-        existing_samples: existingSamples,
-        images: payloadImages,
-        shots: shotsToRequest,
-        rpm: rpmInput && rpmInput.value ? Number(rpmInput.value) : undefined,
-        multiplier: multInput && multInput.value ? Number(multInput.value) : 0.73,
-        distance: distVal,
-        zoom: zoomVal,
-        fov: fovVal,
-        hdr: hdrVal
-      })
-    });
+    const res = await submitDiscoveryJob('/api/discovery/process-static-image', 'static', fields, uploads);
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
@@ -5019,10 +4783,12 @@ async function executeBatchScreenshotAnalysis(weapon: string, mode: string, save
       throw new Error(errMsg);
     }
 
-    const data = await res.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Static image analysis failed');
+    const initialData = await res.json();
+    if (!initialData.success) {
+      throw new Error(initialData.error || 'Static image analysis failed');
     }
+
+    const data = await pollOrStreamJobResult(initialData, statusBox, 'Analyzing screenshot decals and calculating median pattern...');
 
     const spec = data.spec;
     const shotCount = spec.x ? spec.x.length : 0;

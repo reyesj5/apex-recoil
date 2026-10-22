@@ -16,8 +16,10 @@ processing/
 │   ├── aggregator.py       # Multi-spray median-delta integration, proportional accumulation & outlier detection
 │   ├── spec_manager.py     # Schema verification, patch diff reporting & matplotlib visualization
 │   ├── pipeline.py         # End-to-end orchestrator for video clips, images, and sessions
+│   ├── db.py               # SQLite store shared with server/db.js: lossless versioned specs, specs.json sync
+│   ├── shadow_parity.py    # Dual-run shadow parity verification (specs.json vs SQLite)
 │   └── cli.py              # Unified CLI interface
-├── tests/                  # 27 automated unit tests (pytest)
+├── tests/                  # 43 automated unit tests (pytest)
 ├── requirements.txt        # Python dependency manifest
 └── Pipfile                 # Pipenv environment definition
 ```
@@ -84,11 +86,24 @@ Regenerates `arduino_mouse/src/recoil.inc` from `client/specs.json`:
 python -m recoil_discovery.cli export-arduino
 ```
 
+### 7. Dual-Run Shadow Parity Verification
+Compares SQLite active specifications (`data/recoil.db`) against `client/specs.json` across all 31 weapons: 0.000000 coordinate drift, identical fields (`mods`, `ping_points`, `raw_1x_*`, absent multipliers, ...) and identical weapon order. By default it first imports edits made to `specs.json` outside the database, exactly as the web server does before every read and write:
+```bash
+python -m recoil_discovery.shadow_parity            # sync, then verify
+python -m recoil_discovery.shadow_parity --no-sync  # only report drift
+```
+
+`DatabaseManager` ([recoil_discovery/db.py](recoil_discovery/db.py)) uses the same schema as the Node.js service. `save_weapon_spec()` merges the given fields into the current spec, stores a new version and re-exports `specs.json`, rewriting only the changed weapon. `SpecManager.save_specs()` still writes `specs.json` directly; those edits are imported into the database on the next sync. Set `RECOIL_DB_PATH` / `RECOIL_SPECS_PATH` to use other locations.
+
 ---
 
 ## Running Tests
 
-All mathematical conversions, signal detection, decal tracking, and pipeline aggregation are covered by unit tests:
+All mathematical conversions, signal detection, decal tracking, database operations, and shadow parity are covered by unit tests:
 ```bash
+# Run full pytest suite (43 tests; database tests use temp files, never data/recoil.db)
 python -m pytest tests
+
+# Run standalone shadow parity verification
+python -m recoil_discovery.shadow_parity
 ```

@@ -1,0 +1,34 @@
+/* Generated from theme.json by vite.config.mjs; edit theme.json instead. */
+@theme {
+  /* Only the project palette: no Tailwind default colors */
+  --color-*: initial;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-background: #121212;
+  --color-foreground: #F9F9F9;
+  --color-active: #f9c74f;
+  --color-selection: #90be6d;
+  --color-helper: #adb5bd;
+  --color-error: #f94144;
+  --color-focus-border: #181a1f;
+  --color-red: #704040;
+  --color-green: #407040;
+  --color-yellow: #707040;
+  --color-attachment-1: #a8a8a8;
+  --color-attachment-2: #51a8d6;
+  --color-attachment-3: #b237c8;
+  --color-attachment-4: #e63946;
+  --color-start-circle: hsl(120, 65%, 45%);
+  --color-hint-path: hsl(215, 20%, 68%);
+  --color-score-0: rgb(191, 64, 64);
+  --color-score-1: rgb(191, 89, 64);
+  --color-score-2: rgb(191, 115, 64);
+  --color-score-3: rgb(191, 140, 64);
+  --color-score-4: rgb(191, 166, 64);
+  --color-score-5: rgb(191, 191, 64);
+  --color-score-6: rgb(159, 172, 57);
+  --color-score-7: rgb(128, 153, 51);
+  --color-score-8: rgb(96, 134, 45);
+  --color-score-9: rgb(64, 115, 38);
+  --color-score-10: rgb(32, 96, 32);
+}

@@ -23,6 +23,7 @@ html
     link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
     link(href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet")
     link(rel='stylesheet', href='/style.css')
+    link(rel='stylesheet', href='/tailwind.css')
     link(rel="icon", type="image/png", sizes="32x32" href="/favicon-32x32.png")
     link(rel="icon", type="image/png", sizes="16x16" href="/favicon-16x16.png")    
   body
@@ -32,4 +33,6 @@ html
   //- script(src="/plotly-latest.min.js")
   script(src="/plotly-cartesian.min.js")
   script(src='/plot.js')
-  script(src='/bundle.js')
+  //- Each page loads only its own route bundle (editor.pug overrides this block)
+  block scripts
+    script(type="module" src='/trainer.js')
