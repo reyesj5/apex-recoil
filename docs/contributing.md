@@ -31,7 +31,7 @@ Before submitting a pull request, ensure all quality gates pass:
 
 ## Tests
 
-- End-to-end scenarios live in [e2e/](../e2e/) (Playwright in Chrome). [e2e/server.mjs](../e2e/server.mjs) runs the built app on a throwaway database, specs and captures. A scenario fails on any page error, console error or failed request to the app, and the accessibility scenarios fail on any axe violation beyond the current baseline.
+- End-to-end scenarios live in [e2e/](../e2e/) (Playwright in Chrome). [e2e/server.mjs](../e2e/server.mjs) runs the built app on a throwaway database, specs and captures. A scenario fails on any page error, console error or failed request to the app, and the accessibility scenarios fail on any axe violation beyond the current baseline (the new pages under `/next` allow none). For the new interface, follow [ui-migration-progress.md](ui-migration-progress.md).
 - Write scenarios the way a player or editor would work: click, type, then check what the page shows and what it stored (`localStorage`, the API).
 - Unit and component tests sit next to the code as `client/**/*.test.ts(x)` (Vitest, Testing Library, MSW). A request without an MSW handler fails the test.
 

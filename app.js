@@ -53,10 +53,11 @@ var vite = devServer ? import('vite').then(function(v) {
 }) : null;
 
 // Pages name the current build's entry files, so browsers check for a new version every time
-function renderPage(req, res, next, view, title, publicPage) {
+function renderPage(req, res, next, view, title, publicPage, locals) {
   res.set('Cache-Control', 'no-cache');
-  if (!vite) return res.render(view, pageLocals(title, publicPage));
-  res.render(view, pageLocals(title, publicPage), function(err, html) {
+  var viewLocals = Object.assign(pageLocals(title, publicPage), locals);
+  if (!vite) return res.render(view, viewLocals);
+  res.render(view, viewLocals, function(err, html) {
     if (err) return next(err);
     vite.then(function(server) {
       return server.transformIndexHtml(req.originalUrl, html);
@@ -86,12 +87,13 @@ if (vite) {
     }, next);
   });
 }
-// Chunk file names carry a content hash, so browsers keep them for a year; the entry files
-// (trainer.js, editor.js, tailwind.css...) keep their names and are revalidated
-var hashedChunksDir = path.join(__dirname, 'dist', 'chunks') + path.sep;
+// Chunk and asset file names (scripts, fonts) carry a content hash, so browsers keep them for a
+// year; the entry files (trainer.js, editor.js, tailwind.css...) keep their names and are revalidated
+var hashedDirs = ['chunks', 'assets'].map(function(dir) { return path.join(__dirname, 'dist', dir) + path.sep; });
 app.use(express.static(path.join(__dirname, 'dist'), {
   setHeaders: function(res, filePath) {
-    res.set('Cache-Control', filePath.indexOf(hashedChunksDir) === 0 ? 'public, max-age=31536000, immutable' : 'no-cache');
+    var hashed = hashedDirs.some(function(dir) { return filePath.indexOf(dir) === 0; });
+    res.set('Cache-Control', hashed ? 'public, max-age=31536000, immutable' : 'no-cache');
   }
 }));
 app.use(express.static(path.join(__dirname, 'assets')));
@@ -1022,6 +1024,10 @@ async function serveStoredCapture(req, res) {
   }
 }
 
+// The new UI's pages, side by side with the old ones until they replace them (docs/ui-migration-plan.md)
+app.get('/next/components', function(req, res, next) {
+  renderPage(req, res, next, 'next', site.name + ' · Components', false, { entry: 'gallery' });
+});
 app.use('/editor', express.Router().get('/', function(req, res, next) {
   renderPage(req, res, next, 'editor', site.name + ' Studio', false);
 }));

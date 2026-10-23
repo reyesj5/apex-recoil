@@ -1,5 +1,18 @@
 # v260922
 
+- **Design System in Code, Component Gallery & Shared Foundations (M11 Phase 1, 2026-10-23)**:
+  - **Design tokens drive the theme ([client/styles/tokens.json](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/tokens.json))**: the Design System's tokens generate the Tailwind theme at build time: colors, radii, shadows, sizes, fonts and `type-*` text styles, with Tailwind's default palette switched off. [client/styles/app.css](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/app.css) is the new interface's only stylesheet, with self-hosted Chakra Petch, Inter and JetBrains Mono and shadcn/ui's variables mapped onto the tokens. The current pages keep their styles until they are replaced.
+  - **Components ([client/components/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/components/))**: 31 shadcn/ui components (Radix) restyled to the design, plus WeaponTile, TierOption, StatTile, ScoreCard, RunResult, ConsentBanner and InputWithUnit. Classes merge with the `cn` package, taught the token names.
+  - **Component gallery at `/next/components`**: every component in its states, at desktop and phone widths. Three new Playwright scenarios check that it renders on the tokens, has no axe violations (WCAG 2.1 A and AA) with every overlay open, and fits a phone screen. Building it closed gaps in the design: unnamed slider thumbs, links told apart by color alone, a table that scrolled without keyboard access, and low-contrast text on a selected weapon tile.
+  - **Shared foundations ([client/lib/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/lib/))**:
+    - `storage`: settings and score history under the existing `localStorage` keys and formats, tested against values recorded from the current app, so players keep their data.
+    - `api`: responses checked with zod; TanStack Query hooks for specs, history, sessions, screenshots and jobs; uploads straight to object storage with the server as the fallback; job progress over Server-Sent Events, with polling.
+    - `i18n`: English, Russian and Chinese catalogs extracted from the trainer pages and the game code ([client/locales/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/locales/)), with typed keys and a completeness test.
+    - `analytics`: the consent state and Google Analytics with Consent Mode v2, loaded only after Accept and only when `site.json` has a measurement ID and a privacy policy; the choice lasts 12 months.
+    - `site`: typed access to `site.json` with the ownership rules.
+  - **Tests**: 92 Vitest tests (components, storage, API, translations, analytics, site) and 28 Playwright scenarios.
+  - **Handoff**: [docs/ui-migration-progress.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-progress.md) records the status, the conventions, the pitfalls and the next steps for whoever continues; AGENTS.md points to it.
+
 - **Spraydown Name & Logo, Phase 0 Tooling and Test Safety Net (M11, 2026-10-22)**:
   - **Placeholder name "Spraydown"**: page titles (from `site.json`), the README, the processing README, the package name and the server's startup message use it until the owner settles on a name.
   - **Logo ([brand/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/brand/))**: a mark of five shots in a downward chevron and a Chakra Petch wordmark ("down" in volt), in dark, light, graphite and one-color versions; new favicons (SVG, 16 and 32 px PNG, ICO) and an Apple touch icon in `etc/`. `python brand/source/build_logo.py` rebuilds every file, for example after a rename.

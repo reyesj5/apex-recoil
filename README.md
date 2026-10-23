@@ -53,7 +53,7 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
    - Multi-spray median-delta integration and convergence scoring ($rc\_score$).
    - SQLite persistence layer with versioned, lossless specs (kept in sync with `client/specs.json`), audit history, and full-document shadow parity verification.
    - Optional scaled mode: Redis/BullMQ job queue with standalone workers, and S3-compatible capture storage with direct browser uploads.
-   - Comprehensive test suite with 43 Python unit tests, 55 Node.js tests (14 of them need Redis/S3, see below), Vitest unit tests and 25 Playwright end-to-end scenarios in Chrome, including axe accessibility checks.
+   - Comprehensive test suite with 43 Python unit tests, 55 Node.js tests (14 of them need Redis/S3, see below), Vitest unit and component tests and 28 Playwright end-to-end scenarios in Chrome, including axe accessibility checks.
 
 ---
 

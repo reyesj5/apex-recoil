@@ -61,9 +61,9 @@ Versions are the current releases on 2026-10-22; pin exact versions when each is
 | --- | --- | --- |
 | UI | React 19.3 with the React Compiler 1.0, through `@vitejs/plugin-react` 6 | pug templates, DOM code |
 | Rendering | Vite 8 (as today). The trainer is prerendered to HTML per locale and hydrated; the editor renders in the browser | pug on the server and in `scripts/build-static.mjs` |
-| Styling | Tailwind 4.3 with preflight; tokens generated from `theme.json` into `@theme` | `base.css`, `components.css`, `trainer.css`, `editor.css` |
+| Styling | Tailwind 4.3 with preflight; tokens generated from the design system's `client/styles/tokens.json` into `@theme` | `base.css`, `components.css`, `trainer.css`, `editor.css` |
 | Components | shadcn/ui (style `new-york`, Radix through `radix-ui`), copied into `client/components/ui/` and owned there | hand-made dialogs, tabs, tooltips, sliders, selects |
-| Variants, class merging | `class-variance-authority`, `clsx`, `tailwind-merge` (the `cn()` helper) | `classList` toggles |
+| Variants, class merging | `class-variance-authority`, and the `cn` package (clsx and tailwind-merge in one, as shadcn/ui generates it) configured with the token names | `classList` toggles |
 | Icons | `lucide-react`; the game icons from `views/mixins/icons.pug` and the PNG icons in `etc/` as SVG components | pug icon mixins, PNG icons |
 | Canvas | Konva 10. The editor uses `react-konva` 19; the trainer's game engine stays imperative, mounted by a component | Konva 9 code mixed with DOM code |
 | Charts | shadcn/ui Chart (Recharts 3), loaded when the chart opens | Plotly and `etc/plot.js` |
@@ -73,7 +73,7 @@ Versions are the current releases on 2026-10-22; pin exact versions when each is
 | Translations | i18next 26 + react-i18next 17, one JSON catalog per locale | three page copies plus strings in `game.ts` |
 | Notifications | sonner | status text set by hand |
 | Cookie consent | own banner component; Google tag with Consent Mode v2 | tarteaucitron |
-| Fonts | self-hosted `@fontsource-variable/inter` and `@fontsource-variable/jetbrains-mono` | Google Fonts |
+| Fonts | self-hosted `@fontsource/chakra-petch`, `@fontsource-variable/inter` and `@fontsource-variable/jetbrains-mono` | Google Fonts |
 | Development server | Vite in middleware mode inside Express: hot reload, one origin | `vite build --watch` plus nodemon |
 | Tests | Vitest 5, Testing Library and MSW for components; Playwright for end-to-end scenarios, screenshots and axe accessibility checks | none on the client |
 | Lint, format | ESLint 10 with typescript-eslint, react-hooks, jsx-a11y and better-tailwindcss; Prettier with prettier-plugin-tailwindcss | none |
@@ -100,13 +100,13 @@ client/
 ### 3.3 Conventions
 
 1. Style with utilities in JSX and solve repetition with components. No `@apply`, and no CSS files besides `app.css`.
-2. Colors, radii, fonts and recurring sizes are theme tokens from `theme.json`. shadcn's semantic tokens (`background`, `primary`, `muted`, `destructive`, `border`, `ring`, `chart-1`, ...) map onto the Apex palette. No hex values in components; arbitrary values such as `w-[315px]` only for true one-offs.
+2. Colors, radii, fonts and recurring sizes are theme tokens from `client/styles/tokens.json` (the design system). shadcn's semantic tokens (`background`, `primary`, `muted`, `destructive`, `border`, `ring`, `chart-1`, ...) map onto the Apex palette. No hex values in components; arbitrary values such as `w-[315px]` only for true one-offs.
 3. Component variants with `cva`, conditional classes with `cn()`. Never assemble class names from strings (`bg-${color}`); use a map of complete class names, so Tailwind finds them.
 4. Show state through attributes: Radix's `data-state`, `aria-*`, and our own `data-*` (`data-selected`, `data-penalty`), styled with variants such as `data-[selected]:bg-active`.
-5. Interactive widgets use Radix primitives (focus handling, keyboard support, ARIA). Focus rings use the `ring` token; contrast stays at WCAG AA or better.
+5. Interactive widgets use Radix primitives (focus handling, keyboard support, ARIA). Focus shows as one global volt outline (`:focus-visible` in `app.css`); contrast stays at WCAG AA or better.
 6. Mobile first; the current 768 px boundary becomes a theme breakpoint.
 7. prettier-plugin-tailwindcss orders classes; unknown or conflicting classes are lint errors.
-8. The canvas cannot use classes, so Konva takes its colors from the same tokens (imported from `theme.json`).
+8. The canvas cannot use classes, so Konva takes its colors from the same tokens (imported from `tokens.json`).
 9. shadcn/ui components live in the repo and are edited freely; `pnpm dlx shadcn@latest add` and `diff` bring in upstream changes.
 10. Dark theme by default, with tokens arranged so that a light theme can be added later.
 
@@ -138,19 +138,19 @@ Exit: the scenarios pass on the current app and in CI. Met locally on 2026-10-22
 
 ### Phase 1: Design system and shared foundations
 
-The design system is the one in [ui-redesign.md](ui-redesign.md) (sections 4 and 5), drawn on the design canvas.
+The design system is the one in [ui-redesign.md](ui-redesign.md) (sections 4 and 5), drawn on the design canvas and kept in the Design System artifact (https://claude.ai/artifact/XK1KCFGz6tF9WzmKUykaFe). Progress, conventions and next steps: [ui-migration-progress.md](ui-migration-progress.md).
 
-- [ ] 1.1 `pnpm dlx shadcn@latest init` (style `new-york`, CSS variables); `components.json`.
-- [ ] 1.2 Tokens: replace the palette in `theme.json` with the redesign's tokens (ground, panel, volt, the tier colors, ...) and extend the generator in `vite.config.mjs` to Tailwind `@theme` tokens, shadcn's semantic tokens and chart colors (mapping in ui-redesign.md 4.1). New `client/styles/app.css` with `@import "tailwindcss"` (preflight on), tokens, breakpoints and self-hosted Chakra Petch, Inter and JetBrains Mono. The old pages keep the current `tailwind.css` until they are deleted.
-- [ ] 1.3 Components: button (primary, secondary, ghost, destructive, icon), input, label, select, slider, switch, checkbox, toggle, toggle-group, tabs, dialog, alert-dialog, drawer, tooltip, popover, dropdown-menu, command (weapon search), card, badge, separator, scroll-area, progress, skeleton, table, collapsible, sidebar, sonner, form, chart; own `WeaponTile`, `TierOption`, `StatTile`, `ScoreCard` and `ConsentBanner`.
-- [ ] 1.4 Icons: `lucide-react` for generic icons; the placeholder crosshair mark, the game icons and the PNG icons become SVG components.
-- [ ] 1.5 `lib/storage`: Zustand persistence under the existing keys, tested against values written by the current app.
-- [ ] 1.6 `lib/api`: zod schemas and TanStack Query hooks for specs, history, sessions, screenshots, uploads and jobs; `useJobEvents` for progress over Server-Sent Events.
-- [ ] 1.7 `lib/i18n`: catalogs extracted from the three trainer templates and the strings in `game.ts`; typed keys; a test that every locale has every key.
-- [ ] 1.8 `lib/analytics`: consent state and the Google tag with Consent Mode v2, denied by default, using the owner's GA4 ID from `VITE_GA_MEASUREMENT_ID` (no ID, no analytics); never loaded on the Studio.
-- [ ] 1.9 `lib/site.ts`: typed access to `site.json` (name, owner, site URL, links, analytics ID), which the current pages already use, with the rules of the [ownership register](ownership-register.md): unset links hidden, analytics only with an ID and a privacy policy.
+- [x] 1.1 `pnpm dlx shadcn@latest init` (style `new-york`, CSS variables); `components.json`. The CLI (4.x) writes components that import `cn` from the `cn` package; Vite, Vitest and tsconfig point that name at our helper, which knows the token names.
+- [x] 1.2 Tokens: the design system's `tokens.json`, copied to `client/styles/tokens.json`, replaces the palette. The generator in `vite.config.mjs` turns it into Tailwind `@theme` tokens (colors, radii, shadows, sizes, fonts) and `type-*` utilities, and `client/styles/app.css` maps shadcn's semantic tokens and the chart colors onto them (mapping in ui-redesign.md 4.1). `app.css` has `@import "tailwindcss"` (preflight on), the tokens and self-hosted Chakra Petch, Inter and JetBrains Mono. The old pages keep `theme.json` and `tailwind.css` until they are deleted.
+- [x] 1.3 Components: button (primary, secondary, ghost, destructive, icon), input, label, select, slider, switch, checkbox, toggle, toggle-group, tabs, dialog, alert-dialog, drawer, tooltip, popover, dropdown-menu, command (weapon search), card, badge, separator, scroll-area, progress, skeleton, table, collapsible, sidebar, sonner, form, chart; own `WeaponTile`, `TierOption`, `StatTile`, `ScoreCard` and `ConsentBanner`. They are shown in all their states on a gallery at `/next/components`, covered by component tests and three scenarios (axe with no violations, every overlay open, phone width). Collapsible, form, sheet and sidebar are not styled or shown yet; they wait for the Studio shell.
+- [ ] 1.4 Icons: `lucide-react` for generic icons and the placeholder crosshair mark are done; the game icons and the PNG icons still have to become SVG components.
+- [x] 1.5 `lib/storage`: Zustand stores that read and write each value under its existing key and in its existing format, tested against values recorded from the current app.
+- [x] 1.6 `lib/api`: zod schemas and TanStack Query hooks for specs, history, sessions, screenshots, uploads and jobs; `useJobEvents` for progress over Server-Sent Events, with polling as the fallback.
+- [x] 1.7 `lib/i18n`: catalogs extracted from the three trainer templates and the strings in `game.ts`; typed keys; a test that every locale has every key, with the same placeholders and tags.
+- [x] 1.8 `lib/analytics`: consent state and the Google tag with Consent Mode v2, denied by default and loaded only after consent, using the owner's GA4 ID from `site.json` (no ID or no privacy policy, no analytics); never loaded on the Studio. The choice is kept for 12 months.
+- [x] 1.9 `lib/site.ts`: typed access to `site.json` (name, owner, site URL, links, analytics ID), which the current pages already use, with the rules of the [ownership register](ownership-register.md): unset links hidden, analytics only with an ID and a privacy policy.
 
-Exit: every component renders in all its states (component tests and screenshots), storage reads values written by the current app, catalogs are complete.
+Exit: every component renders in all its states (component tests and screenshots), storage reads values written by the current app, catalogs are complete. Met on 2026-10-23, except for 1.4's game icons and the four components that wait for the Studio.
 
 ### Phase 2: Trainer
 

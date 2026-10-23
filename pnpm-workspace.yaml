@@ -10,3 +10,6 @@ allowBuilds:
   msgpackr-extract: false
   # Its postinstall only copies the browser service worker; the tests use msw/node
   msw: false
+minimumReleaseAgeExclude:
+  - i18next@26.5.6
+  - react-i18next@17.1.3

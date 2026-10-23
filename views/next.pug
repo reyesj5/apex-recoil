@@ -1,0 +1,19 @@
+//- The new UI's pages (docs/ui-migration-plan.md): a bare shell for a React entry in
+//- client/entries/ (`entry`), served at /next/... until each page replaces the old one. With pnpm dev
+//- the entry loads from source through Vite; otherwise its build, <entry>.js and <entry>.css.
+doctype html
+html(lang='en')
+  head
+    meta(charset='utf-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1')
+    meta(name='robots' content='noindex')
+    title= title
+    link(rel='icon' type='image/svg+xml' href='/favicon.svg')
+    if !devServer
+      link(rel='stylesheet' href='/' + entry + '.css')
+  body
+    #root
+    if devServer
+      script(type='module' src='/client/entries/' + entry + '.tsx')
+    else
+      script(type='module' src='/' + entry + '.js')

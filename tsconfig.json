@@ -13,7 +13,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "types": ["vite/client"],
-    "paths": { "@/*": ["./client/*"] }
+    // "cn" is the design-token-aware `cn` in client/lib/utils.ts (shadcn/ui components import it as "cn")
+    "paths": { "@/*": ["./client/*"], "cn": ["./client/lib/utils.ts"] }
   },
   "include": ["client"]
 }

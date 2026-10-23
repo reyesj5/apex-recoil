@@ -2,6 +2,8 @@
 
 This repository enforces a strict **Task Completion Protocol** for all AI coding assistants (Antigravity, Claude, Copilot, Cursor, etc.). Whenever you complete any task, bugfix, or feature, you **MUST** execute and verify each step in this workflow before concluding your response.
 
+> **Work in progress: the UI rebuild.** The trainer and the editor are being rebuilt with React, Tailwind and shadcn/ui ([docs/ui-migration-plan.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-plan.md)). Before you touch the interface, read [docs/ui-migration-progress.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-progress.md): what is done, the conventions to keep, the pitfalls already paid for and the next steps. Update it when you finish a step.
+
 ---
 
 ## ⚡ Mandatory Task Completion Protocol
@@ -65,7 +67,7 @@ Never consider a task complete without executing and passing these checks. Use p
    pnpm test:unit
    pnpm build && pnpm test:e2e
    ```
-   *Requirement:* All Vitest tests pass, and all 25 Playwright scenarios pass in Chrome. The scenarios fail on any page error, console error or failed request, and on any accessibility violation beyond the baseline in `e2e/accessibility.spec.ts` (lower a count there when you fix one). They run the app on throwaway data (`e2e/server.mjs`) and need Python with the processing requirements for the discovery runs (skipped locally without it, required in CI).
+   *Requirement:* All Vitest tests pass, and all 28 Playwright scenarios pass in Chrome. The scenarios fail on any page error, console error or failed request, and on any accessibility violation beyond the baseline in `e2e/accessibility.spec.ts` (lower a count there when you fix one). The new pages under `/next` have no baseline: no violations at all (`e2e/gallery.spec.ts`). They run the app on throwaway data (`e2e/server.mjs`) and need Python with the processing requirements for the discovery runs (skipped locally without it, required in CI).
 
 5. **TypeScript Typecheck, Lint & Formatting**:
    ```bash

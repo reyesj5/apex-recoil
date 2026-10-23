@@ -96,14 +96,79 @@ function themeJsonToStyles() {
   };
 }
 
+// A token value from tokens.json as CSS: a theme's value (the first theme, the only one so far),
+// with an alias such as "{volt}" turned into the variable it names
+function tokenValue(value, prefix) {
+  const v = typeof value === 'string' ? value : Object.values(value)[0];
+  const alias = /^\{(.+)\}$/.exec(v);
+  return alias ? `var(--${prefix}${alias[1]})` : v;
+}
+
+// The new UI's tokens. client/styles/tokens.json is the design system's tokens file (the Design
+// System artifact linked from docs/ui-redesign.md). This writes client/styles/design-tokens.css,
+// which app.css imports: Tailwind theme variables for every color, radius, shadow, control height
+// and font family, and a type-<style> utility for every type style. Spacing tokens are the steps
+// of Tailwind's own 4 px scale (space-12 is p-3), so they need no variables.
+function designTokensToTheme() {
+  const jsonPath = resolve(__dirname, 'client/styles/tokens.json');
+  const cssPath = resolve(__dirname, 'client/styles/design-tokens.css');
+
+  return {
+    name: 'design-tokens-to-theme',
+    buildStart() {
+      this.addWatchFile(jsonPath);
+      const tokens = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      const typeUtilities = tokens.type.groups.flatMap((group) =>
+        group.styles.map((style) => {
+          const declarations = [
+            `font-family: var(--font-${style.family || group.family});`,
+            `font-size: ${style.fontSize};`,
+            style.lineHeight !== undefined && `line-height: ${style.lineHeight};`,
+            `font-weight: ${style.fontWeight};`,
+            style.letterSpacing && `letter-spacing: ${style.letterSpacing};`,
+            // The type grammar has no text-transform; styles whose usage says uppercase get it
+            /uppercase/i.test(style.usage || '') && 'text-transform: uppercase;'
+          ].filter(Boolean);
+          return `@utility type-${style.name} {\n${declarations.map((d) => `  ${d}`).join('\n')}\n}`;
+        })
+      );
+      writeIfChanged(cssPath, [
+        '/* Generated from tokens.json by vite.config.mjs; edit tokens.json (the design system) instead. */',
+        '@theme static {',
+        '  /* Only the design system: no Tailwind default colors, radii or shadows */',
+        '  --color-*: initial;',
+        '  --radius-*: initial;',
+        '  --shadow-*: initial;',
+        '  --color-white: #fff;',
+        '  --color-black: #000;',
+        ...tokens.color.tokens.map((t) => `  --color-${t.name}: ${tokenValue(t.value, 'color-')};`),
+        ...tokens.radius.tokens.map((t) => `  --${t.name}: ${t.value};`),
+        ...tokens.shadow.tokens.map((t) => `  --${t.name}: ${tokenValue(t.value, '')};`),
+        '  /* Control and tile heights as spacing values: h-control, size-icon, h-touch */',
+        ...tokens.size.tokens.map((t) => `  --spacing-${t.name.replace(/^size-/, '')}: ${t.value};`),
+        ...Object.entries(tokens.type.families).map(([key, stack]) => `  --font-${key}: ${stack};`),
+        '}',
+        '',
+        ...typeUtilities,
+        ''
+      ].join('\n'));
+    }
+  };
+}
+
 export default defineConfig({
   root: '.',
   publicDir: 'etc',
   resolve: {
-    alias: { '@': resolve(__dirname, 'client') }
+    alias: [
+      { find: '@', replacement: resolve(__dirname, 'client') },
+      // shadcn/ui components import `cn` from "cn"; ours is configured with the design tokens
+      { find: /^cn$/, replacement: resolve(__dirname, 'client/lib/utils.ts') }
+    ]
   },
   plugins: [
     themeJsonToStyles(),
+    designTokensToTheme(),
     tailwindcss(),
     react(),
     // React Compiler (automatic memoization) for components; Babel only sees .jsx/.tsx files,
@@ -123,7 +188,10 @@ export default defineConfig({
         // Legacy /bundle.js: tiny router that lazy-loads the bundle for the current route.
         bundle: resolve(__dirname, 'client/main.ts'),
         // All styles (Tailwind with the project's base, component and page CSS)
-        tailwind: resolve(__dirname, 'client/styles/tailwind.css')
+        tailwind: resolve(__dirname, 'client/styles/tailwind.css'),
+        // The new UI (docs/ui-migration-plan.md): one React entry per page, each with its CSS
+        // (app.css) as <name>.css. The component gallery is served at /next/components.
+        gallery: resolve(__dirname, 'client/entries/gallery.tsx')
       },
       output: {
         entryFileNames: '[name].js',

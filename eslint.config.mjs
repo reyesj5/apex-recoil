@@ -43,7 +43,8 @@ export default tseslint.config(
     files: ['client/**/*.tsx'],
     plugins: { 'better-tailwindcss': betterTailwindcss },
     rules: { ...betterTailwindcss.configs['correctness-error'].rules },
-    settings: { 'better-tailwindcss': { entryPoint: 'client/styles/tailwind.css' } },
+    // The new UI's stylesheet: the design system's tokens (client/styles/tokens.json) and shadcn's variables
+    settings: { 'better-tailwindcss': { entryPoint: 'client/styles/app.css' } },
   },
 
   // Node code: server, scripts, tests and tool configs
