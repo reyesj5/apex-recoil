@@ -1,5 +1,6 @@
 /**
 * Copyright 2021 Mikhail Goncharov
+* Modified by [OWNER NAME], 2025-2026.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -67,6 +68,9 @@ let auto_points: Konva.Circle[] = [];
 let edgeStartName = '';
 let idxCounter = 0;
 let imageMask = new Array<Array<number>>();
+// autoFilter indexes imageMask by image pixel, so the cache it filters must be in image pixels:
+// Konva 10 caches at the device pixel ratio by default (2x the pixels on a high-density screen)
+const IMAGE_PIXELS = { pixelRatio: 1 };
 
 export function acceptAuto() {
   saveUndoState();
@@ -83,7 +87,7 @@ export function initImage() {
   watch([aThreshold, aEnableThreshold, aAutoTargets, aTargetTo, aTargetFrom], () => {
     // Re-cache image to apply updated filter parameters to canvas, then batch-draw stage
     if (img && img.isCached()) {
-      img.cache();
+      img.cache(IMAGE_PIXELS);
       stage.batchDraw();
     }
   });
@@ -120,7 +124,7 @@ export function initImage() {
       img.scale({ x: s, y: s });
       img.position({ x: offsetX, y: offsetY });
       img.zIndex(0);
-      img.cache();
+      img.cache(IMAGE_PIXELS);
       img.filters([autoFilter]);
       imageMask = new Array<Array<number>>(img.width());
       for (let i = 0; i < img.width(); i++) {

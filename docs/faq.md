@@ -8,13 +8,13 @@ If you see a warning that "Active area is too small!" then it means that either 
 
 - most of mouse control software supports multiple CPI settings. Switch to a lower value e.g. from 2000 to 1000 CPI.
 
-- use this [script](https://gist.github.com/metaflow/dd0b38a66b74dad27d6af04358fbae40) for [autohotkey](https://www.autohotkey.com/) to switch between normal and 1/2 sensitivity.
+- use an [AutoHotkey](https://www.autohotkey.com/) script to switch between normal and half sensitivity ([SCRIPT URL]).
 
 after you've reduced you mouse speed you can then multiply web app sensitivity by the same value (e.g. x0.5 mouse speed -> x2 sensitivity).
 
 ## How accurate are the patterns?
 
-I've tested every pattern by replaying it in-game with a few different scopes and game options (like FOV and mouse sensitivity). That was done with a hardware mouse simulator (Arduino board).
+Patterns were checked by replaying them in-game with several scopes and game options (such as FOV and mouse sensitivity), using a hardware mouse simulator (an Arduino board). Newer patterns can also be measured from recordings with the recoil discovery tools ([capture guide](capture.md)). [REVIEW: describe how patterns are verified today.]
 
 
 
@@ -22,7 +22,7 @@ I've tested every pattern by replaying it in-game with a few different scopes an
 
 You can try to use Steam controller support `Settings > Controller > Desktop Configuration`.
 
-According to my experiments, these mouse sensitivity values should be close to in-game:
+These Steam controller values should come close to the in-game sensitivity:
 
 | Apex Legends     | 1     | 2     | 3     | 4     | 5     | 6    | 7     | 8    |
 |------------------|-------|-------|-------|-------|-------|------|-------|------|
@@ -32,7 +32,7 @@ Pick the response curve, [this post might help](https://www.reddit.com/r/apexleg
 
 Steam does not disable mouse movement for non-steam games, your controls might be funky.
 
-*Disclaimer*: I play on the keyboard and mouse and have not tested with a controller. Sensitivity numbers above were computed with [xbox controller emulator](https://github.com/dmadison/ArduinoXInput) and having a linear response pattern. Trying to emulate the recoil movement of a gamepad seems to be non-trivial.
+*Disclaimer*: these values were not tested with a physical controller. They were computed with an [Xbox controller emulator](https://github.com/dmadison/ArduinoXInput) and a linear response curve; emulating a gamepad's recoil movement is not trivial.
 
 ## How scoring works
 
@@ -55,4 +55,4 @@ Normally you should see FPS values around 60: that's the default browser cap on 
 
 ## I have an issue/idea!
 
-If something is broken or you have an improvement idea, please [create an issue](https://github.com/metaflow/apex-recoil/issues/new).
+If something is broken or you have an improvement idea, please create an issue ([ISSUES URL]).

@@ -1,5 +1,35 @@
 # v260922
 
+- **Spraydown Name & Logo, Phase 0 Tooling and Test Safety Net (M11, 2026-10-22)**:
+  - **Placeholder name "Spraydown"**: page titles (from `site.json`), the README, the processing README, the package name and the server's startup message use it until the owner settles on a name.
+  - **Logo ([brand/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/brand/))**: a mark of five shots in a downward chevron and a Chakra Petch wordmark ("down" in volt), in dark, light, graphite and one-color versions; new favicons (SVG, 16 and 32 px PNG, ICO) and an Apple touch icon in `etc/`. `python brand/source/build_logo.py` rebuilds every file, for example after a rename.
+  - **Toolchain**: React 19.3 with the React Compiler, TypeScript 6.0 (strict, bundler resolution, `@/` alias) with separate browser and Node configs, Konva 10.9, ESLint 10 (typescript-eslint, React Hooks, jsx-a11y, Tailwind class checks) and Prettier 3.9 with the Tailwind plugin. New scripts: `pnpm lint`, `pnpm format`, `pnpm format:check`, `pnpm test:unit`, `pnpm test:e2e`; `pnpm tsc` checks both configs.
+  - **Development server with hot reload ([app.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js), [bin/www](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/bin/www))**: `pnpm dev` runs Express with Vite in middleware mode. Style changes apply in place, code and template changes reload the page, and React components will keep their state. It listens on this computer only. `npm-run-all` is gone.
+  - **Compression and caching**: Brotli or gzip for text responses (the analysis event streams stay uncompressed so progress arrives as it happens); hashed chunks are cached for a year as immutable, while pages and entry files revalidate. [docs/playbooks.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/playbooks.md) has the same for nginx, which no longer gzips images and audio.
+  - **End-to-end scenarios ([e2e/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/e2e/))**: 25 Playwright scenarios in Chrome, run against the built app on throwaway data (`e2e/server.mjs`). A scenario fails on any page error, console error or failed request.
+    - Trainer: weapons, search, categories, fire modes, magazines and attachments; settings across a reload (exact `localStorage`); a scored spray with its history and chart; `/ru` and `/zh-CN`; the phone notice; consent deny and accept with no Google request before consent.
+    - Editor: specs, point editing with undo and redo, saving with versions, the save checkpoint, shortcuts, layout memory, scale calibration and overlays, the legacy threshold tools at pixel ratios 1 and 2, and clip and screenshot analysis through the Python pipeline with progress, saved sessions and the screenshot library.
+    - Accessibility: axe (WCAG 2.1 A and AA) on all four pages, failing on anything beyond today's baseline.
+  - **Unit and component tests**: Vitest 5 with Testing Library and MSW, starting with the trainer's scoring math.
+  - **Node and CI**: Node 22.22+ or 24.15+ (`engines`). The CI web job runs on Node 22 and 24 with lint, formatting, both typechecks and unit tests; the integration job runs the end-to-end scenarios on Node 24 and keeps their report when they fail.
+  - **Fixes found by the scenarios**:
+    - The editor's legacy threshold and auto-target tools threw "Unable to apply filter" on high-density screens since Konva 10, which caches at the device pixel ratio; that image is cached at ratio 1 again ([canvas.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/editor/canvas.ts)).
+    - Trainer tooltips stayed open while hovered and swallowed clicks meant for the controls under them, such as the trace buttons below the target-mode row; they no longer take pointer events ([components.css](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/components.css)).
+    - Component tests let requests without an MSW handler through: MSW 3 renamed the option to `onUnhandledFrame`.
+
+- **Our Own Project: Placeholders, Privacy Policy & License Notices (M11, 2026-10-22)**:
+  - **No more links to the original author ([site.json](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/site.json))**: the trainer pages read names, links and the Google Analytics ID from `site.json`, which holds placeholders until the owner fills them in. An empty link is hidden.
+    - The original author's Google Analytics ID and PayPal donation link are gone.
+    - So are links to his repository, FAQ, issues, release notes, privacy policies, Reddit post and YouTube video.
+    - The redirect that sent `.online` visitors to his domain is gone too.
+    - The FAQ, deploy playbook, contribution terms and issue template use placeholders as well.
+  - **Analytics only when configured**: the cookie banner and Google Analytics load only on the public trainer pages, and only once a measurement ID and a privacy policy link are set; the editor never loads them.
+  - **New privacy policy ([docs/privacy-policy.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/privacy-policy.md))**: covers browser storage, server logs, Google Analytics with consent, the consent choice, transfers, retention and rights, with placeholders for the owner's details. The original's policies, English and German, are removed.
+  - **License handled as Apache-2.0 asks**:
+    - The 30 files with the original copyright line keep it and now say `Modified by [OWNER NAME], 2025-2026.`
+    - A [NOTICE](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/NOTICE) file, the README and one footer line credit apex-recoil by Mikhail Goncharov.
+  - What the owner still has to provide, and a command that lists every placeholder: [docs/ownership-register.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ownership-register.md).
+
 - **pnpm 12 Only, Deduplicated Dependencies & Old Build Folder Removed (M10, 2026-10-22)**:
   - **pnpm 12, no npm ([package.json](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/package.json), [pnpm-workspace.yaml](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/pnpm-workspace.yaml))**:
     - `package.json` pins pnpm 12.14.0 under `devEngines.packageManager`, replacing the `packageManager` pin on 10.8.1. Any pnpm 11 or newer switches to that version; npm refuses to install or run scripts (`EBADDEVENGINES`). `package-lock.json` is gone.

@@ -13,7 +13,8 @@ Every AI agent working in this codebase must execute the following 4 steps after
 │ 1. RUN AUTOMATED TESTS & TYPECHECKS                    │
 │    • pytest in processing/                             │
 │    • specs schema verification                         │
-│    • TypeScript tsc typecheck                          │
+│    • TypeScript tsc (browser and Node configs)         │
+│    • Vitest, Playwright, ESLint, Prettier              │
 │                                                        │
 │ 2. SYNCHRONIZE DOCUMENTATION & ROADMAP                 │
 │    • docs/release-notes.md                             │
@@ -59,13 +60,22 @@ Never consider a task complete without executing and passing these checks. Use p
    If you touched the job queue, storage, uploads or discovery endpoints, also run the Redis/S3/end-to-end suites: `docker compose up -d && pnpm test:services` (55 tests in total).
    If you restyled without meaning to change the look (moving CSS from `client/styles/*.css` into Tailwind utilities, renaming classes), capture `node scripts/style-snapshot.mjs` before and after and compare: there must be no differences.
 
-4. **TypeScript Typecheck**:
+4. **Unit, Component & End-to-End Tests**:
+   ```bash
+   pnpm test:unit
+   pnpm build && pnpm test:e2e
+   ```
+   *Requirement:* All Vitest tests pass, and all 25 Playwright scenarios pass in Chrome. The scenarios fail on any page error, console error or failed request, and on any accessibility violation beyond the baseline in `e2e/accessibility.spec.ts` (lower a count there when you fix one). They run the app on throwaway data (`e2e/server.mjs`) and need Python with the processing requirements for the discovery runs (skipped locally without it, required in CI).
+
+5. **TypeScript Typecheck, Lint & Formatting**:
    ```bash
    pnpm tsc
+   pnpm lint
+   pnpm format:check
    ```
-   *Requirement:* 0 TypeScript compilation errors.
+   *Requirement:* 0 TypeScript compilation errors in both configs (`tsconfig.json` for the browser, `tsconfig.node.json` for tool configs and `e2e/`), 0 ESLint errors (legacy code still reports warnings; new code should add none), and every file Prettier formatted (`pnpm format` fixes it).
 
-5. **Asset & Bundle Verification**:
+6. **Asset & Bundle Verification**:
    If CSS, TypeScript, or static bundling logic was altered, verify that `pnpm build` or `pnpm static` succeeds without crashing.
 
 ---

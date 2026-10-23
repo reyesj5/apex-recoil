@@ -1,6 +1,6 @@
-# Apex Legends Recoil Trainer & Discovery Toolkit
+# Spraydown: Recoil Trainer & Discovery Toolkit for Apex Legends
 
-Live site: [https://apexlegendsrecoils.net](https://apexlegendsrecoils.net)
+Live site: [SITE URL] (no domain yet; set `siteUrl` in [site.json](./site.json))
 
 An interactive recoil pattern visualization, muscle memory trainer, and automated discovery toolkit for [Apex Legends](https://www.ea.com/games/apex-legends).
 
@@ -53,16 +53,17 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
    - Multi-spray median-delta integration and convergence scoring ($rc\_score$).
    - SQLite persistence layer with versioned, lossless specs (kept in sync with `client/specs.json`), audit history, and full-document shadow parity verification.
    - Optional scaled mode: Redis/BullMQ job queue with standalone workers, and S3-compatible capture storage with direct browser uploads.
-   - Comprehensive test suite with 43 Python unit tests and 55 Node.js tests (14 of them need Redis/S3, see below).
+   - Comprehensive test suite with 43 Python unit tests, 55 Node.js tests (14 of them need Redis/S3, see below), Vitest unit tests and 25 Playwright end-to-end scenarios in Chrome, including axe accessibility checks.
 
 ---
 
 ## Running Locally
 
 ### 1. Prerequisites
-* **Node.js** 20.19+ or 22.12+ (required by Vite 8)
+* **Node.js** 22.22+ or 24.15+, 24 LTS recommended (`engines` in `package.json`; the test tools need these versions)
 * **pnpm** 12 ([installation](https://pnpm.io/installation)). pnpm 11 and newer switch to the version pinned in `package.json` (`devEngines`) on their own; npm is not supported and stops with `EBADDEVENGINES`.
 * **Python 3.10+** (for the automated discovery engine)
+* **Google Chrome** (for the end-to-end tests)
 
 ### 2. Frontend & Web Server
 From the repository root:
@@ -70,17 +71,26 @@ From the repository root:
 # Install dependencies (pnpm-workspace.yaml lists the native builds allowed to run: esbuild, sqlite3)
 pnpm install
 
-# Build assets (Vite 8 production build: trainer.js, editor.js, tailwind.css)
+# Start the development server: Vite serves the client sources with hot reload
+# (styles update in place, code and template changes reload the page), on this computer only
+pnpm dev
+
+# Build assets (Vite 8 production build: trainer.js, editor.js, tailwind.css); pnpm start serves them
 pnpm build
 
 # Run Node test suites (41 tests across database, queue, storage, and API; build first)
 pnpm test
 
-# Typecheck TypeScript
-pnpm tsc
+# Unit and component tests (Vitest)
+pnpm test:unit
 
-# Start development server
-pnpm dev
+# End-to-end scenarios in Chrome against the built app, on throwaway data (Playwright; build first)
+pnpm test:e2e
+
+# Typecheck (browser and Node configs), lint and check formatting (pnpm format rewrites files)
+pnpm tsc
+pnpm lint
+pnpm format:check
 ```
 
 Open your browser to:
@@ -144,7 +154,7 @@ Deployment is fully static:
 ```bash
 pnpm static
 ```
-This builds the Vite bundles, copies `etc/` and `assets/`, and renders the pages (`index.html`, `index-ru.html`, `index-zh-CN.html`, `editor.html`) into `./static`. Copy its contents to your web server directory (e.g. Nginx / Apache / S3). The Recoil Editor's capture and spec-saving features need the Node server and are not available on a static host.
+This builds the Vite bundles, copies `etc/` and `assets/`, and renders the pages (`index.html`, `index-ru.html`, `index-zh-CN.html`, `editor.html`) into `./static`. Copy its contents to your web server directory (e.g. Nginx / Apache / S3). The Recoil Editor's capture and spec-saving features need the Node server and are not available on a static host. Compression and caching headers for Nginx are in [docs/playbooks.md](./docs/playbooks.md).
 
 ---
 
@@ -158,12 +168,16 @@ Contributions, balance patch updates, and recoil submissions are welcome!
 * [AI Agent Guidelines](./AGENTS.md)
 * [Release Notes](./docs/release-notes.md)
 * [Recoil Discovery Guide](./docs/capture.md)
+* [Privacy Policy](./docs/privacy-policy.md)
+* [UI Migration Plan](./docs/ui-migration-plan.md) and [UI Redesign](./docs/ui-redesign.md)
+* [Ownership Register](./docs/ownership-register.md): placeholders for the owner's names, links and IDs
+* [Brand](./brand/README.md): the logo, its variants and how to regenerate them
 
 ---
 
 ## License & Disclaimers
 
-Source code is licensed under [Apache 2.0](./LICENSE).
+Source code is licensed under [Apache 2.0](./LICENSE). The project is based on [apex-recoil](https://github.com/metaflow/apex-recoil) by Mikhail Goncharov, also licensed under Apache 2.0 (see [NOTICE](./NOTICE)); files that contain its code keep the original copyright header and say that they were modified.
 
 *This project is not affiliated with or sponsored by Electronic Arts Inc., Respawn Entertainment, or Google.*
 

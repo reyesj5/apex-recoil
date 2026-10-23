@@ -30,7 +30,7 @@ This document establishes the master architectural blueprint, execution roadmap,
 | :--- | :--- | :---: | :--- | :--- |
 | **Phase 1** | **Stabilization & Memory Hardening** | 🟢 Complete | Streaming multipart uploads, async fs calls, atomic JSON writes, streaming video decoder | Decoder buffer no longer grows with clip length (328 MB peak on a 5 s 1080p clip vs 632 MB+ before); event-loop stalls not measured |
 | **Phase 2** | **Compute Worker Service & Async Queue** | 🟢 Complete | In-process `JobQueue` (default) or Redis/BullMQ (`REDIS_URL`): persistent jobs, embedded or standalone workers (`pnpm worker`), crash recovery, cross-process cancellation, SSE progress. Each job still starts a fresh Python process (no warm OpenCV daemon) | Integration tests on Redis, including a worker killed mid-job; dispatch latency not measured |
-| **Phase 3** | **Modern Frontend Architecture** | 🟢 Complete | Vite bundler, route bundles (`trainer.js` vs `editor.js`), Recoil Editor split into modules (`client/modules/editor/`); all styling in Tailwind 4 without Sass: page layout as utilities, stateful widgets as CSS in a cascade layer below the utilities, colors from theme.json. React is not used | Trainer route 89 kB gzip (< 150 kB); style migration verified with zero computed-style change (snapshot tool plus scripted editor and trainer sessions); editor refactor verified with an identical scripted session; Lighthouse not measured |
+| **Phase 3** | **Modern Frontend Architecture** | 🟢 Complete | Vite bundler, route bundles (`trainer.js` vs `editor.js`), Recoil Editor split into modules (`client/modules/editor/`); all styling in Tailwind 4 without Sass: page layout as utilities, stateful widgets as CSS in a cascade layer below the utilities, colors from theme.json. React is not used; superseded by the UI rebuild (2026-10-22, [ui-migration-plan.md](ui-migration-plan.md)) | Trainer route 89 kB gzip (< 150 kB); style migration verified with zero computed-style change (snapshot tool plus scripted editor and trainer sessions); editor refactor verified with an identical scripted session; Lighthouse not measured |
 | **Phase 4** | **Database & Asset Storage Layer** | 🟢 Complete | SQLite versioned, lossless spec store kept in sync with `specs.json`; session metadata index; local or S3-compatible capture storage (AWS SDK v3) with direct browser uploads via presigned PUT | Byte-identical `specs.json` round trip, no lost updates between writers; S3 tested against SeaweedFS |
 | **Phase 5** | **Shadow Parity, Benchmarks & Cutover** | 🟢 Complete | Full-document shadow parity, legacy Gulp removed, static site build restored, CI with Redis + S3 integration job | 100% field-level parity across all 31 weapons |
 
@@ -135,7 +135,7 @@ This document establishes the master architectural blueprint, execution roadmap,
 
 - [x] **3.1 Modern Bundler Setup (Vite + TypeScript)**:
   - `vite.config.mjs` builds the route entries `trainer` and `editor`, a legacy `bundle` router and `tailwind` (all styles), and regenerates `client/styles/theme-tokens.css` from `theme.json`: the palette plus the background shades and alpha variants that Sass used to compute.
-  - `pnpm build` (production) and `pnpm watch` (rebuild on change, used by `pnpm dev`).
+  - `pnpm build` (production) and `pnpm watch` (rebuild on change). Since M11 Phase 0, `pnpm dev` serves the sources through Vite inside Express with hot reload instead of rebuilding.
 - [x] **3.2 Core Aim Trainer Bundle Separation**:
   - The shared Konva stage lives in [`client/stage.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/stage.ts) (previously `game.ts`/`editor.ts` imported it from `main.ts`, which pulled the whole editor into every entry).
   - `views/layout.pug` loads `/trainer.js`; `views/editor.pug` loads `/editor.js`. `/bundle.js` remains as a small router for cached pages.
@@ -283,11 +283,12 @@ An audit of Phases 1–5 found the dashboard overstated several items and that a
 **Follow-up (2026-10-22)**
 - Done: the first CI run on GitHub passed all four jobs (PR #2); the Recoil Editor is split into modules (3.3); all styling is in Tailwind without Sass, with the page layout as utilities and no prefix (3.4).
 - Decided: no Tailwind preflight, and the stateful widgets stay component CSS (see 3.4).
+- Decided later the same day, superseding the line above: the UI is rebuilt in React with Tailwind (preflight on) and shadcn/ui, so that no widget CSS remains ([ui-migration-plan.md](ui-migration-plan.md)).
 - Done: pnpm 12 only (pinned under `devEngines`, npm refuses to run, settings in `pnpm-workspace.yaml`), `package-lock.json` removed, dependencies deduplicated; the stale `public/` folder (old Gulp and tsc output still served by Express) removed, and `tsc` only typechecks.
 
 **Still open**
 - A warm Python worker (keeping OpenCV loaded between jobs) if the per-job start-up time (~1–3 s) matters.
-- Optional: moving more widget CSS into utilities; splitting `capture_studio.ts` further.
+- The UI rebuild in React with Tailwind and shadcn/ui (decided 2026-10-22), which replaces the remaining widget CSS, the pug templates and `capture_studio.ts`: [ui-migration-plan.md](ui-migration-plan.md).
 - Measured (2026-10-22): with Tailwind's preflight enabled below the app CSS, about 210 elements per desktop page change size or position (form controls switch from the browser's Arial to Inter with a different line height, labels shrink from 20 to 14 px), links lose their underline and images get `max-width: 100%`. Preflight therefore fits the end of a full utility migration, with those changes made or accepted on purpose.
 
 ---

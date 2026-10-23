@@ -1,5 +1,6 @@
 //- 
 //- Copyright 2021 Mikhail Goncharov
+//- Modified by [OWNER NAME], 2025-2026.
 //-
 //- Licensed under the Apache License, Version 2.0 (the "License");
 //- you may not use this file except in compliance with the License.
@@ -22,16 +23,23 @@ html
     link(rel="preconnect" href="https://fonts.googleapis.com")
     link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
     link(href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet")
-    link(rel='stylesheet', href='/tailwind.css')
+    //- pnpm dev loads the sources through Vite instead of the build (devServer, see app.js)
+    link(rel='stylesheet', href=devServer ? '/client/styles/tailwind.css' : '/tailwind.css')
+    link(rel="icon" type="image/svg+xml" href="/favicon.svg")
     link(rel="icon", type="image/png", sizes="32x32" href="/favicon-32x32.png")
-    link(rel="icon", type="image/png", sizes="16x16" href="/favicon-16x16.png")    
+    link(rel="icon", type="image/png", sizes="16x16" href="/favicon-16x16.png")
+    link(rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png")
   body
     block content
-  script(src='/tarteaucitron/tarteaucitron.js')
-  script(src='/tarteaucitron_init.js')
+  //- Analytics and its cookie banner (only when `analytics` is set, see pageLocals in app.js)
+  if analytics
+    script.
+      window.SITE = !{JSON.stringify({ gaMeasurementId: site.gaMeasurementId, privacyUrl: site.privacyUrl }).replace(/</g, '\\u003c')};
+    script(src='/tarteaucitron/tarteaucitron.js')
+    script(src='/tarteaucitron_init.js')
   //- script(src="/plotly-latest.min.js")
   script(src="/plotly-cartesian.min.js")
   script(src='/plot.js')
   //- Each page loads only its own route bundle (editor.pug overrides this block)
   block scripts
-    script(type="module" src='/trainer.js')
+    script(type="module" src=devServer ? '/client/trainer_main.ts' : '/trainer.js')

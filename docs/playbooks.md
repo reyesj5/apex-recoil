@@ -2,7 +2,7 @@
 
 1. `pnpm static`
 
-2.  scp -r -i <id_rsa> .\static\* root@46.101.102.179:/var/www/html
+2.  scp -r -i <id_rsa> .\static\* [DEPLOY USER]@[DEPLOY HOST]:[WEB ROOT]
 
 # Update domains
 
@@ -13,14 +13,29 @@ add section
 server {
     root /var/www/html;
     index index.html index.htm index.nginx-debian.html;
-    server_name apexlegendsrecoils.net;
+    server_name [DOMAIN];
+    # Compress text only: images and audio are compressed already. For brotli, as the Express
+    # server sends, install the nginx brotli module (Debian and Ubuntu package
+    # libnginx-mod-http-brotli-filter) and add: brotli on; brotli_types <the same types>;
     gzip on;
-    gzip_types text/plain application/xml application/javascript text/css audio/mpeg image/png;
+    gzip_vary on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml application/xml;
 
     location / {
         # First attempt to serve request as file, then
         # as directory, then fall back to displaying a 404.
         try_files $uri $uri/ =404;
+    }
+    # Chunk file names carry a content hash: browsers keep them for a year
+    location ^~ /chunks/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+    # Pages and the entry files that keep their names (trainer.js, editor.js, tailwind.css):
+    # browsers check for a new version every time
+    location ~* \.(html|js|css)$ {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
     }
     location ~ ^/ru/?$ {
        rewrite ^/ru/?(.*)$ /$1 break;
@@ -38,6 +53,6 @@ server {
 
 2. run `nginx -t` to test and `systemctl restart nginx`
 
-3. check that http://apexlegendsrecoils.net/ is available
+3. check that http://[DOMAIN]/ is available
 
 4. run `certbot --nginx` and select new domain

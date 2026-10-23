@@ -1,4 +1,4 @@
-# Apex Recoil Discovery Engine
+# Spraydown Discovery Engine
 
 Automated computer vision and acoustic signal processing engine for discovering, measuring, and aggregating weapon recoil patterns in [Apex Legends](https://www.ea.com/games/apex-legends).
 

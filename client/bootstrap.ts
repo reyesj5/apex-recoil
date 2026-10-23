@@ -1,5 +1,6 @@
 /**
  * Copyright 2021 Mikhail Goncharov
+ * Modified by [OWNER NAME], 2025-2026.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +20,6 @@ import { pokeAttrs } from './storage';
 
 // Shared start-up for the route entries (trainer_main.ts, editor_main.ts).
 export function startApp(init: () => void) {
-  if (window.location.hostname.includes('.online')) {
-    alert('Apex Legends Recoils is moving to a new domain and .ONLINE will not be available from 10 of April.\n'+
-    'Please update your bookmark to apexlegendsrecoils.NET.\nYou will now be redirected.');
-    window.location.href = 'https://apexlegendsrecoils.net' + window.location.pathname;
-  }
-
   init();
   pokeAttrs();
   stage.batchDraw();

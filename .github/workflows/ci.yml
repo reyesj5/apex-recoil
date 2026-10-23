@@ -13,8 +13,8 @@ jobs:
 
     strategy:
       matrix:
-        # Vite 8 requires Node 20.19+ or 22.12+
-        node-version: [20.x, 22.x]
+        # The supported range in package.json (engines): jsdom 30 and Vitest 5 need Node 22.22+ or 24.15+
+        node-version: [22.x, 24.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -36,8 +36,17 @@ jobs:
     - name: Install
       run: pnpm install --frozen-lockfile
 
-    - name: Typecheck
-      run: pnpm exec tsc --noEmit
+    - name: Lint
+      run: pnpm lint
+
+    - name: Formatting
+      run: pnpm format:check
+
+    - name: Typecheck (browser and Node configs)
+      run: pnpm tsc
+
+    - name: Unit and component tests (Vitest)
+      run: pnpm test:unit
 
     - name: Build
       run: pnpm build
@@ -49,7 +58,7 @@ jobs:
       run: pnpm static
 
   integration:
-    name: Integration (Redis/BullMQ + S3)
+    name: Integration (Redis/BullMQ + S3, end-to-end)
     runs-on: ubuntu-latest
 
     steps:
@@ -59,7 +68,7 @@ jobs:
 
     - uses: actions/setup-node@v4
       with:
-        node-version: 22.x
+        node-version: 24.x
         cache: pnpm
 
     - uses: actions/setup-python@v5
@@ -94,6 +103,20 @@ jobs:
 
     - name: All Node tests, including Redis, S3 and end-to-end analysis
       run: pnpm test:services
+
+    # Playwright drives the Google Chrome that the runner image already has (channel: 'chrome')
+    - name: End-to-end scenarios (Playwright)
+      run: pnpm test:e2e
+
+    - name: Playwright report
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 7
 
   processing:
     name: Processing (Python 3.12)

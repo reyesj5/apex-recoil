@@ -1,5 +1,6 @@
 /**
  * Copyright 2021 Mikhail Goncharov
+ * Modified by [OWNER NAME], 2025-2026.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +20,80 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var compression = require('compression');
 
 var app = express();
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
+// Owner-specific names and links for the pages (placeholders until set, see docs/ownership-register.md)
+var site = require('./site.json');
+app.locals.site = site;
+
+// Analytics and its cookie banner: public pages only, once a measurement ID and a privacy policy exist
+function pageLocals(title, publicPage) {
+  return { title: title, analytics: publicPage && Boolean(site.gaMeasurementId && site.privacyUrl) };
+}
+
+// pnpm dev (bin/www --dev): Vite serves the client sources with hot reload instead of dist/. The
+// pages load the source entries (devServer in the views) and get Vite's client and the React
+// Refresh preamble from transformIndexHtml.
+var devServer = process.env.RECOIL_VITE_DEV === '1';
+app.locals.devServer = devServer;
+var vite = devServer ? import('vite').then(function(v) {
+  return v.createServer({ server: { middlewareMode: true }, appType: 'custom' });
+}).then(function(server) {
+  // Express renders the views, so a changed view reloads the page
+  server.watcher.add(path.join(__dirname, 'views'));
+  server.watcher.on('change', function(file) {
+    if (file.endsWith('.pug')) server.ws.send({ type: 'full-reload' });
+  });
+  return server;
+}) : null;
+
+// Pages name the current build's entry files, so browsers check for a new version every time
+function renderPage(req, res, next, view, title, publicPage) {
+  res.set('Cache-Control', 'no-cache');
+  if (!vite) return res.render(view, pageLocals(title, publicPage));
+  res.render(view, pageLocals(title, publicPage), function(err, html) {
+    if (err) return next(err);
+    vite.then(function(server) {
+      return server.transformIndexHtml(req.originalUrl, html);
+    }).then(function(page) {
+      res.send(page);
+    }, next);
+  });
+}
+
 app.use(logger('dev'));
+// Brotli or gzip for text responses, except the analysis event streams: compressing those would
+// hold each progress event in the compressor's buffer instead of sending it right away
+app.use(compression({
+  filter: function(req, res) {
+    var type = res.getHeader('Content-Type');
+    if (typeof type === 'string' && type.indexOf('text/event-stream') === 0) return false;
+    return compression.filter(req, res);
+  }
+}));
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'dist')));
+if (vite) {
+  app.use(function(req, res, next) {
+    vite.then(function(server) {
+      server.middlewares(req, res, next);
+    }, next);
+  });
+}
+// Chunk file names carry a content hash, so browsers keep them for a year; the entry files
+// (trainer.js, editor.js, tailwind.css...) keep their names and are revalidated
+var hashedChunksDir = path.join(__dirname, 'dist', 'chunks') + path.sep;
+app.use(express.static(path.join(__dirname, 'dist'), {
+  setHeaders: function(res, filePath) {
+    res.set('Cache-Control', filePath.indexOf(hashedChunksDir) === 0 ? 'public, max-age=31536000, immutable' : 'no-cache');
+  }
+}));
 app.use(express.static(path.join(__dirname, 'assets')));
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use(express.static(path.join(__dirname, 'etc')));
@@ -959,16 +1023,16 @@ async function serveStoredCapture(req, res) {
 }
 
 app.use('/editor', express.Router().get('/', function(req, res, next) {
-  res.render('editor', { title: 'Editor' });
+  renderPage(req, res, next, 'editor', site.name + ' Studio', false);
 }));
 app.use('/ru', express.Router().get('/', function(req, res, next) {
-  res.render('index-ru', { title: 'Apex Legends Recoils' });
+  renderPage(req, res, next, 'index-ru', site.name + ' · тренажёр отдачи для Apex Legends', true);
 }));
 app.use('/zh-CN', express.Router().get('/', function(req, res, next) {
-  res.render('index-zh-CN', { title: 'Apex Legends Recoils' });
+  renderPage(req, res, next, 'index-zh-CN', site.name + ' · Apex Legends 压枪训练', true);
 }));
 app.use('/*',  express.Router().get('/', function(req, res, next) {
-  res.render('index', { title: 'Apex Legends Recoils' });
+  renderPage(req, res, next, 'index', site.name + ' · Recoil trainer for Apex Legends', true);
 }));
 
 // catch 404 and forward to error handler

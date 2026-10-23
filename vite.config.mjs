@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -97,7 +99,17 @@ function themeJsonToStyles() {
 export default defineConfig({
   root: '.',
   publicDir: 'etc',
-  plugins: [themeJsonToStyles(), tailwindcss()],
+  resolve: {
+    alias: { '@': resolve(__dirname, 'client') }
+  },
+  plugins: [
+    themeJsonToStyles(),
+    tailwindcss(),
+    react(),
+    // React Compiler (automatic memoization) for components; Babel only sees .jsx/.tsx files,
+    // so the legacy TypeScript modules are not parsed twice
+    babel({ include: /\.[jt]sx$/, presets: [reactCompilerPreset()] })
+  ],
   build: {
     outDir: 'dist',
     emptyOutDir: true,

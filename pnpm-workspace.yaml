@@ -8,3 +8,5 @@ allowBuilds:
   # Its install script only compiles when no prebuilt binary exists; the prebuilt one comes from
   # the platform package (@msgpackr-extract/msgpackr-extract-<os>-<arch>)
   msgpackr-extract: false
+  # Its postinstall only copies the browser service worker; the tests use msw/node
+  msw: false

@@ -18,6 +18,7 @@ This document outlines the architectural milestones, completed implementations, 
 | **M8: UI/UX Modernization & Polish** | ✅ Completed | Google Fonts, instant weapon search & category pills, live mag capacities, toolbar ergonomics, corrupted mag SVG. |
 | **M9: CI/CD Pipeline Automation** | ✅ Completed | `.github/workflows/ci.yml`: typecheck, Vite build, Node tests and static build (Node 20/22); integration job with Redis + S3 (compose.yaml); pytest, spec verify and shadow parity (Python 3.12). First GitHub run (PR #2, 2026-10-22) passed all four jobs. |
 | **M10: Platform & Architectural Overhaul** | ✅ Completed | Streaming ingestion, in-process or Redis/BullMQ job queue, Vite 8 route bundles, lossless SQLite spec store, local or S3 capture storage with direct uploads, full-document shadow parity, the Recoil Editor split into modules, and all styling in Tailwind 4 (no Sass). Optional: a warm Python worker. |
+| **M11: UI Rebuild (React, Tailwind, shadcn/ui)** | 🚧 In progress, Phase 0 done | Trainer and editor rebuilt as React 19 components styled only with Tailwind 4 and shadcn/ui, with a new design and identity; no pug, hand-written CSS, Plotly, tarteaucitron or links to the original project. Plan: [docs/ui-migration-plan.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-plan.md); design: [docs/ui-redesign.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-redesign.md); ownership: [docs/ownership-register.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ownership-register.md). Phase 0 (2026-10-22): React 19 and TypeScript 6 toolchain, ESLint 10 and Prettier, Vite hot reload inside Express, compression and caching, Vitest, and 25 Playwright scenarios on the current app, accessibility checks included. |
 
 ---
 
@@ -243,6 +244,37 @@ Tracked and executed in alignment with the master [Architectural Migration Plan]
   - [x] pnpm 12 only: pinned under `devEngines` (npm refuses to run), settings in `pnpm-workspace.yaml` (`allowBuilds`), `package-lock.json` removed, CI on `pnpm/action-setup@v6`; dependencies deduplicated.
   - [x] Removed the stale `public/` folder (old Gulp and tsc output that Express still served); `tsc` only typechecks.
 
+### Milestone 11: UI Rebuild with React, Tailwind and shadcn/ui (planned)
+Decided 2026-10-22: the trainer and the editor are rebuilt as React 19 components styled only with Tailwind 4, with shadcn/ui for standard controls; no pug, no CSS files besides one Tailwind entry, no Plotly or tarteaucitron. Analysis, stack, conventions and steps: [docs/ui-migration-plan.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-plan.md). The UI gets a new design and identity of its own ("graphite and volt"); the audit, tokens and screens are in [docs/ui-redesign.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-redesign.md). Every reference to the original project is replaced with placeholders following [docs/ownership-register.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ownership-register.md); the license and copyright notices stay.
+- [x] **Design**: UI audit (screenshots and runtime baseline), new identity, six mockups on the design canvas (trainer ready, after a run, progress; Studio; phone pattern viewer; foundations), tokens and component inventory.
+- [x] **Design system** (2026-10-22): a Design System artifact (https://claude.ai/artifact/XK1KCFGz6tF9WzmKUykaFe) with the tokens, 26 components with live previews, the brand book, the shadcn/ui mapping and the logos. Token edits there restyle every preview.
+  - Follow-ups for Phase 1:
+    - [ ] Settle the radius scale: the mockups use 9 px for 38 px controls and 12 px for cards in panels, where the spec says 8 and 10. The system keeps both as tokens.
+    - [ ] Add the mockups' extra colors (outline, outline-card, outline-strong, the washes, text-soft, pattern-ink and the dot grids) to the token table in `docs/ui-redesign.md`.
+    - [ ] Fix or accept three marks under 3:1: the destructive button's outline, the chart's tries bars and the neutral segmented control's selected fill.
+    - [ ] Design what the mockups leave out: Dialog, Alert dialog, Drawer, the Command palette, the error toast, a result below the median, and hover for primary buttons.
+    - [ ] Generate the Tailwind theme from the system's `tokens.json` (it replaces `theme.json`).
+- [x] **Ownership register** applied (2026-10-22): the original author's analytics ID, donation link, privacy policies, links and domain redirect are gone; pages read owner values from `site.json` (placeholders until the owner provides them); new privacy policy; license notices (`NOTICE`, `Modified by` lines, footer credit).
+- [x] **Phase 0: Tooling and safety net (2026-10-22)**:
+  - [x] Name placeholder "Spraydown" and the logo: mark, wordmark, lockups and favicons in [brand/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/brand/) and `etc/`.
+  - [x] React 19 with the React Compiler, TypeScript 6.0 (separate browser and Node configs, `@/` alias), Konva 10.
+  - [x] ESLint 10 (flat config with typescript-eslint, React Hooks, jsx-a11y and Tailwind class checks) and Prettier with the Tailwind plugin: `pnpm lint`, `pnpm format`.
+  - [x] Node `^22.22.2 || >=24.15.0` in `engines`; CI web job on Node 22 and 24 with lint, formatting, both typechecks and unit tests. Node 24.22.1 is installed with fnm; the default is still 23.10.
+  - [x] `pnpm dev`: Express hosts Vite in middleware mode (hot reload, local only); `npm-run-all` removed.
+  - [x] Brotli or gzip for text responses (not for the analysis event streams), a year of immutable caching for hashed chunks, revalidation for entry files and pages.
+  - [x] Vitest with Testing Library and MSW (`pnpm test:unit`); Playwright with a throwaway-data server (`pnpm test:e2e`): 25 scenarios covering the trainer, the consent banner, the editor (including the Python discovery runs) and accessibility (axe, nothing beyond today's baseline). CI runs them in the integration job.
+  - [x] Fixed what the scenarios found: Konva 10 broke the legacy threshold tools on high-density screens, and tooltips swallowed clicks meant for the controls under them.
+  - Follow-ups:
+    - [ ] Make Node 24 the local default: `fnm default 24` and pnpm 12 for Node 24 are done (2026-10-22); the system PATH still names Node 23's folder and needs one administrator edit to point at fnm's `default` alias.
+    - [ ] Move the GitHub Actions steps (`checkout`, `setup-node`, `setup-python`, `upload-artifact`) to their releases on the Node 24 action runtime.
+    - [ ] Phases 1 to 3: bring the accessibility baseline in `e2e/accessibility.spec.ts` to zero (no `lang` on any page, 5 unlabeled inputs on `/ru` and `/zh-CN`, an unnamed select and 8 buttons whose label differs from their text in the editor, plus a few contrast and ARIA issues); tarteaucitron ignores clicks on its banner for the first 500 ms (the new consent banner replaces it).
+    - [ ] Phase 3: the legacy auto-target search recurses once per pixel and can overflow the stack on a large dark area; "Measured RPM" shows the RPM the editor sent; a realistic static-image fixture would let the screenshot scenario check the detected shots (the small synthetic wall yields none).
+- [ ] **Phase 1: Design system**: shadcn/ui on tokens from `theme.json`, components, icons, storage under the existing `localStorage` keys, typed API hooks, translation catalogs, consent and analytics.
+- [ ] **Phase 2: Trainer**: game engine separated from the UI, one component tree for three locales, prerendered HTML, charts with Recharts; delete the trainer templates, `trainer.css`, Plotly and tarteaucitron.
+- [ ] **Phase 3: Recoil Editor**: stores, shell, react-konva canvas, panels, capture studio last; delete `editor.pug`, the remaining CSS and `client/modules/editor/`.
+- [ ] **Phase 4: Server and build**: no pug, 404 for unknown paths, `app.js` split into routers, Express 5, multer 2, TypeScript with shared zod schemas.
+- [ ] **Phase 5: Removal and lock-in**: delete leftovers, CI guards for the Tailwind conventions, docs.
+
 ---
 
 ## 🔒 Verification & Quality Gates
@@ -272,9 +304,21 @@ Every code change in this repository MUST satisfy the following quality gates be
    ```bash
    pnpm tsc
    ```
-   *Requirement: 0 type errors.*
+   *Requirement: 0 type errors in the browser config (`tsconfig.json`) and the Node config (`tsconfig.node.json`).*
 
-5. **Static Asset Build (Vite 8)**:
+5. **Lint, Formatting and Unit Tests**:
+   ```bash
+   pnpm lint && pnpm format:check && pnpm test:unit
+   ```
+   *Requirement: 0 lint errors (legacy code still has warnings), every file Prettier formatted, all Vitest tests passing.*
+
+6. **End-to-End Scenarios**:
+   ```bash
+   pnpm build && pnpm test:e2e
+   ```
+   *Requirement: 25/25 Playwright scenarios passing in Chrome, with no accessibility violation beyond the baseline in `e2e/accessibility.spec.ts`. The discovery scenarios need Python with the processing requirements; without them they are skipped locally and fail in CI.*
+
+7. **Static Asset Build (Vite 8)**:
    ```bash
    pnpm build
    pnpm static

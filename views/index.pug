@@ -1,5 +1,6 @@
 //-
 //- Copyright 2021 Mikhail Goncharov
+//- Modified by [OWNER NAME], 2025-2026.
 //-
 //- Licensed under the Apache License, Version 2.0 (the "License");
 //- you may not use this file except in compliance with the License.
@@ -22,18 +23,23 @@ block content
       h1 Apex Legends Recoil Patterns
       p(class="px-1 text-center") Learn and practice spray/recoil patterns
       p#sensitivity-warning.hidden(class="p-2 text-center text-error")
-        | Active area is too small! #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#mouse-sensitivity" target="_blank" rel="noopener noreferrer") how to fix] 
+        if site.faqUrl
+          | Active area is too small! #[a(href=site.faqUrl+'#mouse-sensitivity' target="_blank" rel="noopener noreferrer") how to fix] 
+        else
+          | Active area is too small!
       #top-links(class="flex justify-around px-3 py-1")
         p#show-instructions-btn.action
           | Show instructions
         a(href="/editor")
           +icon('wrench')
           |  Recoil Studio
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer")
-          | FAQ
-        a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank" rel="noopener noreferrer")
-          +icon('heart')
-          |  Support
+        if site.faqUrl
+          a(href=site.faqUrl target="_blank" rel="noopener noreferrer")
+            | FAQ
+        if site.supportUrl
+          a(href=site.supportUrl target="_blank" rel="noopener noreferrer")
+            +icon('heart')
+            |  Support
       #score(class="flex flex-row px-2 py-1")
         div#stats-graph-btn.tooltip.btn(class="mr-1" aria-label="Show historical stats graph")
           img(src="/outline_insert_chart_white_48dp.png" alt="show graph")
@@ -267,23 +273,25 @@ block content
       #controls-bottom(class="mt-auto px-1 pt-1 pb-2")
         #copyright(class="mb-1 text-[0.8em]")
           div(class="flex flex-row text-[0.7em]")
-            a(class="m-0.5" href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
-              img(class="border-b border-b-transparent pb-0.5 hover:border-b-foreground" src="/GitHub-Mark-Light-32px.png", alt="github")
-            a(class="m-0.5" href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
-              img(class="border-b border-b-transparent pb-0.5 hover:border-b-foreground" src="/reddit.png", alt="reddit")
+            if site.repoUrl
+              a(class="m-0.5" href=site.repoUrl target="_blank" rel="noopener noreferrer")
+                img(class="border-b border-b-transparent pb-0.5 hover:border-b-foreground" src="/GitHub-Mark-Light-32px.png", alt="GitHub")
+            if site.communityUrl
+              a(class="mx-1 my-auto text-[15px]" href=site.communityUrl target="_blank" rel="noopener noreferrer")
+                | Community
             a(href="/ru" class="mx-1 my-auto text-[15px]")
               | русский
             a(href="/zh-CN" class="mx-1 my-auto text-[15px]")
               | 中文
             div(class="flex flex-col items-end grow")
-              a(class="m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
-                | Privacy Policy
-              a(class="m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
-                | Datenschutzerklärung
-              a(class="m-0.5" href="#cookies")
-                | Cookie settings
+              if site.privacyUrl
+                a(class="m-0.5" href=site.privacyUrl target="_blank" rel="noopener noreferrer")
+                  | Privacy Policy
+              if analytics
+                a(class="m-0.5" href="#cookies")
+                  | Cookie settings
           p
-            | 2026 by Mikhail equanimity_rulez Goncharov.
+            | © #{new Date().getFullYear()} #{site.owner}. Based on #[a(class="m-0.5" href=site.upstream.url target="_blank" rel="noopener noreferrer") #{site.upstream.name}] by #{site.upstream.author}, #{site.upstream.license}.
           p
             | This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. 
             | Game content and materials are trademarks and copyrights of 
@@ -294,8 +302,9 @@ block content
         #version(class="text-right text-[0.8em]")
           p
             | version #[span#version-value 17]&nbsp;
-            a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank" rel="noopener noreferrer")
-              | what's new
+            if site.changelogUrl
+              a(href=site.changelogUrl target="_blank" rel="noopener noreferrer")
+                | what's new
     #workspace(class="grow overflow-hidden")
       #detailed-stats.hidden(class="bg-menu p-2")
         div Note that the Y-scale for the score is logarithmic as it's quite easy to improve from score 40 to 50 but much harder from 90 to 92.
@@ -305,11 +314,13 @@ block content
       #instructions.hidden(class="bg-menu px-5 py-3")
           h2 Instructions
           p #[a(href="/ru") Russian version].#[a(href="/zh-CN") Chinese version].
-          p Check out an #[a(href="https://www.youtube.com/watch?v=tTPKHa4aXug" target="_blank" rel="noopener noreferrer") overview on YouTube].
+          if site.videoUrl
+            p Check out an #[a(href=site.videoUrl target="_blank" rel="noopener noreferrer") overview on YouTube].
           ul
             li #[a(href="https://www.google.com/search?q=turn+off+enhance+pointer+precision" target="_blank" rel="noopener noreferrer") Make sure that "Enhance pointer precision" is off].
             li Set the #[i sensitivity].&nbsp;
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#controller-support" target="_blank" rel="noopener noreferrer") Setup for controller.
+              if site.faqUrl
+                a(href=site.faqUrl+'#controller-support' target="_blank" rel="noopener noreferrer") Setup for controller.
             li Pick a weapon and magazine.
             li Click in the dotted area below and try to offset the recoil.
             li The better you compensate the higher score you get. The maximum is 100.
@@ -320,21 +331,20 @@ block content
     h1 Apex Legends Recoil Patterns
     p Hi! Thanks for checking out this little app to practice recoil patterns. It's meant to be used on the desktop browser with a mouse or controller. 
       | The screen width of your device must be greater than 768 pixels. 
-      | Meanwhile, please check this 
-      | #[a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer") post on Reddit] 
-      | and #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer") FAQ].
+      if site.faqUrl
+        | Meanwhile, see the #[a(href=site.faqUrl target="_blank" rel="noopener noreferrer") FAQ].
     br
     p Cheers!
     img(class="mobile:py-4" src="/trail.png", alt="trail")
     #copyright-mobile(class="mobile:absolute mobile:bottom-[50px] mobile:text-[0.8em]")
-      p
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
-          | Privacy Policy
-      p
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
-          | Datenschutzerklärung
-      p
-        a(href="#cookies")
-          | Cookie settings
-      p 2024 equanimity_rulez
+      if site.privacyUrl
+        p
+          a(href=site.privacyUrl target="_blank" rel="noopener noreferrer")
+            | Privacy Policy
+      if analytics
+        p
+          a(href="#cookies")
+            | Cookie settings
+      p © #{new Date().getFullYear()} #{site.owner}
+      p Based on #[a(href=site.upstream.url target="_blank" rel="noopener noreferrer") #{site.upstream.name}] by #{site.upstream.author}, #{site.upstream.license}.
       p This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors.

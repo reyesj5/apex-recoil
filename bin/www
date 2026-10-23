@@ -7,6 +7,14 @@
 if (require('fs').existsSync('.env')) process.loadEnvFile('.env');
 
 /**
+ * --dev (pnpm dev): Vite serves the client sources with hot reload (see app.js). It also serves
+ * project files, so the development server only listens on this computer.
+ */
+
+if (process.argv.includes('--dev')) process.env.RECOIL_VITE_DEV = '1';
+var devMode = process.env.RECOIL_VITE_DEV === '1';
+
+/**
  * Module dependencies.
  */
 
@@ -28,10 +36,11 @@ app.set('port', port);
 var server = http.createServer(app);
 
 /**
- * Listen on provided port, on all network interfaces.
+ * Listen on provided port, on all network interfaces (only this computer with --dev).
  */
 
-server.listen(port);
+var host = devMode ? '127.0.0.1' : undefined;
+server.listen(port, host);
 server.on('error', onError);
 server.on('listening', onListening);
 
@@ -80,7 +89,7 @@ function onError(error) {
         port++;
         app.set('port', port);
         setTimeout(function () {
-          server.listen(port);
+          server.listen(port, host);
         }, 100);
         return;
       }
@@ -101,6 +110,6 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  console.log('Apex Recoil server running at http://localhost:' + addr.port);
+  console.log(app.locals.site.name + ' server running at http://localhost:' + addr.port + (devMode ? ' (development, hot reload)' : ''));
   debug('Listening on ' + bind);
 }

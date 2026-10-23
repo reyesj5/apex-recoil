@@ -1,5 +1,5 @@
 tarteaucitron.init({
-    "privacyUrl": "https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md", /* Privacy policy url */
+    "privacyUrl": window.SITE.privacyUrl, /* Privacy policy url (site.json) */
 
     "hashtag": "#cookies", /* Open the panel with this hashtag */
     "cookieName": "tarteaucitron", /* Cookie name */
@@ -34,5 +34,5 @@ tarteaucitron.init({
     "mandatory": false /* Show a message about mandatory cookies */
 });
 
-tarteaucitron.user.gtagUa = 'G-961MVSXWCZ';
+tarteaucitron.user.gtagUa = window.SITE.gaMeasurementId; /* Google Analytics 4 measurement ID (site.json) */
 (tarteaucitron.job = tarteaucitron.job || []).push('gtag');

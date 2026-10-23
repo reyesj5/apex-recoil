@@ -1,5 +1,6 @@
 //-
 //- Copyright 2021 Mikhail Goncharov
+//- Modified by [OWNER NAME], 2025-2026.
 //-
 //- Licensed under the Apache License, Version 2.0 (the "License");
 //- you may not use this file except in compliance with the License.
@@ -717,4 +718,4 @@ block content
           button#close-shortcuts-modal-footer-btn.primary-btn(type="button") Got it!
 
 block scripts
-  script(type="module" src='/editor.js')
+  script(type="module" src=devServer ? '/client/editor_main.ts' : '/editor.js')

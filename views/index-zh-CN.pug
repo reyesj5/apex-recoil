@@ -1,5 +1,6 @@
 //-
 //- Copyright 2021 Mikhail Goncharov
+//- Modified by [OWNER NAME], 2025-2026.
 //-
 //- Licensed under the Apache License, Version 2.0 (the "License");
 //- you may not use this file except in compliance with the License.
@@ -22,18 +23,23 @@ block content
       h1 Apex Legends 后坐力弹道
       p(class="px-1 text-center") 练习连射控枪
       p#sensitivity-warning.hidden(class="p-2 text-center text-error")
-        | 练习区域太小了! #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#mouse-sensitivity" target="_blank" rel="noopener noreferrer") 如何修复] 
+        if site.faqUrl
+          | 练习区域太小了! #[a(href=site.faqUrl+'#mouse-sensitivity' target="_blank" rel="noopener noreferrer") 如何修复] 
+        else
+          | 练习区域太小了!
       #top-links(class="flex justify-around px-3 py-1")
         p#show-instructions-btn.action
           | 显示说明
         a(href="/editor")
           +icon('wrench')
           |  压枪编辑器
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer")
-          | FAQ
-        a(href="https://www.paypal.com/donate/?hosted_button_id=ZM3AS9J6VDYVN" target="_blank" rel="noopener noreferrer")
-          +icon('heart')
-          |  支援
+        if site.faqUrl
+          a(href=site.faqUrl target="_blank" rel="noopener noreferrer")
+            | FAQ
+        if site.supportUrl
+          a(href=site.supportUrl target="_blank" rel="noopener noreferrer")
+            +icon('heart')
+            |  支援
       #score(class="flex flex-row px-2 py-1")
         div#stats-graph-btn.tooltip.btn(class="mr-1" aria-label="显示历史成绩")
           img(src="/outline_insert_chart_white_48dp.png"  alt="show graph")
@@ -267,23 +273,25 @@ block content
       #controls-bottom(class="mt-auto px-1 pt-1 pb-2")
         #copyright(class="mb-1 text-[0.8em]")
           div(class="flex flex-row text-[0.7em]")
-            a(class="m-0.5" href="https://github.com/metaflow/apex-recoil" target="_blank" rel="noopener noreferrer")
-              img(class="border-b border-b-transparent pb-0.5 hover:border-b-foreground" src="/GitHub-Mark-Light-32px.png", alt="github")
-            a(class="m-0.5" href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer")
-              img(class="border-b border-b-transparent pb-0.5 hover:border-b-foreground" src="/reddit.png", alt="reddit")
+            if site.repoUrl
+              a(class="m-0.5" href=site.repoUrl target="_blank" rel="noopener noreferrer")
+                img(class="border-b border-b-transparent pb-0.5 hover:border-b-foreground" src="/GitHub-Mark-Light-32px.png", alt="GitHub")
+            if site.communityUrl
+              a(class="mx-1 my-auto text-[15px]" href=site.communityUrl target="_blank" rel="noopener noreferrer")
+                | 社区
             a(href="/" class="mx-1 my-auto text-[15px]")
               | english
             a(href="/ru" class="mx-1 my-auto text-[15px]")
               | русский
             div(class="flex flex-col items-end grow")
-              a(class="m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
-                | Privacy Policy
-              a(class="m-0.5" href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
-                | Datenschutzerklärung
-              a(class="m-0.5" href="#cookies")
-                | Cookie settings
+              if site.privacyUrl
+                a(class="m-0.5" href=site.privacyUrl target="_blank" rel="noopener noreferrer")
+                  | Privacy Policy
+              if analytics
+                a(class="m-0.5" href="#cookies")
+                  | Cookie settings
           p
-            | 2024 by Mikhail equanimity_rulez Goncharov.
+            | © #{new Date().getFullYear()} #{site.owner}。基于 #{site.upstream.author} 的 #[a(class="m-0.5" href=site.upstream.url target="_blank" rel="noopener noreferrer") #{site.upstream.name}]（#{site.upstream.license}）。
           p
             | This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. 
             | Game content and materials are trademarks and copyrights of 
@@ -294,8 +302,9 @@ block content
         #version(class="text-right text-[0.8em]")
           p
             | version #[span#version-value 17]&nbsp;
-            a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/release-notes.md" target="_blank" rel="noopener noreferrer")
-              | what's new
+            if site.changelogUrl
+              a(href=site.changelogUrl target="_blank" rel="noopener noreferrer")
+                | what's new
     #workspace(class="grow overflow-hidden")
       #detailed-stats.hidden(class="bg-menu p-2")
         div 请注意，Y 轴分数是取对数的，因为从 40 分提高到 50 分很容易，但从 90 分提高到 92 分要困难得多。
@@ -304,11 +313,13 @@ block content
           p.action#hide-stats 关闭图表
       #instructions.hidden(class="bg-menu px-5 py-3")
           h2 说明
-          p 在Youtube上 #[a(href="https://www.youtube.com/watch?v=tTPKHa4aXug" target="_blank" rel="noopener noreferrer") 查看简介].
+          if site.videoUrl
+            p 在Youtube上 #[a(href=site.videoUrl target="_blank" rel="noopener noreferrer") 查看简介].
           ul
             li #[a(href="https://www.google.com/search?q=turn+off+enhance+pointer+precision" target="_blank" rel="noopener noreferrer") 确保“增强鼠标精度”选项已关闭].
             li 设置 #[i 灵敏度].&nbsp;
-              a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md#controller-support" target="_blank" rel="noopener noreferrer") 手柄设置办法.
+              if site.faqUrl
+                a(href=site.faqUrl+'#controller-support' target="_blank" rel="noopener noreferrer") 手柄设置办法.
             li 选择武器和弹夹。
             li 点击下方虚线区域并尝试控枪。
             li 你控制的越好分数就越高。最高为100分。           
@@ -319,23 +330,22 @@ block content
     h1 Apex Legends 后坐力弹道
     p 你好! 感谢你使用这个小程序来练习后坐力弹道. 它旨在通过鼠标或者手柄在电脑浏览器上使用。
       | 您的屏幕宽度必须大于900像素。
-      | 同时请看Reddit上
-      | #[a(href="https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils/" target="_blank" rel="noopener noreferrer") 这个帖子] 
-      | and #[a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/faq.md" target="_blank" rel="noopener noreferrer") FAQ].
+      if site.faqUrl
+        | 同时请看 #[a(href=site.faqUrl target="_blank" rel="noopener noreferrer") FAQ]。
     br
     p Cheers!
     img(class="mobile:py-4" src="/trail.png", alt="trail")
     #copyright-mobile(class="mobile:absolute mobile:bottom-[50px] mobile:text-[0.8em]")
-      p
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy.md" target="_blank" rel="noopener noreferrer")
-          | Privacy Policy
-      p
-        a(href="https://github.com/metaflow/apex-recoil/blob/main/docs/privacy-policy-de.md" target="_blank" rel="noopener noreferrer")
-          | Datenschutzerklärung
-      p
-        a(href="#cookies")
-          | Cookie settings
-      p 2024 equanimity_rulez
+      if site.privacyUrl
+        p
+          a(href=site.privacyUrl target="_blank" rel="noopener noreferrer")
+            | Privacy Policy
+      if analytics
+        p
+          a(href="#cookies")
+            | Cookie settings
+      p © #{new Date().getFullYear()} #{site.owner}
+      p Based on #[a(href=site.upstream.url target="_blank" rel="noopener noreferrer") #{site.upstream.name}] by #{site.upstream.author}, #{site.upstream.license}.
       p This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors.
   script.
     window.game_locale = 'zh-CN';

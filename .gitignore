@@ -121,6 +121,11 @@ scratch/
 .system_generated/
 arduino_mouse/build/
 
+# Playwright end-to-end output (pnpm test:e2e)
+test-results/
+playwright-report/
+blob-report/
+
 # Knowledge graph outputs (graphify)
 graphify-out/
 
