@@ -1,10 +1,11 @@
 'use client';
 
-import { CheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react';
+import { CheckIcon, InfoIcon, Loader2Icon, TriangleAlertIcon, XIcon } from 'lucide-react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 // Toasts: raised with an outline-strong line, radius-card-lg, shadow-toast; the success icon is a
-// volt check on a volt-wash-strong disc. One theme, so no theme switching.
+// volt check on a volt-wash-strong disc, the error icon a danger x on a danger-wash disc. One theme,
+// so no theme switching.
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
@@ -17,7 +18,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
         ),
         info: <InfoIcon className="size-4" />,
         warning: <TriangleAlertIcon className="size-4 text-warning" />,
-        error: <OctagonXIcon className="size-4 text-danger" />,
+        error: (
+          <span className="flex size-[22px] items-center justify-center rounded-full bg-danger-wash text-danger">
+            <XIcon className="size-3.5" strokeWidth={3} />
+          </span>
+        ),
         loading: <Loader2Icon className="size-4 animate-spin" />,
       }}
       toastOptions={{

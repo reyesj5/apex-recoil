@@ -6,9 +6,9 @@ The work is on the `migration` branch: Phase 0 in `e0d2dec`, Phase 1 in `f0d389b
 
 ## Design references
 
-- **Claude with the Artifact tool** works from the two artifacts, which are the source of truth: the design canvas (https://claude.ai/artifact/3Uv9xgQocE1qqS2ohS2MQG, seven artboards) and the Design System (https://claude.ai/artifact/XK1KCFGz6tF9WzmKUykaFe: tokens, brand book, 26 components). Read them with the Artifact tool, not WebFetch. After changing one, refresh the snapshot below with `scripts/export-design.mjs` ([how](design/README.md#refreshing-this-folder-claude-only)).
+- **Claude with the Artifact tool** works from the two artifacts, which are the source of truth: the design canvas (https://claude.ai/artifact/3Uv9xgQocE1qqS2ohS2MQG, fourteen artboards) and the Design System (https://claude.ai/artifact/XK1KCFGz6tF9WzmKUykaFe: tokens, brand book, 30 components). Read them with the Artifact tool, not WebFetch. After changing one, refresh the snapshot below with `scripts/export-design.mjs` ([how](design/README.md#refreshing-this-folder-claude-only)).
 - **Every other agent** uses the snapshot in [design/](design/README.md): PNGs of the artboards and of every component preview, plus the brand book, the tokens, each component's rules and the artboards' markup. Treat it as read-only, and record design changes in this report instead.
-- The Design System was synced with the app on 2026-10-23 (version 7): its `tokens.json` equals `client/styles/tokens.json`, and its rules include what building the components taught (radio groups, underlined links in text, keyboard access for scrolling tables).
+- On 2026-10-24 the canvas (version 20) gained artboards for every screen the app has, and the Design System (version 12) designed what the mockups left out: Dialog, AlertDialog, Drawer, CommandPalette, the error toast, the danger badge, a run below the median and each button on hover. The app follows them (section 3), the Design System's `tokens.json` equals `client/styles/tokens.json`, and its rules include what building the components taught (radio groups, underlined links in text, keyboard access for scrolling tables).
 
 ## 1. Status
 
@@ -211,6 +211,7 @@ scripts/export-design.mjs        refreshes docs/design/ from the artifacts' file
 - Spacing tokens sit on Tailwind's 4 px scale (`space-12` is `p-3`). Size tokens are spacing names (`h-control` is 38 px). Type styles are utilities (`type-score-xl`, `type-micro`).
 - Font sizes come from the type scale: `type-*` for a whole style, or a size step `text-<px>` (`text-13`, `text-11`) when only the size is wanted. The generator makes one step per size the type styles use; there are no arbitrary sizes.
 - shadcn's semantic names (`bg-background`, `text-muted-foreground`, `bg-popover`, `border-border`, `bg-primary`) are mapped onto the tokens in `app.css`. One exception: `bg-card` is the design system's card color (`#151920`); shadcn's Card uses `bg-panel`.
+- The titles of overlays (Dialog, Alert dialog, Drawer) are `type-panel-title`, as the Studio's panel titles; shadcn's `text-lg` is off the type scale. A dialog's Cancel is a secondary button, and the one primary action names what happens.
 - Focus is one global 2 px volt outline with a 2 px offset (`:focus-visible` in `app.css`); don't add `ring-*` focus classes or `outline-none`.
 - `dark:` classes never apply (the app has one dark theme); remove them from generated code.
 - Arbitrary values only for true one-offs.
@@ -323,6 +324,9 @@ The target-speed and firing-speed PNGs, the flags and the GitHub and Reddit mark
 - **An analysis that finds no shots** reports an empty pattern with a magazine of 0 shots: the Studio's result schema accepts it, and the API's spec schema would not.
 - **Radix Tabs unmount the hidden tabs**, so state that must outlive a tab (the live capture) lives above it.
 - **Axe on an overlay**: wait for `document.getAnimations()` to finish first (the Studio's `violations` helper does); a popover checked mid-fade fails contrast.
+- **Narrow cards**: the Studio's side panel is 340 px, so two cards side by side keep 130 px inside each. Until 2026-10-24 the Library's "Add to Screenshots" ran out of its button on both sides and its date wrapped, unseen because no test or screenshot had screenshots on the server. Look at a populated panel: `PORT=3220 node e2e/server.mjs`, then put images in its `captures/screenshots` folder (in the system temp folder, `spraydown-e2e-3220`).
+- **The pipeline names a file's stage with its count** (`processing_clip_1_of_2`, `processing_image_2_of_3`) and repeats it in the details; `describeProgress` adds the details' count only to a stage without one.
+- **Design canvas artboards** (for Claude): a `{{hole}}` in an SVG geometry attribute (`points`, `d`, `cx`) is parsed before the runtime fills it and logs an error, and a hole inside a `<textarea>` shows "[object Object]". Write such values into the file when building it, and draw a filled field as a styled element.
 
 - **Environment**: Windows with Git Bash. Node 24.22.1 is the fnm default, but shells started before the switch still find Node 23; prefix commands with `export PATH="/c/Users/micro.VADER/AppData/Roaming/fnm/aliases/default:$PATH"` when `node --version` says 23. Use pnpm 12; npm refuses to run (`EBADDEVENGINES`).
 - **jsdom and MSW**: a multipart (`FormData`) request fails inside MSW's handler lookup under jsdom and leaks to the network. Tests capture multipart requests at `fetch` instead (`captureMultipart` in `api.test.tsx`). Don't replace jsdom's `FormData` or `Blob` globally: Vitest 5 has its own conversion layer, and swapping the globals breaks it.
@@ -360,7 +364,7 @@ Run the full protocol in `AGENTS.md` before reporting. Results on 2026-10-24 (No
 | `python -m recoil_discovery.cli verify` | every weapon OK |
 | `pnpm build` | passes: the client into `dist/`, the Studio on its own into `dist/` (`studio.js`, 1.15 MB, 360 kB gzip, one file), the prerender into `dist-ssr/`. The gallery's and the Studio's entries are over 500 kB, hence Vite's chunk-size warnings. First loads (gzip, kB of 1000 bytes; English, Russian, Chinese): the trainer 189.3, 194.6 and 194.0 kB; the Patterns page and the Progress page 172.8, 178.1 and 177.5 kB; the documents 155.3 kB (English only) |
 | `pnpm test` | 50 of 50 (the TypeScript server; 5 new for the request parsing), the first-load budget and `/api/discovery/status` included. The job queue's tests that start Python wait 20 s for it: one of them timed out at 5 s once, with two Python processes starting at the same time on Windows |
-| `pnpm test:unit` | 231 tests in 32 files: 40 for the engine, 20 for the trainer and the Progress page, 5 for the prerender, and 69 for the Studio (its model, with the parity cases against the Recoil Editor; the store; the color correction) |
+| `pnpm test:unit` | 234 tests in 33 files: 40 for the engine, 20 for the trainer and the Progress page, 5 for the prerender, and 71 for the Studio (its model, with the parity cases against the Recoil Editor; the store; the color correction; the analysis' progress in words) |
 | `pnpm test:e2e` | 59 of 59: 24 on the trainer (the 12 recorded runs, the pages without JavaScript and consent included), 6 on the Patterns page, 6 on the Progress page, 6 on the documents and the 404 and error pages, 3 on the gallery, and 14 on the Studio (the Python discovery runs included) |
 | `pnpm tsc` | no errors in the three configs (browser, tools, server) |
 | `pnpm lint` | no errors and no warnings (the 219 warnings were in the JavaScript server, scripts and tests), then the conventions check |
@@ -385,17 +389,9 @@ Useful during UI work:
 ## 6. Next steps, in order
 
 **Design work still open** (none of it blocks the start of Phase 2)
-1. **Design follow-ups** (roadmap, M11): settle the radius scale; fix or accept the three marks under 3:1 (`ui-redesign.md` lists them with what carries their meaning; its token table now has every color); design Dialog, Alert dialog, Drawer, the Command palette, the error toast and the primary button's hover. A result below the median is decided and built (its score neutral like its pill); the artboards still show only the positive case. Publishing to the design artifacts needs the owner's approval: an attempt on 2026-10-24 (a Patterns artboard) was stopped by the permission check, so neither artifact has these changes yet.
-2. **The Rampage's thermite grenade**: built as proposed, a switch under Corrupted stock shown only for the Rampage (`game::mods` = `revved_up`). Add it to the Design System's Main artboard and the loadout rules.
+1. **Design decisions for the owner** (roadmap, M11): settle the radius scale, and fix or accept the three marks under 3:1 (`ui-redesign.md` lists them with what carries their meaning; its token table has every color). The rest of the design follow-ups were done on 2026-10-24 with the owner's approval to publish: the Design System's overlays, error toast, danger badge, result below the median and button hovers; artboards for the Patterns page, the documents, the 404 and server error, the trainer's dialogs, and the Studio's panels, analysis, checkpoint and dialogs. Main, Result and Phone draw the path to follow from the start point at the top; Main shows the Studio link, the selected chip's count and the Rampage's thermite grenade; Result switches to a run below the median.
+2. **Drawn the way the app does, worth a look**: the session card's 56 px en dash before the first run reads as a bar. The artboards leave out the support link (shown only when `site.json` sets one); the ScoreCard rules give the result card's line for a run that isn't saved.
 3. **Unstyled components**: none left. The four that were never styled (collapsible, form, sheet, sidebar) were deleted in Phase 5; a page that needs one adds it with the shadcn CLI and styles it to the design.
-4. **What the trainer added beyond the mockups** (bring the artifacts in line, or change the code):
-   - The pattern runs down from the start point (the path the aim follows), while the Main, Result and Phone artboards draw it climbing from a start point at the bottom.
-   - The top bar has the Studio link and, when `site.json` sets one, the support link as icon buttons (the icon mapping planned them; the mockup doesn't show them).
-   - The settings dialog (mouse, practice, display, sound), the help dialog (steps and keys) and the weapon search are built from the components without designs; the Design System's building notes say how.
-   - The ADS multiplier is a setting of its own (the mouse chip showed it).
-   - A selected filter chip's count is `text-secondary` (the FilterChip rule says `text-muted`, 4.2:1 on volt-wash).
-   - A run that isn't saved (released early, or below full speed) says so on the result card; the 56 px en dash before the first run reads as a bar.
-5. **The Patterns page has no artboard**: it is built from the system's parts (panels, class chips, cards styled like weapon tiles, tier options, the phone viewer's dotted pattern box, pattern-ink for the library's patterns). Add a Patterns artboard to the canvas and the snapshot, or change the page to a design.
 
 **Phase 2, what is left**
 1. Read the `lighthouse` job's results after the next push: the desktop profile must score 90 or more for performance and accessibility (it fails the job otherwise); the phone profile's performance is recorded and only warned about. Measured here with Playwright on 2026-10-24 (Lighthouse's curves on Chrome's own metrics, not Lighthouse itself): about 100 on desktop for the trainer, Patterns, Progress and the FAQ; on the phone profile about 98, 99, 96 and 100.
@@ -404,10 +400,9 @@ Useful during UI work:
 
 **Phase 3, what is left**
 1. Run the manual capture check ([studio-capture-check.md](studio-capture-check.md)) with the game, and fix what it finds. It needs a person.
-2. Design: the Studio has no artboards for its other sections (Library, Sessions, Import), the Screenshots and Manual tabs, the analysis' result, the checkpoint and the shortcuts; they are built from the system's parts. The danger badge (a major discrepancy, a failed analysis) is the warning badge in danger's colors.
-3. A realistic static-image fixture would let the screenshot scenario check the shots found (the small synthetic wall yields none).
+2. A realistic static-image fixture would let the screenshot scenario check the shots found (the small synthetic wall yields none).
 
-**After Phase 5**: the plan's phases are done. What is left needs a push, a person or the owner: the Lighthouse scores from CI (Phase 2), the manual capture check (Phase 3), the design follow-ups above, and the owner's values and final name (section 7, and `node scripts/check-release.mjs`).
+**After Phase 5**: the plan's phases are done. What is left needs a push, a person or the owner: the Lighthouse scores from CI (Phase 2), the manual capture check (Phase 3), the two design decisions above, and the owner's values and final name (section 7, and `node scripts/check-release.mjs`).
 
 ## 7. Waiting on the owner
 

@@ -13,7 +13,7 @@ Spraydown is a recoil trainer for Apex Legends with a Studio for capturing and e
 
 - Name things in full: `Marksman`, `Follow path`, `Still target`, `Moving target`, `Sensitivity 5.0`. Weapon names are written the way the game writes them: `R-301`, `C.A.R.`, `HAVOC`, `L-STAR`, `30-30 Repeater`.
 - Use sentence case for labels, buttons and headings: `Save spec`, `Open progress`, `Next run`, `Copy link`, `Score per day`. Start buttons with a verb.
-- Put the instruction where the action happens: "Click and hold anywhere in the range to spray." "Pull against the climb to keep your shots on the start point."
+- Put the instruction where the action happens: "Click and hold anywhere in the range to spray." "Follow the path with your aim as the gun climbs, and your shots stay on the start point."
 - Speak to the player as "you": "Your first run today shows up here." Use "we" only for the product's own practices, as in the consent text: "We use Google Analytics cookies to see how the trainer is used. Nothing is tracked unless you accept."
 - Empty states say what will appear and how: "Recorded sprays appear here. Analyze them together to build a median pattern."
 - Give numbers their units, set in `mono`: `1080 RPM`, `20 m`, `104°`, `56 ms`, `1.0×`, `28 rounds`. Scores are out of 100: `87 / 100`.
@@ -37,7 +37,7 @@ Spraydown is a recoil trainer for Apex Legends with a Studio for capturing and e
 
 - Three families: `display` (Chakra Petch 600 and 700) for scores, weapon names, page titles and section labels; `sans` (Inter 400 to 700) for the interface; `mono` (JetBrains Mono 500 and 600) for numbers in fields and readouts and for keyboard keys.
 - Scores: `score-xl` on the run result card, `score-lg` in the session panel, `stat-value` in stat tiles, `summary-value` for Progress totals, `score-cell` in tables.
-- Panels open with a `section-label` (uppercase, text-muted). Cards and page sections take `heading` or `label` titles.
+- Panels open with a `section-label` (uppercase, text-muted). Cards and page sections take `heading` or `label` titles. Dialogs, alert dialogs and drawers open with a `panel-title`, as the Studio's panels do.
 - Interface text is `body`, controls `label` or `chip`, captions and meta lines `small`, stat tile labels `stat-label` (uppercase), the legal footer and status bar `legal`, tier names and rail labels `micro`.
 - Chakra Petch has no Cyrillic: in Russian, display text falls back to Inter semibold at the same sizes. Chinese text uses system fonts.
 
@@ -46,7 +46,8 @@ Spraydown is a recoil trainer for Apex Legends with a Studio for capturing and e
 - Space on the core steps `space-4`, `space-8`, `space-12`, `space-16`, `space-24`, `space-32`; the in-between steps (`space-2` to `space-20`) are for the specific places their notes name. Panels pad `space-16` with `space-14` between blocks; cards pad `space-12` to `space-16`; pages pad `space-20` at the sides.
 - Round by role: `radius-panel` for panels and the range, `radius-card-lg` for cards inside panels, `radius-card` for tiles and toolbar groups, `radius-control-lg` for 38 px controls, `radius-control` for 34 to 36 px controls, `radius-segment` for segment items, `radius-pill` for chips and badges, `radius-sheet` on phones.
 - Heights: `size-control` (38) for buttons and fields, `size-control-sm` (34) in the Studio, `size-icon` (36) for icon buttons, `size-segment` (30) for chips and segments, `size-touch` (44) for every control on phones.
-- Shadows are only for things that float over other content: `shadow-toast`, `shadow-float` (the run result) and `shadow-sheet` (phone sheets). Panels and cards have none.
+- Shadows are only for things that float over other content: `shadow-toast`, `shadow-float` (the run result, dialogs and the command palette) and `shadow-sheet` (phone sheets and drawers). Panels and cards have none.
+- A dialog, alert dialog, command palette or drawer dims the page under a scrim of black at 50 %, the one color outside the tokens.
 
 ## States and motion
 

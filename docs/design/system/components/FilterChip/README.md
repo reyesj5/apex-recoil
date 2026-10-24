@@ -3,7 +3,7 @@
 Filter chips narrow a list to one class, showing how many items each class holds.
 
 - Pills 30 px high (`size-segment`, `radius-pill`) with a `divider` line on `raised`; 12 px labels at 600 in `text-secondary`, the count in `text-muted` at 500 after the label.
-- Selected: a `volt` line over `volt-wash`, label in `text`.
+- Selected: a `volt` line over `volt-wash`, label in `text`, count in `text-secondary` (`text-muted` stands only 4.2:1 on `volt-wash`).
 - Classes and counts come from the data: `All 31`, `AR 5`, `SMG 5`, `LMG 4`, `Marksman 4`, `Sniper 4`, `Shotgun 5`, `Pistol 4`.
 - On phones chips are 44 px (`sd-chip--touch`) and scroll sideways in one row (`sd-chips--scroll`), as the weapon picker of the pattern viewer.
 

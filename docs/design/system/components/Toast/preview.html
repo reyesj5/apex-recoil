@@ -1,8 +1,12 @@
-<!-- @dsCard group="Feedback" height=110 subtitle="A saved spec with Undo" -->
+<!-- @dsCard group="Feedback" height=170 subtitle="A saved spec with Undo, and a spec that was not saved" -->
 <div class="sd-preview">
   <div role="status" class="sd-toast">
     <span class="sd-toast__icon"><svg class="sd-icon sd-icon--14" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 3;"><path d="M20 6 9 17l-5-5"></path></svg></span>
     <span class="sd-toast__body"><strong>Spec saved</strong> <span class="sd-toast__detail">R-99, version 15</span></span>
     <button type="button" class="sd-toast__action">Undo</button>
+  </div>
+  <div role="alert" class="sd-toast">
+    <span class="sd-toast__icon sd-toast__icon--danger"><svg class="sd-icon sd-icon--14" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 3;"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></span>
+    <span class="sd-toast__body"><strong>The spec was not saved</strong> <span class="sd-toast__detail">The server did not answer; your changes are still here.</span></span>
   </div>
 </div>

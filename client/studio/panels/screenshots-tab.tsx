@@ -175,7 +175,7 @@ function LibraryCard({ onAdded }: { onAdded: (message: Message) => void }) {
       <div className="flex gap-2">
         <Select value={url} onValueChange={setUrl}>
           <SelectTrigger size="sm" aria-labelledby={id} className="w-full min-w-0">
-            <SelectValue placeholder={screenshots.length ? 'Choose a saved screenshot' : 'No saved screenshots'}>
+            <SelectValue placeholder={screenshots.length ? 'Choose a screenshot' : 'No saved screenshots'}>
               {chosen?.filename}
             </SelectValue>
           </SelectTrigger>

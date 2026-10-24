@@ -1,0 +1,20 @@
+<!-- @dsCard group="Overlays" height=520 subtitle="Settings on a phone" -->
+<div class="sd-preview" style="align-items: center;">
+  <div style="width: 100%; max-width: 390px; display: flex; flex-direction: column; border-radius: var(--radius-card); overflow: hidden; background: rgb(0 0 0 / 0.5);">
+    <div style="height: 64px;"></div>
+    <section role="dialog" aria-labelledby="drawer-title" aria-describedby="drawer-text" class="sd-drawer">
+      <span class="sd-drawer__handle" aria-hidden="true"></span>
+      <div class="sd-dialog__head">
+        <h2 id="drawer-title" class="sd-dialog__title" style="justify-content: center;">Settings</h2>
+        <p id="drawer-text" class="sd-dialog__description">Sensitivity, aiming and sound.</p>
+      </div>
+      <div class="sd-fields-2">
+        <label class="sd-field">Sensitivity<input type="number" class="sd-input sd-input--number sd-input--touch" value="5" step="0.1"></label>
+        <label class="sd-field">ADS multiplier<input type="number" class="sd-input sd-input--number sd-input--touch" value="1" step="0.05"></label>
+      </div>
+      <label class="sd-toggle-row" style="min-height: 44px;">Invert Y <input type="checkbox" role="switch" class="sd-switch"></label>
+      <label class="sd-toggle-row" style="min-height: 44px;">Play sounds <input type="checkbox" role="switch" class="sd-switch" checked></label>
+      <button type="button" class="sd-btn sd-btn--primary sd-btn--touch sd-btn--block">Done</button>
+    </section>
+  </div>
+</div>

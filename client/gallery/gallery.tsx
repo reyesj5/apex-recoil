@@ -561,6 +561,10 @@ function Feedback() {
       duration: Infinity,
       action: { label: 'Undo', onClick: () => undefined },
     });
+    toast.error('The spec was not saved', {
+      description: 'The server did not answer; your changes are still here.',
+      duration: Infinity,
+    });
   }, []);
 
   return (
@@ -589,19 +593,28 @@ function Feedback() {
           <Badge variant="tag">Studio</Badge>
         </div>
       </Item>
-      <Item title="Toast" description="Confirms what happened and offers the way back.">
-        <Button
-          variant="secondary"
-          className="self-start"
-          onClick={() =>
-            toast.success('Spec saved', {
-              description: 'R-99, version 16',
-              action: { label: 'Undo', onClick: () => undefined },
-            })
-          }
-        >
-          Show a toast
-        </Button>
+      <Item title="Toast" description="Confirms what happened and offers the way back; an error says why.">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            onClick={() =>
+              toast.success('Spec saved', {
+                description: 'R-99, version 16',
+                action: { label: 'Undo', onClick: () => undefined },
+              })
+            }
+          >
+            Show a toast
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              toast.error('The spec was not saved', { description: 'The server did not answer; try again.' })
+            }
+          >
+            Show an error
+          </Button>
+        </div>
       </Item>
       <Item title="Progress" description="A share or a running job.">
         <div className="flex max-w-95 flex-col gap-3">

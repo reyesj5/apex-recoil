@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Studio, side panels in use</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0C0F}
+*{box-sizing:border-box}
+button,select,input,textarea{font:inherit;color:inherit}
+a{color:#C5F23A}a:hover{color:#DDF98A}
+:focus-visible{outline:2px solid #C5F23A;outline-offset:2px}
+.panel{width:340px;display:flex;flex-direction:column;gap:14px;padding:16px;background:#111419;border:1px solid #1C2128}
+.panel-title{margin:0;font-family:'Chakra Petch',sans-serif;font-size:18px;font-weight:700}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;gap:2px;background:#0D1014;border:1px solid #262C35;border-radius:10px}
+.tab{height:32px;border-radius:7px;border:0;background:transparent;color:#A7B0BC;font-weight:600}
+.tab[aria-selected="true"]{background:#262C35;color:#ECEFF3}
+.card{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:12px;border:1px solid #232830;background:#151920}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.label{margin:0;font-size:13px;font-weight:600}
+.field{display:flex;min-width:0;flex-direction:column;gap:6px;font-size:12px;color:#A7B0BC}
+.input{display:flex;align-items:center;height:34px;padding:0 10px;border-radius:8px;border:1px solid #646D79;background:#0D1014;color:#ECEFF3;font-family:'JetBrains Mono',monospace;font-size:13px}
+.input .unit{margin-left:auto;font-family:Inter,sans-serif;color:#848E9B}
+.select{display:flex;align-items:center;justify-content:space-between;gap:8px;height:34px;padding:0 10px;border-radius:8px;border:1px solid #646D79;background:#0D1014;color:#ECEFF3;font-size:13px;white-space:nowrap;overflow:hidden}
+.select.placeholder{color:#848E9B}
+.textarea{width:100%;margin:0;padding:8px 10px;border-radius:8px;border:1px solid #646D79;background:#0D1014;color:#ECEFF3;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;resize:vertical}
+.hint{margin:0;font-size:12px;line-height:1.5;color:#A7B0BC}
+.fine{margin:0;font-size:11px;line-height:1.5;color:#848E9B}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:34px;padding:0 12px;border-radius:8px;border:1px solid transparent;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
+.btn svg{width:16px;height:16px;flex:none}
+.btn.primary{background:#C5F23A;color:#0A0C0F;font-weight:700}
+.btn.primary[disabled]{background:#1F242C;color:#5B6470}
+.btn.secondary{border-color:#343B46;background:#171B21;color:#ECEFF3}
+.btn.secondary[disabled]{color:#5B6470}
+.btn.ghost{background:transparent;color:#A7B0BC}
+.btn.ghost[disabled]{color:#5B6470}
+.btn.icon{width:34px;padding:0}
+.btn.large{height:38px;padding:0 14px;border-radius:9px;font-size:14px}
+.btn.large svg{width:18px;height:18px}
+.badge{display:inline-flex;align-items:center;gap:5px;flex:none;padding:2px 8px;border-radius:999px;font-size:11px;white-space:nowrap;background:#1F242C;color:#A7B0BC}
+.badge.positive{background:rgba(197,242,58,0.12);color:#C5F23A;font-weight:600}
+.badge.warning{background:rgba(255,181,71,0.12);color:#FFB547;font-weight:600}
+.notice{border-radius:10px;border:1px solid #262C35;background:#151920;padding:10px 12px;font-size:12px;line-height:1.5;color:#A7B0BC}
+.notice.positive{border-color:rgba(197,242,58,0.4);background:rgba(197,242,58,0.12);color:#ECEFF3}
+.switch{width:36px;height:20px;padding:2px;border-radius:999px;background:#343B46;display:flex}
+.switch::after{content:"";width:16px;height:16px;border-radius:50%;background:#A7B0BC}
+.switch[aria-checked="true"]{background:#C5F23A;justify-content:flex-end}
+.switch[aria-checked="true"]::after{background:#0A0C0F}
+.item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;border:1px solid #232830;background:#151920}
+.item.active{border-color:#C5F23A}
+.thumb{display:block;flex:none;border-radius:6px;background:#0D1014}
+.mono{font-family:'JetBrains Mono',monospace}
+ul{margin:0;padding:0;list-style:none}
+</style>
+</helmet>
+<div style="width: 1908px; display: flex; align-items: stretch; gap: 32px; padding: 40px; background: #0A0C0F; color: #ECEFF3; font-family: Inter, system-ui, sans-serif; font-size: 13px;">
+
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <defs>
+      <linearGradient id="wall-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6E737A"></stop><stop offset="1" stop-color="#50555C"></stop></linearGradient>
+      <marker id="decal" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.4" markerHeight="2.4" markerUnits="userSpaceOnUse"><circle cx="5" cy="5" r="4.5" fill="#17191C"></circle></marker>
+      <symbol id="wall" viewBox="-40 -41.5 80 45">
+        <rect x="-40" y="-41.5" width="80" height="45" fill="url(#wall-fill)"></rect>
+        <path d="M-40 -14H40M-21 -41.5V3.5M19 -41.5V3.5" stroke="#61666D" stroke-width="0.5"></path>
+        <polyline points="-0.00,-0.00 1.75,-3.71 1.61,-8.61 3.57,-12.04 3.36,-15.89 3.71,-19.04 3.64,-21.07 4.20,-22.68 5.18,-23.45 6.51,-24.57 8.33,-24.15 9.17,-25.55 7.84,-27.93 6.09,-29.89 4.27,-31.43 2.38,-31.85 0.70,-31.71 -0.63,-31.71 -1.05,-33.25 -0.14,-34.51 1.26,-35.84 2.94,-36.26 4.34,-37.24 6.02,-36.75 7.21,-36.61 8.33,-36.47 9.24,-37.31 9.45,-38.15" fill="none" stroke="none" marker-start="url(#decal)" marker-mid="url(#decal)" marker-end="url(#decal)"></polyline>
+      </symbol>
+    </defs>
+  </svg>
+
+  <aside class="panel" aria-label="Capture, screenshots being analyzed">
+    <h2 class="panel-title">Capture</h2>
+    <div class="tabs" role="tablist" aria-label="Capture method">
+      <button type="button" class="tab" role="tab" aria-selected="false">Live</button>
+      <button type="button" class="tab" role="tab" aria-selected="true">Screenshots</button>
+      <button type="button" class="tab" role="tab" aria-selected="false">Manual</button>
+    </div>
+    <section class="card" aria-label="Setup">
+      <h3 class="label">Setup</h3>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+        <div class="field">Distance<span class="input">20<span class="unit">m</span></span></div>
+        <div class="field">Field of view<span class="input">104<span class="unit">°</span></span></div>
+      </div>
+      <div class="field">Optic<span class="select">2× HCOG Bruiser (standard at 20 m)<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#848E9B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span></div>
+      <div class="field">Color correction<span class="select">HDR fix (natural)<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#848E9B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span></div>
+      <p class="fine">The color correction undoes the washed-out colors of Windows HDR and Auto HDR captures.</p>
+    </section>
+    <section class="card" aria-label="Server library">
+      <div class="card-head">
+        <h3 class="label">Server library</h3>
+        <button type="button" class="btn ghost icon" aria-label="Refresh the library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"></path></svg></button>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <span class="select placeholder" style="flex: 1;">Choose a screenshot<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#848E9B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span>
+        <button type="button" class="btn secondary" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"></path></svg>Add</button>
+      </div>
+    </section>
+    <div class="row">
+      <button type="button" class="btn secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"></path></svg>Choose images</button>
+      <button type="button" class="btn ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>Clear</button>
+    </div>
+    <section aria-label="Screenshots to analyze" style="display: flex; flex-direction: column; gap: 8px;">
+      <div class="card-head"><h3 class="label">Screenshots</h3><span style="font-size: 12px; color: #848E9B;">3 loaded</span></div>
+      <ul style="display: flex; flex-direction: column; gap: 6px;">
+        <sc-for list="{{batch}}" as="b" hint-placeholder-count="3">
+          <li class="{{b.className}}">
+            <svg class="thumb" width="64" height="36" aria-hidden="true"><use href="#wall" width="64" height="36"></use></svg>
+            <span style="display: flex; min-width: 0; flex: 1; flex-direction: column;">
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600;">{{b.name}}</span>
+              <span style="font-size: 11px; color: #848E9B;">{{b.source}}</span>
+            </span>
+            <span class="badge">Analyzing…</span>
+            <button type="button" class="btn ghost icon" aria-label="{{b.removeLabel}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+          </li>
+        </sc-for>
+      </ul>
+    </section>
+    <button type="button" class="btn primary large" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>Analyze 3 screenshots</button>
+    <div class="notice" role="status">
+      <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;"><span>Processing image 2 of 3</span><span class="mono" style="color: #ECEFF3;">35%</span></span>
+      <span role="progressbar" aria-label="Analysis progress" aria-valuenow="35" style="display: block; margin-top: 8px; height: 6px; border-radius: 3px; background: #1F242C; overflow: hidden;"><span style="display: block; width: 35%; height: 100%; border-radius: 3px; background: #C5F23A;"></span></span>
+    </div>
+  </aside>
+
+  <aside class="panel" aria-label="Capture, placing shots by hand">
+    <h2 class="panel-title">Capture</h2>
+    <div class="tabs" role="tablist" aria-label="Capture method">
+      <button type="button" class="tab" role="tab" aria-selected="false">Live</button>
+      <button type="button" class="tab" role="tab" aria-selected="false">Screenshots</button>
+      <button type="button" class="tab" role="tab" aria-selected="true">Manual</button>
+    </div>
+    <section class="card" aria-label="Wall image">
+      <h3 class="label">Wall image</h3>
+      <p class="hint">Loading an image starts the pattern over, so the decals you add become the whole pattern (undo brings it back). A file name ending in the distance, such as <code class="mono">wall 20.png</code>, sets the anchors' distance.</p>
+      <div class="row">
+        <button type="button" class="btn secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM9 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM21 15l-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg>Choose an image</button>
+        <button type="button" class="btn ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2l20 20M10.41 10.41a2 2 0 1 1-2.83-2.83M13.5 13.5 6 21M18 12l3 3M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.05-.22 1.41-.59M21 15V5a2 2 0 0 0-2-2H9"></path></svg>Remove the image</button>
+      </div>
+    </section>
+    <section class="card" aria-label="Find the decals">
+      <h3 class="label">Find the decals</h3>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+        <div class="field">Threshold<span class="input">110</span></div>
+        <div class="field">Size from<span class="input">12<span class="unit">px</span></span></div>
+        <div class="field">Size to<span class="input">60<span class="unit">px</span></span></div>
+      </div>
+      <div class="card-head" style="font-size: 13px;">Find targets<span class="switch" role="switch" aria-checked="true" aria-label="Find targets"></span></div>
+      <div class="card-head" style="font-size: 13px;">Show the threshold<span class="switch" role="switch" aria-checked="false" aria-label="Show the threshold"></span></div>
+      <div class="notice" role="status">28 targets found. Click one on the canvas to add it, or add them all.</div>
+      <div class="row">
+        <button type="button" class="btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72M14 7l3 3M5 6v4M19 14v4M10 2v2M7 8H3M21 16h-4M11 3H9"></path></svg>Add the targets as shots</button>
+        <button type="button" class="btn ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21M22 21H7M5 11l9 9"></path></svg>Clear the pattern</button>
+      </div>
+    </section>
+    <section class="card" aria-label="Version 2 export">
+      <h3 class="label">Version 2 export</h3>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+        <div class="field">Anchor distance<span class="input">20<span class="unit">m</span></span></div>
+        <div class="field" style="justify-content: flex-end;">Barrel<span class="input">0</span></div>
+        <div class="field" style="justify-content: flex-end;">Stock<span class="input">0</span></div>
+      </div>
+      <label class="field">Comment<textarea class="textarea" rows="2">r301 wall 20.png</textarea></label>
+      <p class="hint">28 shots, a full magazine has 37. 2 anchors marked (middle-click a shot).</p>
+      <div class="field"><span id="export-label">Export</span><div class="textarea" role="textbox" aria-readonly="true" aria-multiline="true" aria-labelledby="export-label" style="word-break: break-all;"><div style="height: 72px; overflow: hidden;">{{exportJson}}</div></div></div>
+      <button type="button" class="btn secondary" style="align-self: flex-start;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 8h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2zM4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>Copy</button>
+    </section>
+  </aside>
+
+  <aside class="panel" aria-label="Screenshot library">
+    <h2 class="panel-title">Screenshot library</h2>
+    <div class="card-head">
+      <p style="margin: 0; font-size: 12px; color: #A7B0BC;">4 screenshots on the server</p>
+      <button type="button" class="btn ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"></path></svg>Refresh</button>
+    </div>
+    <ul style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+      <sc-for list="{{library}}" as="s" hint-placeholder-count="4">
+        <li style="display: flex; min-width: 0; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; border: 1px solid #232830; background: #151920;">
+          <button type="button" aria-label="{{s.showLabel}}" style="padding: 0; border: 0; background: none; cursor: pointer;"><svg class="thumb" viewBox="0 0 16 9" style="width: 100%; height: auto;" aria-hidden="true"><use href="#wall" width="16" height="9"></use></svg></button>
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600;">{{s.name}}</span>
+          <span style="font-size: 11px; color: #848E9B;">{{s.meta}}</span>
+          <button type="button" class="btn secondary" aria-label="{{s.addLabel}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"></path></svg>Add</button>
+        </li>
+      </sc-for>
+    </ul>
+  </aside>
+
+  <aside class="panel" aria-label="Saved sessions">
+    <h2 class="panel-title">Saved sessions</h2>
+    <div class="row">
+      <button type="button" class="btn secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7zM14 2v4a2 2 0 0 0 2 2h4M12 12v6M15 15l-3-3-3 3"></path></svg>Import clips</button>
+      <button type="button" class="btn ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"></path></svg>Refresh</button>
+    </div>
+    <p class="fine" style="font-size: 12px;">Import recorded clips (.webm, .mp4) with their wall screenshots (spray_01.webm and spray_01_wall.jpg go together), or images alone into the Screenshots tab.</p>
+    <div class="notice positive" role="status">Loaded 5 sprays of R-301 into the Live tab. Analyze them there. <a href="#" style="color: #C5F23A;">Go to Capture</a></div>
+    <ul style="display: flex; flex-direction: column; gap: 8px;">
+      <sc-for list="{{sessions}}" as="s" hint-placeholder-count="3">
+        <li style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 10px; border: 1px solid #232830; background: #151920;">
+          <span style="font-size: 13px; font-weight: 600;">{{s.weapon}} <span style="font-weight: 400; color: #A7B0BC;">{{s.mode}}</span></span>
+          <span style="font-size: 12px; color: #A7B0BC;">{{s.sprays}}</span>
+          <span class="mono" style="font-size: 11px; color: #848E9B;">{{s.figures}}</span>
+          <button type="button" class="btn secondary" style="align-self: flex-start;" aria-label="{{s.loadLabel}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>Load</button>
+        </li>
+      </sc-for>
+    </ul>
+  </aside>
+
+  <aside class="panel" aria-label="Import">
+    <h2 class="panel-title">Import</h2>
+    <p class="hint">Paste a pattern from the discovery tools (<code class="mono">recoil_discovery process --json</code>) or a spec. Its pattern, fire rate, shot times and magazines replace those of R-301; Save spec keeps them.</p>
+    <div class="field"><span id="discovery-label">Discovery JSON</span><div class="textarea" role="textbox" aria-multiline="true" aria-labelledby="discovery-label" style="height: 198px; overflow: hidden; white-space: pre-wrap;">{{discoveryJson}}</div></div>
+    <button type="button" class="btn primary large">Apply to R-301</button>
+    <div class="notice positive" role="status">Applied to R-301: 37 shots.</div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1908,"height":1216}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // The R-301's decal positions on the wall, the opposite of the path to follow the Patterns page draws
+    const P = {"flatline":"0,0 2.8,9.6 3.6,13.6 8.5,20.3 12.6,24.5 13.1,30.1 12.7,35.7 10.2,37.1 5.7,35.1 4.1,34.2 2.7,36.4 2.4,40.4 4.8,41.7 9.4,45.3 13.6,45.3 17.9,45.5 18.7,48.9 20.3,53.2 24.6,56 28.9,59 31.1,59.3 32,60.7 31,63.6 28,64.7 24.5,66.6 21.5,67.4 18.5,68.3","r301":"0,0 -2.5,5.3 -2.3,12.3 -5.1,17.2 -4.8,22.7 -5.3,27.2 -5.2,30.1 -6,32.4 -7.4,33.5 -9.3,35.1 -11.9,34.5 -13.1,36.5 -11.2,39.9 -8.7,42.7 -6.1,44.9 -3.4,45.5 -1,45.3 0.9,45.3 1.5,47.5 0.2,49.3 -1.8,51.2 -4.2,51.8 -6.2,53.2 -8.6,52.5 -10.3,52.3 -11.9,52.1 -13.2,53.3 -13.5,54.5","havoc_tc":"0,0 -2.6,3.7 -4.3,8.6 -2.8,13.3 -3.9,18 -4,20.3 -2.1,26.1 -1,28.2 -0.9,33.8 -2.8,34.4 -5.1,35.9 -6.9,35 -8.9,35 -9.6,39.4 -8.5,39.7 -6.2,41.9 -3.9,40.1 -1.4,39.7 -1.8,43.9 -2.7,48.9 -1.9,50.8 -0.7,51.6 0,56.9 1,59.8 5.6,64","hemlok":"0,0 -0.7,3.2 -1.3,7.1 0,0 0.6,3.7 1.3,7.5 0,0 -0.6,3.2 -1.4,6.5 0,0 0.6,3.4 1.3,7.5 0,0 -0.8,3.9 -1.7,8.1 0,0 0.8,3.3 1.4,6.9 0,0 -0.7,4.1 -1.4,7.5 0,0 0.9,3.4 1.5,7.2 0,0 -0.6,3.7 -1.5,7.5","nemesis":"0,0 -0.4,3 -0.8,5.8 -1.1,8.4 0,0 0.3,3.2 0.8,5.8 1.3,8.8 0,0 -0.5,3 -0.9,5.8 -1.2,8.7 0,0 0.4,2.9 1,5.6 1.4,8.9 0,0 -0.5,2.7 -0.9,5.7 -1.2,8.5 0,0 0.3,2.9 0.8,6 1.2,8.9 0,0 -0.5,2.5 -1,5.5 -1.4,8","alternator":"0,0 1.5,7.9 -1.1,14 1.6,21 -0.9,27.4 2,34.9 -0.6,41.5 1,47.2 -2.9,51.8 -0.2,58.7 -5.1,62.8 -2.2,67.5 -6.8,69.1 -5.9,71 -8.3,73.1 -4.1,78 -5.2,82.4 -1.3,84.2 -4.7,88.6 0.5,88.3 -0.9,92.7 3.5,91.7","prowler":"0,0 2,8.7 2.3,13.4 2,19.8 2.3,23.8 0,0 2.1,4.9 2.7,9.6 5,14 5.8,18.6 0,0 1.6,3.1 1.1,6.6 -0.7,9.5 -6.4,10.3 0,0 -2.1,1.7 -5.1,4.2 -3.1,7.9 -3.5,12.2 0,0 -0.4,3.3 -1.2,6.4 1.7,8.2 4.7,10.1 0,0 -0.1,1.3 -3.4,3.6 -7.8,3.6 -11.2,3.9","r99":"0,0 -1.4,6.2 -1.8,11.4 -0.4,16.6 -0.1,24.8 -2.5,35.8 -5.2,44.6 -8,51.1 -9.7,59.5 -10.4,65.8 -7.8,73.1 -5,80.2 -4.4,85.8 -3.5,93.5 -4.7,95.5 -6.9,96.7 -9.6,99.3 -12.9,99 -9.5,103.6 -6.1,103.8 -2.1,105.4 -0.2,106.6 2.3,107.5 -0.1,109.2","volt":"0,0 -2.2,5.7 -2.8,12.8 -2.1,21.4 -4.2,25.8 -4.1,35.6 -7.9,41.1 -8.9,49.7 -7,55.9 -9.2,62.4 -8.9,66.8 -5.7,67.9 -1.6,67.3 1,70 3.5,73.2 2.6,75.4 -0.1,75.5 -2,75.8 -1.2,77.6 0.6,79.1 2.6,79.9 4.2,79.7 4.6,80.2 4.6,81.5","car":"0,0 0.9,6.7 3.2,12.1 3,18.5 6.3,24.8 6.6,30.6 9.1,37.8 12.2,42.6 11.8,50.1 7.8,57 7,64.5 5.1,66.6 0.9,66.4 -1.9,67.1 -2.5,70.2 1.1,73.2 6.3,72.8 9.2,75.2 8.6,77.7 5.8,79 3.2,79.5 -0.9,79.4 -1.7,79.8 -1.6,81.9 0.1,84.8 2.6,86.5","devotion_tc":"0,0 0.3,17.2 0.4,34.4 0.6,45.3 1.8,56.7 3.3,65.5 5,72.2 6.7,78.3 9.7,81.4 11.2,85.7 12.9,89.1 15.5,93 18.1,95.5 21.3,97.1 25.1,97.7 28.7,98.2 30.7,97.1 33.7,98 33.5,100.7 33.3,103.7 31.2,105.9 29,107.2 26.5,108.9 23.1,110.5 19.5,112.6 17.8,114.4 18,116.5 17.2,119.4 15.1,121.5 12.7,123.2 9.5,124.2 6.6,123.8 3.9,123.8 1.1,125.8 -0.9,127.5 -1.9,129.8 -3,131.6 -2.4,133.3 -1.9,135.5 -2.7,137.7 -4.1,139.1 -5.9,139.9 -6.6,141.1 -6.7,142.6","lstar":"0,0 5.3,5.6 13.9,7.9 19.9,16.5 17.8,23.6 14.6,25.7 12.2,30.2 8.9,38.8 8.5,45.7 8.1,50.6 8.8,56.4 6.9,62.2 7.2,67.5 7,73.1 5,78.3 4.7,83.5 3.9,88.4 5.2,92.9 6.5,96.6 5.9,99.1 4.6,103.1 4.6,108.1 2.8,112 1.2,116.1 1.9,120.3 2.6,124.4 3.4,128.5 -0.3,134.4","spitfire":"0,0 0.4,7.1 1,9.5 3.4,13.8 5,16.9 6.1,21.1 6.1,25.6 4.9,27 2.7,26.3 2.1,25.6 1.2,26.9 0.6,30.1 2,31.2 4.8,33.2 6.7,34.1 9.3,33.2 10.6,34 11.6,37.6 12.6,40.9 14.6,42.7 17,43.4 18.2,43.6 17.6,46.1 15.5,47.3 14,48.3 11.9,49.5 9.7,50.5 7.4,49.1 6.6,51.2 5.4,53.9 5.3,55.6 2.7,54.9 1.7,53.9 0.7,55.2 -0.1,58 1.2,58.6 3.9,60.7 5,61.2 7.7,60.1 9.1,60.5 9.5,64.3 10.3,68 12.2,70.4 14.6,71.2 15.7,71.5","rampage":"0,0 -1.1,6.7 3.4,10.7 5.2,17.5 2,22.2 1.5,29.8 -0.9,35.2 -3.5,39 -7,42.6 -8.9,45.9 -9.7,50.2 -6.1,52.6 -2.5,55.4 0,58.9 3.2,59.6 5.7,61.6 8.1,64.1 7.8,67 6.4,69 8.1,70.9 6.6,73.4 8.1,75.9 9.7,78.4 8.1,81.8 9.9,84.2 11.5,86.7 9.8,90.1 12.2,94 14.6,97.8 16.7,101.6 16.2,106.1 14.6,109.6 15.8,112.4 14.4,115.2 15.5,118.3 17.2,121.1","g7_scout":"0.4,4.1 0.4,4.1 0.3,4.7 0.3,4 0.4,4.3 0.4,4 -0.3,4.1 -0.5,4.1 0.4,4.2 0.5,4.1 0.4,4.6 0.3,4.8 0.2,4.5 -0.6,4.1","triple_take":"0.2,6.2 0.2,6.2 0.3,6.5 0.2,5.4 0.4,6.6 -0.1,6.6 0.3,6.1 0.1,6.4 -0.4,6.1 0.2,6 0.2,5.5 0.2,6.1","3030_repeater":"-0.6,7 -0.6,7 0.8,7.1 0.3,6.3 0.4,6.6 0.5,6.2 0.5,7.2 0.1,6.5","bocek":"-0.2,1.5 -0.2,1.5 0.1,1.4 -0.2,1.4 -0.2,1.6 0,1.5 -0.1,1.5 0.1,1.5 0.1,1.5 0.1,1.5 0.1,1.5 -0.2,1.7 -0.2,1.5 0.1,1.7 0.2,1.6 -0.2,1.7 -0.1,1.5 -0.1,1.6 -0.1,1.8 -0.1,1.8 0.1,1.5 -0.1,1.7 -0.2,1.7 0,1.5 0.2,1.4 0.1,1.7 -0.1,1.6 0,1.5 -0.1,1.4 -0.2,1.5 0.1,1.6 0,1.4 -0.1,1.7 0,1.5 -0.2,1.5 0.2,1.5 -0.2,1.6 0,1.4 -0.2,1.7 -0.1,1.5","charge_rifle":"0.2,8.4 0.2,8.4 -0.3,9.2 0,10 -0.2,8.2 0,9.7 0.1,9.7 0.2,9.9","longbow":"0,8 0,8 0.5,9.3 0.4,9.7 -0.6,8.4 0.4,8 -0.4,8.3 0.1,8 -0.4,8.9 0.3,8.6","sentinel":"-0.1,10.9 -0.1,10.9 -0.2,10 0.2,10.2 0,11.3 0.1,10.6","kraber":"0.1,14.9 0.1,14.9 0.2,12.5 -0.2,13.3","eva8":"0,0 -0.1,6 0.3,12 0.1,18.3 -0.2,24 0.1,30.2 0.1,36.1 0,42.1","mastiff":"0.5,7.7 0.5,7.7 0.2,7.7 -0.9,7.7 0.3,7.6","mozambique":"0,0 0.5,4.8 0.6,10 0.7,15.2 1.1,19.9","mozambique_akimbo":"0,0 1.8,4.2 -1.4,8.7 1.9,12.8 -1.7,16.5 1.6,21 -1.6,25.8 1.7,30.6 -1.9,34.7 1.5,39.6","peacekeeper":"0.3,9 0.3,9 0.5,9 0.5,8 0.5,7.8","re45":"0,0 -0.8,5.9 -1.4,11.3 -4.5,16.6 -6.3,22.8 -8.1,28.1 -12.4,32.8 -15.1,35.5 -19.3,38.9 -23,41.5 -25.6,44.7 -28.1,46.9 -27.6,49.7 -30.5,53 -30.9,55.9 -32.5,59.4 -31.8,63 -34.2,65.9 -35.5,67.8 -38.3,68.7 -36.4,70.3 -38.8,71.7 -40.5,74.4","p2020":"-0.3,3.2 -0.3,3.2 -0.2,3.3 0.3,3.4 0.1,3.3 -0.1,3.2 -0.4,2.8 0.4,3 0.2,3.2 -0.5,3.4 -0.3,2.8","p2020_akimbo":"1.5,2.9 1.5,2.9 -2.8,2.5 2.4,2.5 -2.7,2.4 2.7,2.8 -2.7,2.6 2.9,2.2 -2.5,3 2.4,2.6 -2.3,2.7 2.6,2.5 -2.8,2.6 2.7,2.9 -2.6,2.9 2.5,2.4 -2.8,2.4 2.8,2.7 -2.8,2.4 2.7,2.8 -2.5,2.9 2.9,2.7","wingman":"-0.5,7 -0.5,7 -0.1,6 -0.5,6.3 -0.3,6.4 0.1,6.5 -0.6,6.1"};
+    const r301 = P.r301.split(' ').map((p) => p.split(',').map(Number));
+    const wallX = r301.map((p) => Math.round(-p[0] * 4.2));
+    const wallY = r301.map((p) => Math.round(-p[1] * 4.2));
+    // A full magazine of the level 3 extension, as the export lists it
+    const exportJson = JSON.stringify({
+      version: 2, weapon: 'r301', barrel: 0, stock: 0, comment: 'r301 wall 20.png',
+      x: wallX, y: wallY, anchor_indexes: [0, 27], anchor_in_game_distance: 20
+    });
+    const discoveryJson = JSON.stringify({ weapon: 'r301', rpm: 806.4, x: wallX.slice(0, 6).map((v) => v / 4), y: wallY.slice(0, 6).map((v) => v / 4), sample_count: 5 }, null, 2)
+      .replace(/\[\n\s+/g, '[').replace(/,\n\s+(?=-?\d)/g, ', ').replace(/\n\s+\]/g, ']')
+      .replace(/(\d)\]/g, '$1, …]');
+    return {
+      exportJson: exportJson,
+      discoveryJson: discoveryJson,
+      batch: [
+        ['r301_wall_20.png', 'Disk', true],
+        ['r301_wall_20_b.png', 'Server library', false],
+        ['r301_wall_20_c.png', 'Disk', false]
+      ].map((b, i) => ({ name: (i + 1) + '. ' + b[0], source: b[1], className: b[2] ? 'item active' : 'item', removeLabel: 'Remove ' + b[0] })),
+      library: [
+        ['r301_wall_20.png', 'Oct 24, 2026 · 2.9 MB'],
+        ['flatline_spray_01_wall.jpg', 'Oct 23, 2026 · 412 KB'],
+        ['havoc_tc_wall_20.png', 'Oct 22, 2026 · 3.1 MB'],
+        ['r99_wall_15.png', 'Oct 20, 2026 · 2.7 MB']
+      ].map((s) => ({ name: s[0], meta: s[1], showLabel: 'Show ' + s[0] + ' on the canvas', addLabel: 'Add ' + s[0] + ' to Screenshots' })),
+      sessions: [
+        ['R-301', 'Auto', 5, '10/24/2026 09:42 AM', '37 shots · 806 RPM · convergence 92'],
+        ['Flatline', 'Auto', 3, '10/23/2026 06:15 PM', '35 shots · 598 RPM · convergence 88'],
+        ['HAVOC', 'Auto', 4, '10/22/2026 02:03 PM', '35 shots · 671 RPM · convergence 85']
+      ].map((s) => ({ weapon: s[0], mode: s[1], sprays: s[2] + ' sprays · ' + s[3], figures: s[4], loadLabel: 'Load the ' + s[0] + ' session of ' + s[3] }))
+    };
+  }
+}
+</script>
+</body>
+</html>

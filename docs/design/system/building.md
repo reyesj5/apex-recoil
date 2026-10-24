@@ -55,4 +55,4 @@ shadcn/ui's `card` is the `panel` surface; this system's `card` token is the dar
 
 A choice of one (segmented controls, chips, weapon tiles, magazine tiers) is a Radix toggle group of type single, which is a radio group: each option has `role="radio"` and `aria-checked`, and the arrow keys move between options.
 
-Dialog, Alert dialog, Drawer, Command and the error toast are not designed yet. Until they are, build them from shadcn/ui on the variables above: the `raised` surface with an `outline-strong` line, `radius-panel` corners and `shadow-float`.
+Dialog, AlertDialog, Drawer and CommandPalette are shadcn/ui's Dialog, Alert Dialog, Drawer and Command on the variables above: the `raised` surface with an `outline-strong` line, `radius-panel` corners (`radius-sheet` for a drawer) and `shadow-float`, their titles in `type-panel-title`. The error toast is Sonner's, with the danger disc of the Toast component.

@@ -12,11 +12,13 @@ import { setComparing, useStudio, type AnalysisKind } from '../store';
 // An analysis' progress and outcome, under the button that started it: the job's stage while it
 // runs, then what it measured and how it compares with the saved spec, with Save and Compare.
 
-/** The job's stage in words: "Splitting clips, clip 1 of 2" */
+/** The job's stage in words: "Processing clip 1 of 2", "Aggregating" */
 export function describeProgress(progress: JobProgress) {
   const stage = progress.stage.replace(/_/g, ' ');
   const words = stage.charAt(0).toUpperCase() + stage.slice(1);
   const d = progress.details;
+  // The pipeline names a file's stage with its count (processing_clip_1_of_2): the details repeat it
+  if (/ \d+ of \d+$/.test(stage)) return words;
   if (d?.clip_index && d.total_clips) return `${words}, clip ${d.clip_index} of ${d.total_clips}`;
   if (d?.image_index && d.total_images) return `${words}, image ${d.image_index} of ${d.total_images}`;
   return words;

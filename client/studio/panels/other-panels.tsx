@@ -17,8 +17,10 @@ import { addedMessage } from './screenshots-tab';
 
 type Message = { tone: 'neutral' | 'positive' | 'warning' | 'danger'; text: string } | null;
 
-const dateFormat = new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' });
-const sizeFormat = (bytes: number) => `${Math.round(bytes / 1024)} KB`;
+// A library card is about 130 px wide inside: the day and the size have to fit one line
+const dayFormat = new Intl.DateTimeFormat('en', { dateStyle: 'medium' });
+const sizeFormat = (bytes: number) =>
+  bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
 function RefreshButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
@@ -72,11 +74,16 @@ export function LibraryPanel() {
                 {s.filename}
               </span>
               <span className="text-11 text-text-muted">
-                {dateFormat.format(new Date(s.timestamp))} · {sizeFormat(s.sizeBytes)}
+                {dayFormat.format(new Date(s.timestamp))} · {sizeFormat(s.sizeBytes)}
               </span>
-              <Button variant="secondary" size="sm" onClick={() => void add(s)}>
+              <Button
+                variant="secondary"
+                size="sm"
+                aria-label={`Add ${s.filename} to Screenshots`}
+                onClick={() => void add(s)}
+              >
                 <PlusIcon aria-hidden="true" />
-                Add to Screenshots
+                Add
               </Button>
             </li>
           ))}

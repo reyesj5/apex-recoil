@@ -72,7 +72,8 @@ export function NumberField({
   const id = useId();
   const [draft, setDraft] = useState<string | null>(null);
   return (
-    <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
+    // At the bottom of their cell: a row whose label wraps keeps its inputs in line
+    <div className={cn('flex min-w-0 flex-col justify-end gap-1.5', className)}>
       <Label htmlFor={id} className="text-xs font-normal text-text-secondary">
         {label}
       </Label>
