@@ -42,7 +42,23 @@ export function readSite(json: SiteJson): Site {
   return site;
 }
 
-export const site = readSite(data);
+/**
+ * The values pages render with: site.json as bundled, unless the page carries the server's own (a
+ * JSON script with the id site-json, which the server writes into the new pages, so a page and its
+ * prerendered markup always agree). The server's prerender sets them with setSite.
+ */
+export const site: Site = readSite(data);
+
+/** Makes every page render with these values (the prerender does this for each page it renders) */
+export function setSite(json: SiteJson) {
+  for (const key of Object.keys(site)) delete site[key as keyof Site];
+  Object.assign(site, readSite({ ...data, ...json }));
+}
+
+if (typeof document !== 'undefined') {
+  const embedded = document.getElementById('site-json')?.textContent;
+  if (embedded) setSite(JSON.parse(embedded) as SiteJson);
+}
 
 /** Whether a value is still a placeholder, such as "[OWNER NAME]" */
 export function isPlaceholder(value: string) {

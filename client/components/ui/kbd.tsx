@@ -14,8 +14,8 @@ function Kbd({
       className={cn(
         'pointer-events-none inline-flex w-fit items-center justify-center gap-1 font-mono font-medium whitespace-nowrap select-none',
         variant === 'default' &&
-          'rounded-key border border-outline-strong px-1.5 py-0.5 text-[11px] leading-[1.3] text-text-secondary',
-        variant === 'inset' && 'rounded-key-inset bg-volt-ink-wash px-[5px] py-px text-[10px] text-current',
+          'rounded-key border border-outline-strong px-1.5 py-0.5 text-11 leading-[1.3] text-text-secondary',
+        variant === 'inset' && 'rounded-key-inset bg-volt-ink-wash px-[5px] py-px text-10 text-current',
         '[[data-slot=tooltip-content]_&]:ml-1 [[data-slot=tooltip-content]_&]:border-0 [[data-slot=tooltip-content]_&]:p-0 [[data-slot=tooltip-content]_&]:text-xs [[data-slot=tooltip-content]_&]:text-current',
         "[&_svg:not([class*='size-'])]:size-3",
         className,

@@ -3,7 +3,7 @@ import { createPersistedStore, field, flag, number, oneOf, text } from './index'
 // The trainer's settings and score history, under the keys the current trainer writes (client/game.ts
 // and client/stats.ts, namespace 'game:', so every key starts with 'game::'). Fallbacks are the
 // current defaults.
-export const trainerFields = {
+export const currentTrainerFields = {
   weapon: field('game::weapon', text, 'r99'),
   /** The magazine's index in the weapon's list, 0 for the base magazine */
   mag: field('game::mag', number, 0),
@@ -36,4 +36,19 @@ export const trainerFields = {
   stats: field('game::stats', text, '[]'),
 };
 
-export const useTrainerSettings = createPersistedStore(trainerFields);
+// Settings the redesign adds, under new keys the current trainer never reads
+export const trainerFields = {
+  ...currentTrainerFields,
+  /**
+   * The game's ADS sensitivity multiplier. Runs use sensitivity × ADS, as the current trainer asks
+   * players to enter by hand, so 1 leaves a stored sensitivity meaning what it did.
+   */
+  ads: field('game::ads', number, 1),
+  /** How fast Replay shows the last run again */
+  replaySpeed: field('game::replay-speed', number, 1),
+  /** The last saved runs with their times, as JSON (client/trainer/run-log.ts), for the Progress page */
+  runs: field('game::runs', text, '[]'),
+};
+
+// The trainer's pages are prerendered, so the stored values load after hydration (useStoredSettings)
+export const useTrainerSettings = createPersistedStore(trainerFields, globalThis.localStorage, { deferLoad: true });

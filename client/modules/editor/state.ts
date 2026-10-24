@@ -19,7 +19,7 @@
 // persisted editor settings, and the session/background state that several modules reassign
 // through the setters at the end of this file.
 import Konva from 'konva';
-import { Weapon } from '../../game';
+import { Weapon } from '../../engine/weapons';
 import { NumericAttribute, StringAttribute, BooleanAttribute } from '../../storage';
 import { ActiveSessionData } from '../types';
 

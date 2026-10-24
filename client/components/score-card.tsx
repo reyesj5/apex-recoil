@@ -41,7 +41,7 @@ function ScoreDelta({
   return (
     <div
       data-slot="score-delta"
-      className={cn('flex items-center gap-2 text-[13px] text-text-secondary', className)}
+      className={cn('flex items-center gap-2 text-13 text-text-secondary', className)}
       {...props}
     >
       <span

@@ -53,7 +53,7 @@ const toggleGroupItemVariants = cva(
       },
       size: {
         default: '',
-        touch: 'h-touch px-3.5 text-[13px]',
+        touch: 'h-touch px-3.5 text-13',
       },
     },
     defaultVariants: {
@@ -112,9 +112,16 @@ function ToggleGroupItem({
   );
 }
 
-/** The count after a filter chip's label (All 31, AR 5) */
+/** The count after a filter chip's label (All 31, AR 5); text-secondary in the selected chip, whose volt-wash
+ * leaves text-muted at 4.2:1 */
 function ToggleGroupCount({ className, ...props }: React.ComponentProps<'span'>) {
-  return <span data-slot="toggle-group-count" className={cn('font-medium text-text-muted', className)} {...props} />;
+  return (
+    <span
+      data-slot="toggle-group-count"
+      className={cn('font-medium text-text-muted in-data-[state=on]:text-text-secondary', className)}
+      {...props}
+    />
+  );
 }
 
 export { ToggleGroup, ToggleGroupItem, ToggleGroupCount, toggleGroupVariants, toggleGroupItemVariants };

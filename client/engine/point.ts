@@ -15,25 +15,30 @@
  * limitations under the License.
  */
 
-import Konva from "konva";
-import { error } from "./utils";
+// Points and vectors for the trainer's engine, moved from client/point.ts. The engine runs without a
+// DOM, so an invalid value is reported to the console instead of the page's error bar.
+
+export interface Vector2d {
+  x: number;
+  y: number;
+}
 
 export class PlainPoint {
   x: number = 0;
   y: number = 0;
-};
+}
 
-export class Point implements Konva.Vector2d {
+export class Point implements Vector2d {
   x: number = 0;
   y: number = 0;
-  constructor(v?: number | Point | PlainPoint | null, y?: number) {
+  constructor(v?: number | Point | PlainPoint | Vector2d | null, y?: number) {
     if (v == null) v = 0;
     if (v instanceof Point) {
       this.x = v.x;
       this.y = v.y;
       return;
     }
-    const a = v as any;
+    const a = v as Vector2d;
     if (a.x != null && a.y != null) {
       this.x = a.x;
       this.y = a.y;
@@ -42,7 +47,7 @@ export class Point implements Konva.Vector2d {
     if (typeof v === 'number') {
       this.x = v;
     } else {
-      error(v, 'is not a valid init value for point');
+      console.error(v, 'is not a valid init value for point');
     }
     if (y == undefined) y = 0;
     this.y = y;
@@ -54,7 +59,7 @@ export class Point implements Konva.Vector2d {
     return this;
   }
   clone(): this {
-    return new (this.constructor as any)(this.x, this.y);
+    return new (this.constructor as new (x: number, y: number) => this)(this.x, this.y);
   }
   /** Multiply both coordinates by scalar v. */
   s(v: number): this {
@@ -81,12 +86,12 @@ export class Point implements Konva.Vector2d {
   scaleY(v: number): this {
     return this.sy(v);
   }
-  sub(other: this): this {
+  sub(other: Vector2d): this {
     this.x = this.x - other.x;
     this.y = this.y - other.y;
     return this;
   }
-  add(other: this): this {
+  add(other: Vector2d): this {
     this.x = this.x + other.x;
     this.y = this.y + other.y;
     return this;
@@ -98,21 +103,21 @@ export class Point implements Konva.Vector2d {
   array(): [number, number] {
     return [this.x, this.y];
   }
-  distance(other: this): number {
+  distance(other: Vector2d): number {
     const dx = this.x - other.x;
     const dy = this.y - other.y;
     return Math.sqrt(dx * dx + dy * dy);
   }
-  closeTo(other: this): boolean {
+  closeTo(other: Vector2d): boolean {
     return this.distance(other) < 0.1;
   }
   atan2(): number {
     return Math.atan2(this.y, this.x);
   }
-  dot(o: this): number {
+  dot(o: Vector2d): number {
     return this.x * o.x + this.y * o.y;
   }
   length(): number {
     return Math.sqrt(this.x * this.x + this.y * this.y);
   }
-};
+}

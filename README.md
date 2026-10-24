@@ -75,10 +75,10 @@ pnpm install
 # (styles update in place, code and template changes reload the page), on this computer only
 pnpm dev
 
-# Build assets (Vite 8 production build: trainer.js, editor.js, tailwind.css); pnpm start serves them
+# Build assets (Vite 8 production build into dist/: trainer.js, editor.js, tailwind.css; and the new pages' prerender into dist-ssr/); pnpm start serves them
 pnpm build
 
-# Run Node test suites (41 tests across database, queue, storage, and API; build first)
+# Run Node test suites (42 tests across database, queue, storage, API and the built bundles; build first)
 pnpm test
 
 # Unit and component tests (Vitest)
@@ -154,7 +154,7 @@ Deployment is fully static:
 ```bash
 pnpm static
 ```
-This builds the Vite bundles, copies `etc/` and `assets/`, and renders the pages (`index.html`, `index-ru.html`, `index-zh-CN.html`, `editor.html`) into `./static`. Copy its contents to your web server directory (e.g. Nginx / Apache / S3). The Recoil Editor's capture and spec-saving features need the Node server and are not available on a static host. Compression and caching headers for Nginx are in [docs/playbooks.md](./docs/playbooks.md).
+This builds the Vite bundles, copies `etc/` and `assets/`, renders the pages (`index.html`, `index-ru.html`, `index-zh-CN.html`, `editor.html`) into `./static`, and prerenders the rebuilt trainer and its Progress page, previewed under `/next`, into `next/.../index.html`. Copy its contents to your web server directory (e.g. Nginx / Apache / S3). The Recoil Editor's capture and spec-saving features need the Node server and are not available on a static host. Compression and caching headers for Nginx are in [docs/playbooks.md](./docs/playbooks.md).
 
 ---
 

@@ -15,7 +15,7 @@ function InputWithUnit({
       data-slot="input-with-unit"
       className={cn(
         'flex h-control items-center gap-2 rounded-control-lg border border-field bg-inset px-3 text-sm focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-volt',
-        size === 'sm' && 'h-control-sm rounded-control px-2.5 text-[13px]',
+        size === 'sm' && 'h-control-sm rounded-control px-2.5 text-13',
         className,
       )}
     >

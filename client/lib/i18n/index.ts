@@ -1,8 +1,6 @@
 import i18next, { type i18n } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from '@/locales/en.json';
-import ru from '@/locales/ru.json';
-import zhCN from '@/locales/zh-CN.json';
 
 // The trainer's text in English, Russian and Simplified Chinese: one catalog per locale in
 // client/locales, extracted from the three trainer templates (views/index*.pug) and the strings in
@@ -19,17 +17,33 @@ export const localeNames: Record<Locale, string> = { en: 'English', ru: 'Рус�
 /** Where each locale's trainer is served */
 export const localePaths: Record<Locale, string> = { en: '/', ru: '/ru', 'zh-CN': '/zh-CN' };
 
-export const resources = {
-  en: { translation: en },
-  ru: { translation: ru },
-  'zh-CN': { translation: zhCN },
-} as const;
+/** A locale's texts by key, as in client/locales */
+export type Catalog = Record<string, unknown>;
+
+// English is bundled: it is the fallback for any text a locale lacks. The other catalogs load with the
+// page that needs them, so a page carries its own language and English, not all three.
+const catalogs: Record<Locale, () => Promise<Catalog>> = {
+  en: () => Promise.resolve(en),
+  ru: () => import('@/locales/ru.json').then((m) => m.default),
+  'zh-CN': () => import('@/locales/zh-CN.json').then((m) => m.default),
+};
+
+/** A locale's catalog, for createI18n */
+export function loadCatalog(locale: Locale): Promise<Catalog> {
+  return catalogs[locale]();
+}
 
 declare module 'i18next' {
   interface CustomTypeOptions {
     defaultNS: 'translation';
     resources: { translation: typeof en };
   }
+}
+
+/** The page's locale, from <html lang> (which the server sets), English for any other */
+export function documentLocale(): Locale {
+  const lang = document.documentElement.lang;
+  return locales.find((locale) => locale === lang) ?? 'en';
 }
 
 /** The locale of a trainer path ('/ru' is Russian), English for any other */
@@ -39,16 +53,16 @@ export function localeFromPath(pathname: string): Locale {
 }
 
 /**
- * An i18next instance for one locale, ready as soon as it returns (the catalogs are bundled), so the
- * prerendered page and the browser's first render produce the same text. Missing keys fall back to
- * English.
+ * An i18next instance for one locale and its catalog (loadCatalog), ready as soon as it returns, so
+ * the prerendered page and the browser's first render produce the same text. Missing keys fall back
+ * to English.
  */
-export function createI18n(locale: Locale): i18n {
+export function createI18n(locale: Locale, catalog: Catalog = en): i18n {
   const instance = i18next.createInstance();
   void instance.use(initReactI18next).init({
     lng: locale,
     fallbackLng: 'en',
-    resources,
+    resources: { en: { translation: en }, [locale]: { translation: catalog } },
     initAsync: false,
     // React escapes what it renders
     interpolation: { escapeValue: false },

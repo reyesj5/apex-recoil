@@ -70,6 +70,10 @@ export type Values<F extends Fields> = { [K in keyof F]: F[K] extends Field<infe
 export type PersistedState<F extends Fields> = Values<F> & {
   /** Sets one value and writes it to its key */
   set<K extends keyof F>(name: K, value: Values<F>[K]): void;
+  /** Whether the stored values have been read (always, unless the store defers loading) */
+  loaded: boolean;
+  /** Reads the stored values (a store that defers loading needs this once, after hydration) */
+  load(): void;
 };
 
 // localStorage can be missing or throw (storage disabled, private windows, a full quota); the values
@@ -105,16 +109,31 @@ export function readValues<F extends Fields>(fields: F, storage: Storage | undef
  * A Zustand store (a React hook with getState, setState and subscribe) of the values in `fields`,
  * read from storage when it is created. A changed value is written to its key at once; values nobody
  * changes are not written, so a first visit leaves storage empty.
+ *
+ * With `deferLoad`, the store starts with the fallbacks and reads storage when `load()` is called: a
+ * prerendered page renders the fallbacks (the server has no storage), so the browser's first render
+ * must too, and the stored values follow once the page has hydrated.
  */
 export function createPersistedStore<F extends Fields>(
   fields: F,
   storage: Storage | undefined = globalThis.localStorage,
+  { deferLoad = false }: { deferLoad?: boolean } = {},
 ) {
+  let loading = false;
+  const fallbacks = Object.fromEntries(Object.entries(fields).map(([name, f]) => [name, f.fallback])) as Values<F>;
   const store = create<PersistedState<F>>()((setState) => ({
-    ...readValues(fields, storage),
+    ...(deferLoad ? fallbacks : readValues(fields, storage)),
+    loaded: !deferLoad,
     set: (name, value) => setState({ [name]: value } as Partial<PersistedState<F>>),
+    load: () => {
+      // What storage holds is set as read, without writing it back
+      loading = true;
+      setState({ ...readValues(fields, storage), loaded: true } as Partial<PersistedState<F>>);
+      loading = false;
+    },
   }));
   store.subscribe((state, previous) => {
+    if (loading) return;
     for (const [name, f] of Object.entries(fields)) {
       const value = state[name as keyof F];
       if (Object.is(value, previous[name as keyof F])) continue;

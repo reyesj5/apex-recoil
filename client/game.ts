@@ -19,13 +19,26 @@ import { Howl } from "howler";
 import Konva from "konva";
 import { cursor, layer, stage } from "./stage";
 import { resumeAttrUpdates, suspendAttrUpdates, BooleanAttribute, NumericAttribute, StringAttribute, watch, initAttributes } from './storage';
-import { Point } from "./point";
+import { Point } from "./engine/point";
 import specs from './specs.json';
 import theme from '../theme.json';
-import { addStat, aStats, distanceScore, loadStats, percentile, statsForSetup, TrialSetup } from "./stats";
-import { clamp, copy, numberToDate, today } from "./utils";
+import { addStat, aStats, loadStats, percentile, statsForSetup, TrialSetup } from "./stats";
+import { numberToDate, today } from "./utils";
 import assertExists from "ts-assert-exists";
 import hotkeys from "hotkeys-js";
+// The engine: weapons, patterns, runs and the target, shared with the new trainer (client/engine)
+import { runSetup, type LoadoutSettings } from './engine/loadout';
+import { clamp, hintPath, onScreen, patternBox as measurePattern, recoilPattern, sensitivityScale } from './engine/pattern';
+import { Run, type Recoil, type RunResult, type Shot } from './engine/run';
+import { Target as TargetMotion, type Rect } from './engine/target';
+import {
+  formatMods, getWeaponModeConfig, isSingleShellShotgun, magSize, nextFireMode, parseMods, resolveFireMode,
+  soundFile, weaponUsesStock, withMods, type FireMode, type MagInfo, type Weapon,
+} from './engine/weapons';
+export {
+  WEAPON_FIRE_MODES, getWeaponModeConfig, isSingleFireWeapon, isSingleShellShotgun, weaponUsesStock,
+} from './engine/weapons';
+export type { FireMode, MagInfo, Weapon, WeaponModeConfig } from './engine/weapons';
 
 let sound: Howl | null = null;
 let pings: Howl[] = [new Howl({ src: `./audio/ping0.wav` }), new Howl({ src: `./audio/ping1.wav`})];
@@ -73,162 +86,13 @@ const aScaleY = new NumericAttribute('scale-y', NS, 1);
 const aCorruptedStock = new BooleanAttribute('corrupted-stock', NS, false);
 export const aFireMode = new StringAttribute('fire-mode', NS, 'default');
 
-export type FireMode = 'auto' | 'burst' | 'single';
-
-export interface WeaponModeConfig {
-  modes: FireMode[];
-  defaultMode: FireMode;
-  burstSize?: number;      // shots per burst
-  burstDelayMs?: number;   // pause between bursts (ms)
-  burstIntraMs?: number;   // time between shots within burst (ms)
-  refireDelayMs?: number;  // minimum time between clicks in single-fire (ms)
-  recoilResetMs?: number;  // time for recoil to return to 0 (ms)
-}
-
-export const WEAPON_FIRE_MODES: Record<string, WeaponModeConfig> = {
-  prowler: {
-    modes: ['burst', 'auto'],
-    defaultMode: 'burst',
-    burstSize: 5,
-    burstDelayMs: 200,
-    burstIntraMs: 50,
-    refireDelayMs: 200,
-    recoilResetMs: 150,
-  },
-  hemlok: {
-    modes: ['burst', 'single'],
-    defaultMode: 'burst',
-    burstSize: 3,
-    burstDelayMs: 215,
-    burstIntraMs: 98,
-    refireDelayMs: 160,
-    recoilResetMs: 160,
-  },
-  nemesis: {
-    modes: ['burst'],
-    defaultMode: 'burst',
-    burstSize: 4,
-    burstDelayMs: 142,
-    burstIntraMs: 64,
-    recoilResetMs: 110,
-  },
-  r301: {
-    modes: ['auto', 'single'],
-    defaultMode: 'auto',
-    refireDelayMs: 130,
-    recoilResetMs: 110,
-  },
-  flatline: {
-    modes: ['auto', 'single'],
-    defaultMode: 'auto',
-    refireDelayMs: 140,
-    recoilResetMs: 120,
-  },
-  peacekeeper: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 1176,
-    recoilResetMs: 400,
-  },
-  mastiff: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 760,
-    recoilResetMs: 300,
-  },
-  wingman: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 357,
-    recoilResetMs: 200,
-  },
-  p2020: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 140,
-    recoilResetMs: 100,
-  },
-  p2020_akimbo: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 100,
-    recoilResetMs: 80,
-  },
-  '3030_repeater': {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 428,
-    recoilResetMs: 250,
-  },
-  g7_scout: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 246,
-    recoilResetMs: 180,
-  },
-  triple_take: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 740,
-    recoilResetMs: 350,
-  },
-  bocek: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 800,
-    recoilResetMs: 350,
-  },
-  charge_rifle: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 1100,
-    recoilResetMs: 400,
-  },
-  longbow: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 698,
-    recoilResetMs: 350,
-  },
-  sentinel: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 1579,
-    recoilResetMs: 500,
-  },
-  kraber: {
-    modes: ['single'],
-    defaultMode: 'single',
-    refireDelayMs: 2400,
-    recoilResetMs: 700,
-  },
-};
-
-export function getWeaponModeConfig(weaponName: string): WeaponModeConfig {
-  return WEAPON_FIRE_MODES[weaponName] || {
-    modes: ['auto'],
-    defaultMode: 'auto',
-  };
-}
-
 export function currentFireMode(): FireMode {
-  const w = selectedWeapon();
-  const cfg = getWeaponModeConfig(w.name);
-  const val = aFireMode.get();
-  if (val && cfg.modes.includes(val as FireMode)) {
-    return val as FireMode;
-  }
-  return cfg.defaultMode;
+  return resolveFireMode(selectedWeapon().name, aFireMode.get());
 }
 
 export function toggleFireMode() {
-  const w = selectedWeapon();
-  const cfg = getWeaponModeConfig(w.name);
-  if (cfg.modes.length <= 1) return;
-  const cur = currentFireMode();
-  const idx = cfg.modes.indexOf(cur);
-  const nextMode = cfg.modes[(idx + 1) % cfg.modes.length];
-  aFireMode.set(nextMode);
+  const next = nextFireMode(selectedWeapon().name, currentFireMode());
+  if (next) aFireMode.set(next);
 }
 
 export function updateFireModeUI() {
@@ -259,22 +123,6 @@ export function updateFireModeUI() {
   if (hintElem) {
     setClass(hintElem, 'hidden', cfg.modes.length <= 1);
   }
-}
-
-export function weaponUsesStock(name: string): boolean {
-  const noStockWeapons = new Set([
-    're45', 'p2020', 'p2020_akimbo', 'mozambique_akimbo', 'wingman', 'bocek', 'kraber'
-  ]);
-  return !noStockWeapons.has(name);
-}
-
-export function isSingleShellShotgun(name: string): boolean {
-  return name === 'peacekeeper' || name === 'mastiff' || name === 'eva8' || name === 'mozambique';
-}
-
-export function isSingleFireWeapon(name: string): boolean {
-  const cfg = getWeaponModeConfig(name);
-  return cfg.defaultMode === 'single';
 }
 
 export function updateMagTooltips() {
@@ -367,39 +215,7 @@ export function updateMagTooltips() {
 }
 
 export function currentMagSize(): number {
-  const w = selectedWeapon();
-  const raw = w.mags[Math.min(aMag.get(), w.mags.length - 1)]?.size || 1;
-  if (!aCorruptedStock.get() || !weaponUsesStock(w.name)) {
-    return raw;
-  }
-  const reduction = isSingleShellShotgun(w.name) ? 1 : 4;
-  return Math.max(1, raw - reduction);
-}
-
-export interface MagInfo {
-  size: number;
-  audio: string;
-};
-
-export interface Weapon {
-  name: string;
-  rpm?: number;
-  mags: MagInfo[];
-  time_points: number[];
-  x: number[];
-  y: number[];
-  mods: { [key: string]: any; };
-  ping_points: number[];
-}
-
-interface Rect {
-  topLeft: Point;
-  bottomRight: Point;
-}
-
-function pointInRect(p: Point, r: Rect) {
-  return p.x >= r.topLeft.x && p.x <= r.bottomRight.x
-    && p.y >= r.topLeft.y && p.y <= r.bottomRight.y;
+  return magSize(selectedWeapon(), aMag.get(), aCorruptedStock.get());
 }
 
 interface Frame {
@@ -408,12 +224,9 @@ interface Frame {
 }
 
 class Target {
-  private pos = new Point(-10, -10);
   circle: Konva.Circle;
-  next = new Point();
-  private v = 1;
   shapes: Konva.Shape[] = [];
-  moving: boolean = false;
+  private motion = new TargetMotion();
   private _offset = new Point();
   private dirty = false;
   constructor() {
@@ -421,7 +234,7 @@ class Target {
       radius: 6,
       stroke: colorStartCircle,
       strokeWidth: 2,
-      position: this.pos,
+      position: this.motion.position(),
     });
     // As it's called before layer is created.
     window.setTimeout(() => {
@@ -436,53 +249,23 @@ class Target {
     this.shapes.forEach(s => s.destroy());
   }
   onSettingsUpdated() {
-    this.moving = aMovingTarget.get();
-    this.v = aTargetSpeed.get() * scale() / 1000;
-    if (this.moving && !pointInRect(this.pos, startRect)) {
-      this.pos.x = Math.max(0, (startRect.topLeft.x + startRect.bottomRight.x) / 2);
-      this.pos.y = Math.max(0, (startRect.topLeft.y + startRect.bottomRight.y) / 2);
-    }
-    this.pickNext();
-  }
-  pickNext() {
-    const d = startRect.bottomRight.clone().sub(startRect.topLeft);
-    d.x *= Math.random();
-    d.y *= Math.random();
-    d.add(startRect.topLeft);
-    this.next = d;
-    this.v = aTargetSpeed.get() * scale() / 1000;
+    this.motion.configure(startRect, aMovingTarget.get(), aTargetSpeed.get(), scale());
     this.circle.radius(6); // Head radius from 40m is ~6px.
     this.dirty = true;
   }
   frame(f: Frame): boolean {
     let update = this.dirty;
-    if (this.moving) {
-      let d = this.next.clone().sub(this.pos);
-      const move = f.timeDiff * this.v;
-      if (d.length() < move) {
-        this.pickNext();
-        d = this.next.clone().sub(this.pos);
-      } else {
-        this.pos.add(d.s(move / d.length()));
-      }
-      if (!pointInRect(this.pos, startRect)) {
-        console.log(f.timeDiff, d, this.pos);
-      }
-      update = true;
-    }
+    if (this.motion.step(f.timeDiff)) update = true;
     if (update) {
-      this.circle.position(this.pos);
+      this.circle.position(this.motion.position());
       this.circle.offset(screen(this._offset));
       this.dirty = false;
     }
     return update;
   }
   position(p?: Point): Point {
-    if (p) {
-      this.pos = p.clone();
-      this.dirty = true;
-    }
-    return this.pos.clone();
+    if (p) this.dirty = true;
+    return this.motion.position(p);
   }
   offset(p?: Point): Point {
     if (p) {
@@ -540,36 +323,14 @@ function instructionsControls() {
 }
 
 function selectedWeapon(): Weapon {
-  const w = copy(weapons.get(aWeapon.get())) as Weapon;
+  const w = weapons.get(aWeapon.get());
   if (w == null) throw Error("weapon not found");
-  activeMods().forEach(name => {
-    const mod = w.mods[name];
-    if (mod == null) return;
-    for (const k in mod) {
-      console.log('key', k, mod[k]);
-      (w as any)[k] = mod[k];
-    }
-  })
-  return w;
+  return withMods(w, activeMods());
 }
 
 function updateSound() {
   if (aMute.get()) return;
-  const w = selectedWeapon();
-  const mode = currentFireMode();
-  let audioName: string;
-  if (mode === 'single') {
-    audioName = isSingleShellShotgun(w.name) ? 'shotgun_shot' : 'single_shot';
-  } else {
-    const magIdx = Math.min(aMag.get(), w.mags.length - 1);
-    audioName = w.mags[magIdx]?.audio || 'spitfire_0';
-  }
-  const ext = audioName.endsWith('.wav') || audioName.endsWith('.mp3')
-    ? ''
-    : (audioName === 'shotgun_shot' || audioName === 'single_shot')
-      ? '.wav'
-      : '.mp3';
-  const newPath = `./audio/${audioName}${ext}`;
+  const newPath = soundFile(selectedWeapon(), aMag.get(), currentFireMode());
   if (soundPath != newPath) {
     soundPath = newPath;
     sound = new Howl({ src: [soundPath] });
@@ -596,7 +357,7 @@ function soundControls() {
 }
 
 function scale() {
-  return clamp(1 / aSens.get(), 0.1, 10);
+  return sensitivityScale(aSens.get());
 }
 
 function gradientColor(x: number) {
@@ -607,183 +368,65 @@ function gradientColor(x: number) {
   return scoreGradient[idx];
 }
 
-function box(pattern: Point[]): [Point, Point] {
-  const a = new Point();
-  const b = new Point();
-  pattern.forEach(p => {
-    const d = pattern[0].clone().sub(p);
-    a.x = Math.min(a.x, d.x);
-    a.y = Math.min(a.y, d.y);
-    b.x = Math.max(b.x, d.x);
-    b.y = Math.max(b.y, d.y);
-  });
-  return [a, b];
-}
-
 function drawPattern(pattern: Point[], mag: number, start: Point, sc: number): [Konva.Group, Konva.Circle[], Konva.Text[]] {
   const mode = currentFireMode();
-  const w = selectedWeapon();
-  const cfg = getWeaponModeConfig(w.name);
+  const path = hintPath(pattern, mag, mode, getWeaponModeConfig(selectedWeapon().name), start);
   const group = new Konva.Group();
   const circles: Konva.Circle[] = [];
   const texts: Konva.Text[] = [];
-
-  if (mode === 'single') {
-    // Single-fire: each shot kicks up from center and recovers back to center
-    for (let i = 0; i < mag; i++) {
-      let kick: Point;
-      if (i === 0) {
-        kick = (pattern.length > 1) ? pattern[1].clone().sub(pattern[0]) : (pattern[0]?.clone() || new Point());
-      } else {
-        kick = pattern[i].clone().sub(pattern[i - 1]);
-      }
-      if (kick.length() < 1 && pattern.length > 1) {
-        kick = pattern[1].clone();
-      }
-      const xy = start.clone().sub(kick);
-      const ln = new Konva.Line({
-        points: [start.x, start.y, xy.x, xy.y],
+  // Single shots draw thicker kicks and number from 1; bursts and full auto number from 0
+  const width = mode === 'auto' ? 1 : 1.5;
+  const dot = mode === 'single'
+    ? { radius: 2, strokeWidth: 1.5, label: new Point(3, -6) }
+    : { radius: 1.5, strokeWidth: 1, label: mode === 'burst' ? new Point(2, -5) : new Point() };
+  path.lines.forEach(line => {
+    const points = line.points.flatMap(p => [p.x, p.y]);
+    group.add(line.reset
+      ? new Konva.Line({ points, stroke: 'rgba(255, 255, 255, 0.55)', strokeWidth: 1, dash: [3, 3] })
+      : new Konva.Line({ points, stroke: colorHintPath, strokeWidth: width }));
+  });
+  if (sc > 0.3) {
+    path.dots.forEach(d => {
+      circles.push(new Konva.Circle({
+        radius: dot.radius,
         stroke: colorHintPath,
-        strokeWidth: 1.5,
-      });
-      group.add(ln);
-
-      const resetLn = new Konva.Line({
-        points: [xy.x, xy.y, start.x, start.y],
-        stroke: 'rgba(255, 255, 255, 0.55)',
-        strokeWidth: 1,
-        dash: [3, 3],
-      });
-      group.add(resetLn);
-
-      if (sc > 0.3) {
-        const c = new Konva.Circle({
-          radius: 2,
-          stroke: colorHintPath,
-          strokeWidth: 1.5,
-          position: xy,
-        });
-        circles.push(c);
-        texts.push(new Konva.Text({
-          text: `${i + 1}`,
-          fontSize: 10,
-          fill: 'white',
-          position: xy.clone().add(new Point(3, -6)),
-        }));
-      }
-    }
-  } else if (mode === 'burst') {
-    // Burst mode: segmented burst curves with recovery lines between bursts
-    const B = cfg.burstSize || 3;
-    const numBursts = Math.ceil(mag / B);
-
-    for (let b = 0; b < numBursts; b++) {
-      const burstStartIdx = b * B;
-      const burstEndIdx = Math.min((b + 1) * B - 1, mag - 1);
-      if (burstStartIdx > burstEndIdx) break;
-
-      const basePoint = pattern[burstStartIdx];
-      const burstPoints: number[] = [];
-      let lastXy: Point = start.clone();
-
-      for (let i = burstStartIdx; i <= burstEndIdx; i++) {
-        const relKick = pattern[i].clone().sub(basePoint);
-        const xy = start.clone().sub(relKick);
-        burstPoints.push(xy.x, xy.y);
-        lastXy = xy;
-
-        if (sc > 0.3) {
-          const c = new Konva.Circle({
-            radius: 1.5,
-            stroke: colorHintPath,
-            strokeWidth: 1,
-            position: xy,
-          });
-          circles.push(c);
-          texts.push(new Konva.Text({
-            text: `${i}`,
-            fontSize: 10,
-            fill: 'white',
-            position: xy.clone().add(new Point(2, -5)),
-          }));
-        }
-      }
-
-      if (burstPoints.length >= 4) {
-        const burstLine = new Konva.Line({
-          points: burstPoints,
-          stroke: colorHintPath,
-          strokeWidth: 1.5,
-        });
-        group.add(burstLine);
-      }
-
-      if (lastXy.distance(start) > 2) {
-        const resetLine = new Konva.Line({
-          points: [lastXy.x, lastXy.y, start.x, start.y],
-          stroke: 'rgba(255, 255, 255, 0.55)',
-          strokeWidth: 1,
-          dash: [3, 3],
-        });
-        group.add(resetLine);
-      }
-    }
-  } else {
-    // Full auto: single continuous polyline
-    const hintLinePoints: number[] = [];
-    pattern.forEach((p, i) => {
-      if (i >= mag) return;
-      const xy = start.clone().sub(p);
-      hintLinePoints.push(xy.x, xy.y);
-      if (sc > 0.3) {
-        const c = new Konva.Circle({
-          radius: 1.5,
-          stroke: colorHintPath,
-          strokeWidth: 1,
-          position: xy,
-        });
-        circles.push(c);
-        texts.push(new Konva.Text({
-          text: `${i}`,
-          fontSize: 10,
-          fill: 'white',
-          position: xy,
-        }));
-      }
+        strokeWidth: dot.strokeWidth,
+        position: d.at,
+      }));
+      texts.push(new Konva.Text({
+        text: `${d.label}`,
+        fontSize: 10,
+        fill: 'white',
+        position: d.at.clone().add(dot.label),
+      }));
     });
-    const hintLine = new Konva.Line({
-      points: hintLinePoints,
-      stroke: colorHintPath,
-      strokeWidth: 1,
-    });
-    group.add(hintLine);
   }
-
   return [group, circles, texts];
 }
 
 function screen(p: Point): Point {
-  return p.clone().sx( aScaleX.get()).sy(aScaleY.get());
+  return onScreen(p, { scaleX: aScaleX.get(), scaleY: aScaleY.get() });
 }
 
 function scaledPattern(): Point[] {
-  const w = selectedWeapon();
-  const sc = scale();
-  const n = currentMagSize();
-  const pattern = [];
-  const my = aInvertY.get() ? -1 : 1;
-  for (let i = 0; i < n; i++) pattern.push(screen(new Point(w.x[i], my * w.y[i]).s(sc)));
-  return pattern;
+  return unscaledPattern().map(screen);
 }
 
 function unscaledPattern(): Point[] {
-  const w = selectedWeapon();
-  const sc = scale();
-  const n = currentMagSize();
-  const pattern = [];
-  const my = aInvertY.get() ? -1 : 1;
-  for (let i = 0; i < n; i++) pattern.push(new Point(w.x[i], my * w.y[i]).s(sc));
-  return pattern;
+  return recoilPattern(selectedWeapon(), currentMagSize(), { sens: aSens.get(), invertY: aInvertY.get() });
+}
+
+/** The settings a run is set up from (the engine's runSetup) */
+function loadoutSettings(): LoadoutSettings {
+  return {
+    mag: aMag.get(),
+    fireMode: aFireMode.get(),
+    mods: aMods.get(),
+    corruptedStock: aCorruptedStock.get(),
+    sens: aSens.get(),
+    invertY: aInvertY.get(),
+    speed: aFireSpeed.get(),
+  };
 }
 
 class TracePreview {
@@ -792,7 +435,7 @@ class TracePreview {
     const sc = scale();
     const n = currentMagSize();
     pattern = scaledPattern();
-    patternBox = box(pattern);
+    patternBox = measurePattern(pattern);
     // Explicit pattern, shot count, start coordinate offset, and scale factor are required for isolated preview rendering
     const [line, circles, texts] = drawPattern(pattern, n, patternBox[0].clone().s(-1).add(new Point(50, 50)), sc);
     this.addShape(line);
@@ -1005,11 +648,11 @@ function setMod(name: string, on: boolean) {
   } else {
     m.delete(name);
   }
-  aMods.set(Array.from(m.values()).join(','));
+  aMods.set(formatMods(m));
 }
 
 function activeMods(): Set<string> {
-  return new Set(aMods.get().split(',').filter(v => v != ''));
+  return parseMods(aMods.get());
 }
 
 interface I18n {
@@ -1138,7 +781,6 @@ function showStats() {
 class Shooting {
   startPos: Point; // Starting position.
   totalFrames = 0;
-  score = 0;
   mag = 1;
   speed = 1;
   hitMarker = new Konva.Circle();
@@ -1146,10 +788,10 @@ class Shooting {
   displayPattern: Point[] = [];
   pattern: Point[] = [];
   hitScores: number[] = [];
+  hitTimes: number[] = [];
   showHint = true;
   start_t = 0;
-  weapon: Weapon = { name: '', mags: [], x: [], y: [], time_points: [], mods: new Map(), ping_points: [] };
-  hitIndex = -1; // Position in the pattern we already passed.
+  weapon: Weapon = { name: '', mags: [], x: [], y: [], time_points: [], mods: {}, ping_points: [] };
   pingIndex = -1; // Position in weapon pings.
   hitMarkers: Konva.Circle[] = [];
   crossHair?: Konva.Group;
@@ -1161,21 +803,10 @@ class Shooting {
   running: boolean = false;
   shapes: (Konva.Shape | Konva.Group)[] = [];
   movingTarget: boolean = false;
-
-  // Firing mode mechanics
   mode: FireMode = 'auto';
-  mouseDown: boolean = false;
-  burstSize: number = 1;
-  burstDelayMs: number = 200;
-  burstIntraMs: number = 100;
-  refireDelayMs: number = 200;
-  recoilResetMs: number = 150;
-  lastShotTime: number = 0;
-  burstStartTime: number = 0;
-  burstEndTime: number = 0;
-  shotsInCurrentBurst: number = 0;
-  inBurstCooldown: boolean = false;
-  lastBurstPeak: Point = new Point();
+  // When rounds fire and how they score: the engine's run (client/engine/run.ts)
+  run: Run | null = null;
+  private finishTimer: number | null = null;
 
   constructor() {
     this.startPos = new Point();
@@ -1196,19 +827,10 @@ class Shooting {
     this.start_t = Date.now();
     this.startPos = cursor();
     const sc = scale();
+    const setup = runSetup(assertExists(weapons.get(aWeapon.get())), loadoutSettings());
     this.speed = clamp(aFireSpeed.get() / 100, 0.1, 1);
-    this.mag = currentMagSize();
-
-    this.mode = currentFireMode();
-    const cfg = getWeaponModeConfig(this.weapon.name);
-    this.burstSize = cfg.burstSize || 1;
-    this.burstDelayMs = cfg.burstDelayMs || 200;
-    this.burstIntraMs = cfg.burstIntraMs || 100;
-    this.refireDelayMs = cfg.refireDelayMs || (this.weapon.rpm ? 60000 / this.weapon.rpm : 200);
-    this.recoilResetMs = cfg.recoilResetMs || 150;
-    this.mouseDown = true;
-    this.inBurstCooldown = false;
-    this.lastBurstPeak = new Point();
+    this.mag = setup.mag;
+    this.mode = setup.mode;
 
     if (this.mode === 'auto') {
       if (!aMute.get() && sound != null) {
@@ -1237,7 +859,7 @@ class Shooting {
       target.offset(new Point());
     }
     this.displayPattern = scaledPattern();
-    this.pattern = unscaledPattern();
+    this.pattern = setup.pattern;
     {
       const [group, circles, texts] = drawPattern(this.displayPattern, this.mag, this.startPos.clone(), sc);
       this.hintGroup.add(group);
@@ -1254,25 +876,21 @@ class Shooting {
     this.addShape(this.crossHair);
     stage.container().classList.add('no-cursor');
 
-    if (this.mode === 'single') {
-      this.lastShotTime = this.start_t;
-      this.recordHit(0);
-    } else if (this.mode === 'burst') {
-      this.burstStartTime = this.start_t;
-      this.shotsInCurrentBurst = 1;
-      this.lastShotTime = this.start_t;
-      this.recordHit(0);
-    }
-
-    this.frame();
+    // The run fires the first round of a single or burst shot at once, then takes its first frame
+    this.run = new Run(setup, this.start_t, this.startPos, target.position(), {
+      onShot: (shot) => this.onShot(shot),
+      onFinish: (result) => this.finish(result),
+    });
+    this.totalFrames++;
+    if (this.run.recoil) this.showRecoil(this.run.recoil);
+    this.scheduleFinish();
     stage.batchDraw();
     stage.listening(false);
   }
 
-  recordHit(idx: number) {
-    this.hitIndex = idx;
+  // A round fired: its sound in single and burst fire, and its marker.
+  onShot(shot: Shot) {
     const sc = scale();
-    const cur = cursor();
     const isSingleOrBurst = (this.mode === 'single' || this.mode === 'burst');
 
     if (isSingleOrBurst && !aMute.get() && sound != null) {
@@ -1280,19 +898,16 @@ class Shooting {
       sound.play();
     }
 
-    const p = this.pattern[this.hitIndex];
-    this.hitVectors.push(cur.clone().sub(target.position()));
-    let hit = cur.clone().add(p);
-    const rawDistance = hit.distance(target.position()) / sc;
-    let s = distanceScore(rawDistance);
-    this.hitScores.push(s);
-    this.score += s;
+    const p = this.pattern[shot.index];
+    this.hitVectors.push(shot.aim);
+    this.hitScores.push(shot.score);
+    this.hitTimes.push(shot.t);
     this.hitMarker.radius(2);
     let hitScreen: Point;
     if (this.recoilTarget) {
       hitScreen = this.startPos.clone().add(new Point(this.wallGroup.offset()));
     } else {
-      const dCur = cursor().clone().sub(this.startPos);
+      const dCur = shot.cursor.clone().sub(this.startPos);
       const dCurScaled = screen(dCur);
       hitScreen = this.startPos.clone().add(dCurScaled).add(screen(p));
     }
@@ -1311,198 +926,54 @@ class Shooting {
     this.hitMarker.zIndex(0); // To put behind the scope.
   }
 
-  onSingleFireClick() {
-    if (!this.running || this.mode !== 'single') return;
-    this.mouseDown = true;
-    const now = Date.now();
-    if (now - this.lastShotTime < this.refireDelayMs) return; // Refire cooldown in effect
-    if (this.hitIndex + 1 < this.mag) {
-      this.lastShotTime = now;
-      this.recordHit(this.hitIndex + 1);
-      if (this.hitIndex + 1 >= this.mag) {
-        window.setTimeout(() => {
-          if (this.running) this.finish();
-        }, Math.min(this.recoilResetMs, 400));
-      }
-    }
+  // The trigger pressed again during the run: the next single shot, or the next burst.
+  press() {
+    if (!this.running || this.run == null) return;
+    this.run.press(Date.now(), cursor(), target.position());
+    this.scheduleFinish();
   }
 
-  onBurstFireClick() {
-    if (!this.running || this.mode !== 'burst') return;
-    this.mouseDown = true;
-    if (this.inBurstCooldown) {
-      const now = Date.now();
-      if ((now - this.burstEndTime) * this.speed >= this.burstDelayMs && this.hitIndex + 1 < this.mag) {
-        this.inBurstCooldown = false;
-        this.burstStartTime = now;
-        this.shotsInCurrentBurst = 1;
-        this.lastShotTime = now;
-        this.recordHit(this.hitIndex + 1);
-        if (this.hitIndex + 1 >= this.mag) {
-          this.inBurstCooldown = true;
-          this.burstEndTime = now;
-          window.setTimeout(() => {
-            if (this.running) this.finish();
-          }, Math.min(this.recoilResetMs, 300));
-        }
-      }
-    }
+  // The trigger let go: ends a full-auto spray.
+  release() {
+    if (!this.running || this.run == null) return;
+    this.run.release(Date.now());
   }
 
-  recoilVector(t: number, i: number): [Point, number] {
-    while (i + 1 < this.mag && t > this.weapon.time_points[i + 1]) i++;
-    if (i == -1) return [new Point(), i];
-    if (i + 1 >= this.mag) return [this.pattern[this.mag - 1].clone(), i];
-    const dt = (this.weapon.time_points[i + 1] - this.weapon.time_points[i]);
-    let progress = Math.max(Math.min((t - this.weapon.time_points[i]) / dt, 1), 0);
-    const p = this.pattern[i];
-    return [this.pattern[i + 1].clone().sub(p).s(progress).add(p), i];
+  // Once the last single shot or burst has fired, the run ends when its recoil settles, frame or not.
+  scheduleFinish() {
+    const run = this.run;
+    if (this.finishTimer != null || run == null || run.finishAt == null) return;
+    const at = run.finishAt;
+    this.finishTimer = window.setTimeout(() => {
+      if (this.running) run.frame(at, cursor(), target.position());
+    }, Math.max(0, at - Date.now()));
   }
 
   frame(): boolean {
-    if (!this.running) return false;
+    if (!this.running || this.run == null) return false;
     this.totalFrames++;
-    const sc = scale();
+    const now = Date.now();
+    const recoil = this.run.frame(now, cursor(), target.position());
+    this.scheduleFinish();
+    if (dev && this.mode === 'auto') {
+      const frame_t = (now - this.start_t) * this.speed + 8;
+      while (this.pingIndex + 1 < this.weapon.ping_points.length &&
+        frame_t + pingOffset >= this.weapon.ping_points[this.pingIndex + 1]) {
+          this.pingIndex += 1;
+          pings[this.pingIndex % 2].play();
+      }
+    }
+    if (recoil == null) return false;
+    this.showRecoil(recoil);
+    return true;
+  }
+
+  // Moves the wall, the target, the hint and the crosshair with the recoil and the cursor.
+  showRecoil(recoil: Recoil) {
     const dCur = cursor().clone().sub(this.startPos);
     const dCurScaled = screen(dCur);
-    const now = Date.now();
-    let vRecoil = new Point();
-    let vRecoilNextFrame = new Point();
-
-    if (this.mode === 'single') {
-      // Check idle timeout
-      if (now - this.lastShotTime > Math.max(2500, this.refireDelayMs + 1500)) {
-        this.finish();
-        return false;
-      }
-      const dt = (now - this.lastShotTime) * this.speed;
-      let pKick: Point;
-      if (this.hitIndex >= 0 && this.hitIndex < this.pattern.length) {
-        if (this.hitIndex === 0) {
-          pKick = (this.pattern.length > 1) ? this.pattern[1].clone().sub(this.pattern[0]) : this.pattern[0].clone();
-          if (pKick.length() < 1 && this.pattern.length > 1) pKick = this.pattern[1].clone();
-        } else {
-          pKick = this.pattern[this.hitIndex].clone().sub(this.pattern[this.hitIndex - 1]);
-        }
-      } else {
-        pKick = this.pattern[0]?.clone() || new Point();
-      }
-
-      const kickDuration = 35;
-      if (dt <= kickDuration) {
-        vRecoil = pKick.clone().s(dt / kickDuration);
-        const dtNext = dt + 24;
-        vRecoilNextFrame = (dtNext <= kickDuration)
-          ? pKick.clone().s(dtNext / kickDuration)
-          : pKick.clone().s(0.5 * (1 + Math.cos(((dtNext - kickDuration) / (this.recoilResetMs - kickDuration)) * Math.PI)));
-      } else if (dt <= this.recoilResetMs) {
-        const prog = (dt - kickDuration) / (this.recoilResetMs - kickDuration);
-        const factor = 0.5 * (1 + Math.cos(prog * Math.PI));
-        vRecoil = pKick.clone().s(factor);
-
-        const dtNext = dt + 24;
-        if (dtNext <= this.recoilResetMs) {
-          const progNext = (dtNext - kickDuration) / (this.recoilResetMs - kickDuration);
-          vRecoilNextFrame = pKick.clone().s(0.5 * (1 + Math.cos(progNext * Math.PI)));
-        } else {
-          vRecoilNextFrame = new Point();
-        }
-      } else {
-        vRecoil = new Point();
-        vRecoilNextFrame = new Point();
-      }
-    } else if (this.mode === 'burst') {
-      // Check idle timeout if trigger not held
-      if (!this.mouseDown && this.inBurstCooldown && (now - this.burstEndTime > 2000)) {
-        this.finish();
-        return false;
-      }
-
-      if (this.inBurstCooldown) {
-        const dt = (now - this.burstEndTime) * this.speed;
-        // Recoil smoothly resets back toward 0
-        if (dt <= this.recoilResetMs) {
-          const prog = dt / this.recoilResetMs;
-          const factor = 0.5 * (1 + Math.cos(prog * Math.PI));
-          vRecoil = this.lastBurstPeak.clone().s(factor);
-          const dtNext = dt + 24;
-          if (dtNext <= this.recoilResetMs) {
-            const progNext = dtNext / this.recoilResetMs;
-            vRecoilNextFrame = this.lastBurstPeak.clone().s(0.5 * (1 + Math.cos(progNext * Math.PI)));
-          } else {
-            vRecoilNextFrame = new Point();
-          }
-        } else {
-          vRecoil = new Point();
-          vRecoilNextFrame = new Point();
-        }
-
-        // Automatic refire of next burst if trigger held
-        if (dt >= this.burstDelayMs && this.mouseDown && this.hitIndex + 1 < this.mag) {
-          this.inBurstCooldown = false;
-          this.burstStartTime = now;
-          this.shotsInCurrentBurst = 1;
-          this.lastShotTime = now;
-          this.recordHit(this.hitIndex + 1);
-          vRecoil = new Point();
-          vRecoilNextFrame = new Point();
-        }
-      } else {
-        // Firing within current burst
-        const dtSinceShot = (now - this.lastShotTime) * this.speed;
-        if (dtSinceShot >= this.burstIntraMs && this.shotsInCurrentBurst < this.burstSize && this.hitIndex + 1 < this.mag) {
-          this.shotsInCurrentBurst++;
-          this.lastShotTime = now;
-          this.recordHit(this.hitIndex + 1);
-        }
-
-        const b = Math.floor(this.hitIndex / this.burstSize);
-        const baseIdx = b * this.burstSize;
-        const pBase = this.pattern[baseIdx];
-        const pCurrent = this.pattern[this.hitIndex].clone().sub(pBase);
-
-        if (this.shotsInCurrentBurst < this.burstSize && this.hitIndex + 1 < this.mag) {
-          const pNext = this.pattern[this.hitIndex + 1].clone().sub(pBase);
-          const intraProg = Math.min(1, Math.max(0, ((now - this.lastShotTime) * this.speed) / this.burstIntraMs));
-          vRecoil = pNext.clone().sub(pCurrent).s(intraProg).add(pCurrent);
-          vRecoilNextFrame = pNext;
-        } else {
-          vRecoil = pCurrent.clone();
-          vRecoilNextFrame = pCurrent.clone();
-        }
-
-        if (this.shotsInCurrentBurst >= this.burstSize || this.hitIndex + 1 >= this.mag) {
-          this.inBurstCooldown = true;
-          this.burstEndTime = now;
-          this.lastBurstPeak = vRecoil.clone();
-          if (this.hitIndex + 1 >= this.mag) {
-            window.setTimeout(() => {
-              if (this.running) this.finish();
-            }, Math.min(this.recoilResetMs, 300));
-          }
-        }
-      }
-    } else {
-      // Auto mode: original continuous timeline
-      const frame_t = (now - this.start_t) * this.speed + 8;
-      let [v, i] = this.recoilVector(frame_t, this.hitIndex);
-      let [vNext, _] = this.recoilVector(frame_t + 24, i);
-      vRecoil = v;
-      vRecoilNextFrame = vNext;
-
-      while (this.hitIndex < i) {
-        this.recordHit(this.hitIndex + 1);
-      }
-      if (dev) {
-        while (this.pingIndex + 1 < this.weapon.ping_points.length &&
-          frame_t + pingOffset >= this.weapon.ping_points[this.pingIndex + 1]) {
-            this.pingIndex += 1;
-            pings[this.pingIndex % 2].play();
-        }
-      }
-      if (this.hitIndex + 1 >= this.mag) this.finish();
-    }
-
+    const vRecoil = recoil.now;
+    const vRecoilNextFrame = recoil.next;
     this.recoilGroup.offset(screen(vRecoilNextFrame));
     const vRecoilCompensated = vRecoil.clone().add(dCur);
     if (this.recoilTarget) {
@@ -1522,25 +993,30 @@ class Shooting {
         target.offset(vRecoilNextFrame);
       }
     }
-
-    return true;
   }
 
-  finish() {
+  finish(result: RunResult) {
     this.running = false;
+    if (this.finishTimer != null) window.clearTimeout(this.finishTimer);
     stage.listening(true);
     sound?.stop();
     resumeAttrUpdates();
-    const shotsCount = this.hitIndex + 1;
-    this.score = shotsCount > 0 ? Math.max(0, Math.min(1, this.score / shotsCount)) : 0;
-    const x = Math.round(100 * this.score);
-    if ((this.speed == 1) && (shotsCount >= this.mag) && shotsCount > 0) addStat(x, trialSetup());
+    // What this run scored, shot by shot, for the engine's parity tests (client/engine)
+    (window as any).__spraydownLastRun = {
+      finishedAt: result.finishedAt,
+      score: result.score,
+      shots: result.shots,
+      hitTimes: this.hitTimes,
+      hitScores: this.hitScores,
+    };
+    const x = result.points;
+    if (result.counted) addStat(x, trialSetup());
     this.hintGroup.visible(true);
     this.hitMarkers.forEach(m => m.radius(2));
     const txt = new Konva.Text({
       text: `${x}`,
       fontSize: 20,
-      fill: gradientColor(this.score),
+      fill: gradientColor(result.score),
       shadowColor: theme.background,
       shadowBlur: 0,
       shadowOffset: { x: 1, y: 1 },
@@ -1665,18 +1141,14 @@ export function initGame() {
     e.evt.preventDefault();
     switch (e.evt.button) {
       case 0:
+        // A press during a run fires its next shot or burst; one after it ends starts the next run
+        if (shooting.running) shooting.press();
         if (!shooting.running) {
           shooting.clear();
           shooting = new Shooting();
           tracePreview?.clear();
           tracePreview = null;
           shooting.start();
-        } else {
-          if (shooting.mode === 'single') {
-            shooting.onSingleFireClick();
-          } else if (shooting.mode === 'burst') {
-            shooting.onBurstFireClick();
-          }
         }
         break;
       case 1:
@@ -1688,10 +1160,7 @@ export function initGame() {
   });
   stage.on('mouseup', function (e: Konva.KonvaEventObject<MouseEvent>) {
     if (e.evt.button == 0 && shooting.running) {
-      shooting.mouseDown = false;
-      if (shooting.mode === 'auto') {
-        shooting.finish();
-      }
+      shooting.release();
     }
   });
   hotkeys('b', () => {

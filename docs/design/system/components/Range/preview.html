@@ -1,0 +1,60 @@
+<!-- @dsCard group="Surfaces" height=1000 subtitle="Ready to practice, and after a run (R-301)" -->
+<div class="sd-preview">
+  <section aria-label="Practice range" class="sd-range" style="min-height: 470px;">
+    <div role="toolbar" aria-label="Practice options" class="sd-range__toolbar">
+      <div role="radiogroup" aria-label="Mode" class="sd-segmented sd-segmented--floating">
+        <button type="button" class="sd-segmented__item" role="radio" aria-checked="true">Follow path</button>
+        <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">Still target</button>
+        <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">Moving target</button>
+      </div>
+      <div role="radiogroup" aria-label="Show results as" class="sd-segmented sd-segmented--floating">
+        <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">Target</button>
+        <button type="button" class="sd-segmented__item" role="radio" aria-checked="true">Dots</button>
+        <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">Lines</button>
+      </div>
+      <label class="sd-toolbar-field">Replay
+        <select class="sd-select sd-select--bare"><option>0.5×</option><option selected>1×</option><option>2×</option></select>
+      </label>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 72px 16px 64px;">
+      <svg role="img" aria-label="R-301 recoil pattern" viewBox="140 200 80 170" style="width: 160px; height: 280px; max-width: 100%;">
+        <defs>
+          <marker id="ready-dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2"><circle class="sd-pattern__ghost-dot" cx="5" cy="5" r="4"></circle></marker>
+        </defs>
+        <polyline class="sd-pattern__ghost" points="160,350 165,339 165,323 171,313 170,301 172,291 171,285 173,280 176,278 180,274 186,275 188,271 184,264 179,258 173,253 167,252 162,252 158,252 157,247 159,243 164,239 169,238 173,235 179,236 182,237 186,237 189,235 189,232" marker-mid="url(#ready-dot)" marker-end="url(#ready-dot)"></polyline>
+        <circle class="sd-pattern__start" cx="160" cy="350" r="9"></circle>
+        <line class="sd-pattern__start" x1="160" x2="160" y1="336" y2="343"></line>
+        <line class="sd-pattern__start" x1="160" x2="160" y1="357" y2="364"></line>
+        <line class="sd-pattern__start" x1="146" x2="153" y1="350" y2="350"></line>
+        <line class="sd-pattern__start" x1="167" x2="174" y1="350" y2="350"></line>
+      </svg>
+      <p class="sd-range__instruction"><strong>Click and hold anywhere in the range to spray</strong><span>Pull against the climb to keep your shots on the start point.</span></p>
+    </div>
+    <button type="button" class="sd-settings-chip sd-range__bottom-left"><svg class="sd-icon sd-icon--16" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="6"></rect><path d="M12 7v4"></path></svg><span>Sensitivity <strong class="sd-mono">5.0</strong></span><span>ADS <strong class="sd-mono">1.0×</strong></span><span>Invert Y <strong>off</strong></span></button>
+    <button type="button" class="sd-btn sd-btn--icon sd-range__bottom-right" aria-label="Mute sounds"><svg class="sd-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg></button>
+  </section>
+  <section aria-label="Practice range after a run" class="sd-range" style="min-height: 440px;">
+    <svg role="img" aria-label="Your R-301 run compared with the pattern" viewBox="140 220 80 145" style="width: 190px; height: 340px; max-width: 100%;">
+      <defs>
+        <marker id="ghost-dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3" markerHeight="3"><circle class="sd-pattern__ghost-dot sd-pattern__ghost-dot--faint" cx="5" cy="5" r="4"></circle></marker>
+        <marker id="shot-dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.4" markerHeight="3.4"><circle class="sd-pattern__shot-dot" cx="5" cy="5" r="4"></circle></marker>
+      </defs>
+      <polyline class="sd-pattern__ghost sd-pattern__ghost--faint" points="160,350 165,339 165,323 171,313 170,301 172,291 171,285 173,280 176,278 180,274 186,275 188,271 184,264 179,258 173,253 167,252 162,252 158,252 157,247 159,243 164,239 169,238 173,235 179,236 182,237 186,237 189,235 189,232" marker-mid="url(#ghost-dot)" marker-end="url(#ghost-dot)"></polyline>
+      <polyline class="sd-pattern__shots" points="160,353 167,342 168,326 175,315 175,303 177,292 176,285 177,280 179,277 182,272 186,273 187,268 181,261 175,255 168,250 166,249 161,250 158,250 158,246 161,243 168,239 174,239 180,237 187,238 191,240 195,240 198,238 197,235" marker-mid="url(#shot-dot)" marker-end="url(#shot-dot)"></polyline>
+      <circle class="sd-pattern__start" cx="160" cy="350" r="9"></circle>
+    </svg>
+    <div class="sd-legend-chip sd-range__bottom-left">
+      <span class="sd-legend__item"><span class="sd-legend-chip__pattern"></span>Pattern</span>
+      <span class="sd-legend__item"><span class="sd-legend-chip__shot"></span>Your shots</span>
+    </div>
+  </section>
+</div>
+<script>
+document.querySelectorAll('[role="radiogroup"]').forEach(function (group) {
+  group.addEventListener('click', function (event) {
+    var item = event.target.closest('button');
+    if (!item || !group.contains(item)) return;
+    group.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-checked', String(b === item)); });
+  });
+});
+</script>

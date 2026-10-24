@@ -23,6 +23,7 @@
 @source "../entries";
 @source "../gallery";
 @source "../lib";
+@source "../trainer";
 
 /* One theme and no .dark class, so shadcn/ui's dark: classes never apply (Tailwind's default dark
    variant would follow the operating system's setting instead) */

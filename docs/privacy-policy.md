@@ -22,7 +22,7 @@ We are the controller of the personal data described here under the EU General D
 
 ## 1. Data stored only in your browser
 
-The trainer saves your settings (for example weapon, magazine, sensitivity, practice mode and sound volume) and your score history in your browser's local storage, so they are still there on your next visit. This data stays on your device: we do not receive it.
+The trainer saves your settings (for example weapon, magazine, sensitivity, practice mode and sound volume) and your score history (each saved run's score, with its date and time) in your browser's local storage, so they are still there on your next visit. This data stays on your device: we do not receive it.
 
 This storage is strictly necessary for features you ask for, so it does not need consent. You can delete it at any time by clearing this site's data in your browser; that also deletes your score history.
 

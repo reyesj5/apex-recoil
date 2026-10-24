@@ -18,10 +18,10 @@
 // Recoil pattern editing on the Konva stage: bullet holes and edges, undo/redo, the legacy image
 // import with automatic target detection, and drawing the selected weapon's spec.
 import Konva from 'konva';
-import { MagInfo, Weapon } from '../../game';
+import { MagInfo, Weapon } from '../../engine/weapons';
 import { layer, stage } from '../../stage';
 import { watch } from '../../storage';
-import { PlainPoint, Point } from '../../point';
+import { PlainPoint, Point } from '../../engine/point';
 import specs from '../../specs.json';
 import { Edge } from '../types';
 import {

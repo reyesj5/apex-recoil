@@ -5,7 +5,7 @@
   "scripts": {
     "start": "nodemon ./bin/www",
     "dev": "nodemon ./bin/www --dev",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr",
     "watch": "vite build --watch",
     "static": "node scripts/build-static.mjs",
     "tsc": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",

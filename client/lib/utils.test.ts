@@ -17,6 +17,12 @@ describe('cn', () => {
     expect(cn('type-label', 'type-heading')).toBe('type-heading');
   });
 
+  it('treats the type scale steps as font sizes', () => {
+    expect(cn('text-xs', 'text-13')).toBe('text-13');
+    expect(cn('text-11', 'text-sm')).toBe('text-sm');
+    expect(cn('text-13', 'text-text-muted')).toBe('text-13 text-text-muted');
+  });
+
   it('keeps classes of different kinds', () => {
     expect(cn('text-xs', 'text-volt')).toBe('text-xs text-volt');
     expect(cn('type-label', 'text-text-secondary')).toBe('type-label text-text-secondary');

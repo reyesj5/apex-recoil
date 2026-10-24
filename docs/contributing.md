@@ -27,7 +27,7 @@ Before submitting a pull request, ensure all quality gates pass:
 ## Development
 
 - Node 22.22+ or 24.15+ (`engines` in `package.json`); 24 LTS is recommended.
-- `pnpm dev` serves the client sources through Vite inside Express: style changes apply in place, code and template changes reload the page, and server changes restart it (nodemon). It listens on this computer only, because Vite also serves project files. `pnpm build` and `pnpm start` serve the production build.
+- `pnpm dev` serves the client sources through Vite inside Express: style changes apply in place, code and template changes reload the page, and server changes restart it (nodemon). It listens on this computer only, because Vite also serves project files. `pnpm build` (the client into `dist/`, the new pages' prerender into `dist-ssr/`) and `pnpm start` serve the production build.
 
 ## Tests
 

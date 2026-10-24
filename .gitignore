@@ -2,6 +2,7 @@
 public/
 static/
 dist/
+dist-ssr/
 
 # Logs
 logs

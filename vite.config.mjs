@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
+import { compileToSource, mergeConfigs } from 'cn/compiler';
+import { defaultConfig } from 'cn/config';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -108,10 +110,14 @@ function tokenValue(value, prefix) {
 // System artifact linked from docs/ui-redesign.md). This writes client/styles/design-tokens.css,
 // which app.css imports: Tailwind theme variables for every color, radius, shadow, control height
 // and font family, and a type-<style> utility for every type style. Spacing tokens are the steps
-// of Tailwind's own 4 px scale (space-12 is p-3), so they need no variables.
+// of Tailwind's own 4 px scale (space-12 is p-3), so they need no variables. It also writes
+// client/lib/cn-tables.ts, the tables cn() in client/lib/utils.ts merges classes with: Tailwind's
+// classes as tailwind-merge knows them, with the token names added to Tailwind's scales, compiled
+// here so that pages don't download the default config and the compiler (about 6 kB gzip).
 function designTokensToTheme() {
   const jsonPath = resolve(__dirname, 'client/styles/tokens.json');
   const cssPath = resolve(__dirname, 'client/styles/design-tokens.css');
+  const tablesPath = resolve(__dirname, 'client/lib/cn-tables.ts');
 
   return {
     name: 'design-tokens-to-theme',
@@ -132,6 +138,10 @@ function designTokensToTheme() {
           return `@utility type-${style.name} {\n${declarations.map((d) => `  ${d}`).join('\n')}\n}`;
         })
       );
+      // Every size in the type scale as a font-size step (text-13, text-11) for text that takes a
+      // size without a whole type style; like an arbitrary size, it leaves the line height alone
+      const fontSizes = [...new Set(tokens.type.groups.flatMap((group) => group.styles.map((style) => style.fontSize)))]
+        .sort((a, b) => parseFloat(a) - parseFloat(b));
       writeIfChanged(cssPath, [
         '/* Generated from tokens.json by vite.config.mjs; edit tokens.json (the design system) instead. */',
         '@theme static {',
@@ -147,16 +157,97 @@ function designTokensToTheme() {
         '  /* Control and tile heights as spacing values: h-control, size-icon, h-touch */',
         ...tokens.size.tokens.map((t) => `  --spacing-${t.name.replace(/^size-/, '')}: ${t.value};`),
         ...Object.entries(tokens.type.families).map(([key, stack]) => `  --font-${key}: ${stack};`),
+        '  /* The type scale\'s sizes as font-size steps: text-11, text-13 */',
+        ...fontSizes.map((size) => `  --text-${parseFloat(size)}: ${size};`),
         '}',
         '',
         ...typeUtilities,
         ''
       ].join('\n'));
+      // A later class replaces an earlier one of the same kind: h-touch after h-control,
+      // rounded-card after rounded-control-lg, bg-panel after bg-card, type-label after type-micro
+      const config = mergeConfigs(defaultConfig(), {
+        extend: {
+          theme: {
+            color: tokens.color.tokens.map((t) => t.name),
+            radius: tokens.radius.tokens.map((t) => t.name.replace(/^radius-/, '')),
+            shadow: tokens.shadow.tokens.map((t) => t.name.replace(/^shadow-/, '')),
+            spacing: tokens.size.tokens.map((t) => t.name.replace(/^size-/, '')),
+            font: Object.keys(tokens.type.families),
+            // The type scale's sizes as font-size steps (text-13)
+            text: fontSizes.map((size) => String(parseFloat(size)))
+          },
+          classGroups: {
+            'type-style': [{ type: tokens.type.groups.flatMap((group) => group.styles.map((style) => style.name)) }]
+          }
+        }
+      });
+      writeIfChanged(tablesPath, compileToSource(config, {
+        lang: 'ts',
+        banner: '// Generated from tokens.json by vite.config.mjs (cn\'s merge tables); edit tokens.json instead.'
+      }));
     }
   };
 }
 
-export default defineConfig({
+// Output names: entries by name (the views link them), hashed chunks and assets, CSS by entry name.
+// The prerender's build names its assets the same way, so its markup links the client build's files.
+const output = {
+  entryFileNames: '[name].js',
+  chunkFileNames: 'chunks/[name]-[hash].js',
+  assetFileNames: (assetInfo) => {
+    if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+      return '[name].css';
+    }
+    return 'assets/[name]-[hash].[ext]';
+  }
+};
+
+const clientBuild = {
+  outDir: 'dist',
+  emptyOutDir: true,
+  sourcemap: true,
+  minify: 'esbuild',
+  rollupOptions: {
+    input: {
+      // Route bundles: views/layout.pug loads trainer.js, views/editor.pug loads editor.js.
+      trainer: resolve(__dirname, 'client/trainer_main.ts'),
+      editor: resolve(__dirname, 'client/editor_main.ts'),
+      // Legacy /bundle.js: tiny router that lazy-loads the bundle for the current route.
+      bundle: resolve(__dirname, 'client/main.ts'),
+      // All styles (Tailwind with the project's base, component and page CSS)
+      tailwind: resolve(__dirname, 'client/styles/tailwind.css'),
+      // The new UI (docs/ui-migration-plan.md): one stylesheet for every new page (app.css, linked
+      // by views/next.pug and the prerendered pages; the entries don't import it, or it would land in a
+      // shared chunk's CSS) and one React entry per page. The component gallery is served at
+      // /next/components, the rebuilt trainer at /next and its Progress page at /next/progress (named
+      // apart from the current trainer's bundle until they replace it).
+      app: resolve(__dirname, 'client/styles/app.css'),
+      gallery: resolve(__dirname, 'client/entries/gallery.tsx'),
+      'trainer-next': resolve(__dirname, 'client/entries/trainer-next.tsx'),
+      'progress-next': resolve(__dirname, 'client/entries/progress-next.tsx')
+    },
+    output
+  }
+};
+
+// The prerender (vite build --ssr, which pnpm build runs after the client build): the new pages as a
+// Node module, dist-ssr/prerender.mjs, that server/prerender.mjs renders into HTML. The client build
+// emits the assets it links; dist-ssr/ is outside dist/, so Express never serves it.
+const ssrBuild = {
+  ssr: true,
+  outDir: 'dist-ssr',
+  emptyOutDir: true,
+  copyPublicDir: false,
+  sourcemap: true,
+  rollupOptions: {
+    input: { prerender: resolve(__dirname, 'client/entries/prerender.tsx') },
+    // .mjs, since package.json doesn't declare the project's modules as ES modules
+    output: { ...output, entryFileNames: '[name].mjs', chunkFileNames: 'chunks/[name]-[hash].mjs' }
+  }
+};
+
+export default defineConfig(({ isSsrBuild }) => ({
   root: '.',
   publicDir: 'etc',
   resolve: {
@@ -175,37 +266,8 @@ export default defineConfig({
     // so the legacy TypeScript modules are not parsed twice
     babel({ include: /\.[jt]sx$/, presets: [reactCompilerPreset()] })
   ],
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-    sourcemap: true,
-    minify: 'esbuild',
-    rollupOptions: {
-      input: {
-        // Route bundles: views/layout.pug loads trainer.js, views/editor.pug loads editor.js.
-        trainer: resolve(__dirname, 'client/trainer_main.ts'),
-        editor: resolve(__dirname, 'client/editor_main.ts'),
-        // Legacy /bundle.js: tiny router that lazy-loads the bundle for the current route.
-        bundle: resolve(__dirname, 'client/main.ts'),
-        // All styles (Tailwind with the project's base, component and page CSS)
-        tailwind: resolve(__dirname, 'client/styles/tailwind.css'),
-        // The new UI (docs/ui-migration-plan.md): one React entry per page, each with its CSS
-        // (app.css) as <name>.css. The component gallery is served at /next/components.
-        gallery: resolve(__dirname, 'client/entries/gallery.tsx')
-      },
-      output: {
-        entryFileNames: '[name].js',
-        chunkFileNames: 'chunks/[name]-[hash].js',
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-            return '[name].css';
-          }
-          return 'assets/[name]-[hash].[ext]';
-        }
-      }
-    }
-  },
+  build: isSsrBuild ? ssrBuild : clientBuild,
   server: {
     port: 3000
   }
-});
+}));

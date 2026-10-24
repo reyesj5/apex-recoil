@@ -1,6 +1,6 @@
 # UI Redesign: Audit and New Design
 
-*2026-10-22. The design that Phase 1 of the [UI migration plan](ui-migration-plan.md) implements. The mockups live on a private design canvas: https://claude.ai/artifact/3Uv9xgQocE1qqS2ohS2MQG (share it from the page's Share menu before sending the link to anyone). The design system built from this spec and the mockups (tokens, 26 components with live previews, the brand book and the logos) is a private Design System artifact: https://claude.ai/artifact/XK1KCFGz6tF9WzmKUykaFe. Names, logo, links and IDs owned by the original project are placeholders; see the [ownership register](ownership-register.md).*
+*2026-10-22. The design that Phase 1 of the [UI migration plan](ui-migration-plan.md) implements. The mockups live on a private design canvas: https://claude.ai/artifact/3Uv9xgQocE1qqS2ohS2MQG (share it from the page's Share menu before sending the link to anyone). The design system built from this spec and the mockups (tokens, 26 components with live previews, the brand book and the logos) is a private Design System artifact: https://claude.ai/artifact/XK1KCFGz6tF9WzmKUykaFe. Claude reads both with the Artifact tool; agents that can't open them use the snapshot in [design/](design/README.md), with PNGs of every artboard and component preview, the brand book, the tokens and the component rules. Names, logo, links and IDs owned by the original project are placeholders; see the [ownership register](ownership-register.md).*
 
 ## 1. Audit of the current UI
 

@@ -16,7 +16,7 @@
 */
 
 // Confirmation dialog shown before captured clips or screenshots are sent for analysis.
-import { getWeaponModeConfig } from '../../game';
+import { getWeaponModeConfig } from '../../engine/weapons';
 import { loadedSpecsList, loadWeaponIntoManager } from './weapon_manager';
 
 interface AnalysisConfirmOptions {

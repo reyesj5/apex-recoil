@@ -1,5 +1,6 @@
-import { createCn } from 'cn/config';
-import tokens from '@/styles/tokens.json';
+import { createCn } from 'cn/engine';
+// The merge tables, compiled from the design tokens by vite.config.mjs (designTokensToTheme)
+import tables from './cn-tables';
 
 /**
  * Joins class names (like clsx) and resolves Tailwind conflicts (like tailwind-merge), with the
@@ -8,17 +9,4 @@ import tokens from '@/styles/tokens.json';
  * bg-card. shadcn/ui components import it as `cn` from "cn"; vite.config.mjs, vitest.config.mts
  * and tsconfig.json point that import here.
  */
-export const cn = createCn({
-  extend: {
-    theme: {
-      color: tokens.color.tokens.map((t) => t.name),
-      radius: tokens.radius.tokens.map((t) => t.name.replace(/^radius-/, '')),
-      shadow: tokens.shadow.tokens.map((t) => t.name.replace(/^shadow-/, '')),
-      spacing: tokens.size.tokens.map((t) => t.name.replace(/^size-/, '')),
-      font: Object.keys(tokens.type.families),
-    },
-    classGroups: {
-      'type-style': [{ type: tokens.type.groups.flatMap((group) => group.styles.map((style) => style.name)) }],
-    },
-  },
-});
+export const cn = createCn(tables);

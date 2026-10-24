@@ -18,7 +18,7 @@
 // Shared Konva stage. Kept out of the entry modules so the trainer and the editor can be
 // bundled separately without importing each other.
 import Konva from 'konva';
-import { Point } from './point';
+import { Point } from './engine/point';
 
 const stageContainer = document.getElementById('stage');
 export const stage = new Konva.Stage({

@@ -182,7 +182,7 @@ function Actions() {
           </Button>
           <Button disabled>Analyze sprays</Button>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-[13px]">
+        <div className="flex flex-wrap items-center gap-2 text-13">
           <Button size="sm">
             Save spec <Kbd variant="inset">Ctrl S</Kbd>
           </Button>
@@ -345,13 +345,13 @@ function Selection() {
             <TabsTrigger value="screenshots">Screenshots</TabsTrigger>
             <TabsTrigger value="manual">Manual</TabsTrigger>
           </TabsList>
-          <TabsContent value="live" className="text-[13px] text-text-secondary">
+          <TabsContent value="live" className="text-13 text-text-secondary">
             Stand 20 m from the target wall with a 2× Bruiser scope, then fire the full magazine.
           </TabsContent>
-          <TabsContent value="screenshots" className="text-[13px] text-text-secondary">
+          <TabsContent value="screenshots" className="text-13 text-text-secondary">
             Add wall screenshots from disk or from the library.
           </TabsContent>
-          <TabsContent value="manual" className="text-[13px] text-text-secondary">
+          <TabsContent value="manual" className="text-13 text-text-secondary">
             Place the shots by hand on a wall image.
           </TabsContent>
         </Tabs>
@@ -429,7 +429,7 @@ function Fields() {
               <InputWithUnit id="fov" unit="°" defaultValue={104} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2.5 text-[13px]">
+          <div className="grid grid-cols-2 gap-2.5 text-13">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="fire-rate">Fire rate</Label>
               <InputWithUnit id="fire-rate" unit="RPM" size="sm" defaultValue={1080} />
@@ -441,7 +441,7 @@ function Fields() {
                 type="number"
                 step="0.01"
                 defaultValue={0.73}
-                className="h-control-sm rounded-control px-2.5 font-mono text-[13px]"
+                className="h-control-sm rounded-control px-2.5 font-mono text-13"
               />
             </div>
           </div>
@@ -520,7 +520,7 @@ function Fields() {
         </div>
       </Item>
       <Item title="Checkbox and slider" description="The Studio's layers: on or off, and a level with its value.">
-        <div className="flex max-w-80 flex-col gap-3 text-[13px]">
+        <div className="flex max-w-80 flex-col gap-3 text-13">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <Checkbox id="layer-wall" defaultChecked />
@@ -610,12 +610,12 @@ function Feedback() {
             ] as const
           ).map(([name, runs, share, best, median]) => (
             <div key={name} className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-[13px]">
+              <div className="flex justify-between text-13">
                 <span className="font-semibold">{name}</span>
                 <span className="text-text-secondary">{runs} runs</span>
               </div>
               <Progress value={share} aria-label={`${name}: ${runs} runs`} />
-              <div className="text-[11px] text-text-muted">
+              <div className="text-11 text-text-muted">
                 Best <strong className="text-text">{best}</strong> · median {median}
               </div>
             </div>
@@ -750,7 +750,7 @@ function Data() {
                 />
               </LineChart>
             </ChartContainer>
-            <div className="mt-1.5 flex justify-between text-[11px] text-text-muted">
+            <div className="mt-1.5 flex justify-between text-11 text-text-muted">
               <span>First run</span>
               <span>Median 78 (dashed)</span>
             </div>

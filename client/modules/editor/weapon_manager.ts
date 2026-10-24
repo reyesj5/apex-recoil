@@ -16,7 +16,7 @@
 */
 
 // Weapon manager panel: loading and editing weapon specs, the save checkpoint dialog, and saving to the server.
-import { getWeaponModeConfig } from '../../game';
+import { getWeaponModeConfig } from '../../engine/weapons';
 import { stage } from '../../stage';
 import specs from '../../specs.json';
 import { DiscrepancyReport } from '../types';

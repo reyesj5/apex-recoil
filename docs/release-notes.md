@@ -1,5 +1,48 @@
 # v260922
 
+- **Prerendered Pages and Consent on `/next` (M11 Phase 2.4 to 2.6, 2026-10-23)**:
+  - **Prerendered in each language**: `pnpm build` also builds the new pages for Node ([client/entries/prerender.tsx](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/entries/prerender.tsx)), and [server/prerender.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/prerender.mjs) renders each of the six pages (the trainer and the Progress page in English, Russian and Chinese) into HTML with the server's `site.json` values. Express renders a page on its first request and serves it from memory; `pnpm static` writes `static/next/.../index.html`. A page shows before its JavaScript runs, or without it; the browser then hydrates it and loads the stored settings and history.
+  - **A title and meta description per page and language**: written for the trainer and the Progress page in English, Russian and Chinese, replacing the old site's English sentence about the Studio.
+  - **Consent on the new pages**: the banner, the footer's Cookie settings and an address ending in `#cookies` work with the values the server runs with (each page carries them in `<script id="site-json">`), and the Google tag loads only after Accept.
+  - **Smaller downloads**: `cn()` merges classes with tables compiled at build time ([client/lib/cn-tables.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/lib/cn-tables.ts)) instead of compiling Tailwind's default configuration in every browser: 5.6 kB less JavaScript (gzip) on every new page, with the same results (the prerendered pages and every class on the new pages compared before and after, and 422,105 random class combinations).
+  - **The budget is a test**: after a build, `pnpm test` checks that each new page loads at most 200 kB (200,000 bytes) of JavaScript, gzip: 191.0 kB on the trainer in English, 196.1 kB in Russian, 195.5 kB in Chinese, and 176.6 to 181.8 kB on the Progress page. Sizes in the entries below are KiB (1,024 bytes).
+  - **Tests**: 4 Playwright scenarios (the pages without JavaScript, consent on the trainer and the Progress page, the consent sheet on a phone), 3 Vitest tests for the prerender, and the budget test.
+
+- **The Progress Page, Previewed at `/next/progress` (M11 Phase 2.2, 2026-10-23)**:
+  - **[client/trainer/progress/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/trainer/progress/)**, the redesign's Progress page, in English, Russian and Chinese, linked from the trainer's top bar and its session panel:
+    - **Totals**: runs, best score, median with its change since the first week, and days practiced, for one weapon or all, over 7 days, 30 days or all time.
+    - **Score per day**: the best and the median as lines, the tries as bars (Recharts, which loads after the rest of the page).
+    - **By weapon**: each weapon's runs, best and median, the most practiced first.
+    - **Recent runs**: when, weapon, magazine, mode and score, from a run log the rebuilt trainer now keeps (`game::runs`, the last 200 saved runs); the score history has no times, so earlier runs show only in the totals. The privacy policy now says saved runs keep their date and time (in the browser only).
+    - **Export CSV**: the days shown, a row per weapon, magazine and mode, readable by spreadsheets in every language.
+  - **Smaller downloads**: the catalogs drop the old pages' strings the new pages never show. The trainer loads 191.3 to 196.3 KiB of JavaScript (gzip) by language, the Progress page 177.3 to 182.3 KiB.
+  - **Tests**: 5 Playwright scenarios for the Progress page (the empty state, a seeded history summed up, filtered and exported, a run saved in the trainer, Russian and Chinese, the phone) and Vitest tests for its figures, the run log and plural forms in Russian.
+
+- **The Rebuilt Trainer, Previewed at `/next` (M11 Phase 2.2 to 2.4, 2026-10-23)**:
+  - **The redesign's trainer ([client/trainer/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/trainer/))** at `/next`, `/next/ru` and `/next/zh-CN`, next to the current pages until it replaces them:
+    - **Top bar**: the weapon search (Ctrl K), language, the Studio, help and settings.
+    - **Loadout**: the selected weapon, a filter, class chips with counts, all 31 weapons with their art, magazine tiers with their capacities, fire mode, and switches for the corrupted stock and the Rampage's thermite grenade.
+    - **The range**: the weapon's path before a run, the options floating over it (Follow path, still or moving target; results around the target, as dots or as lines; replay speed), the mouse settings in one chip, and after each run a result card with the score, the gap to today's median, Replay and Next run.
+    - **Session**: the last score, today's tries, median and best, the all-time best, today's trend, tips and the legal footer.
+    - **Phones**: a pattern viewer instead of a dead end, with every weapon's path, Play spray, its magazines and Copy link.
+    - **Dialogs**: settings for mouse, practice, display and sound, and a help dialog with every key.
+  - **It scores exactly like the current page**: the range ([client/trainer/range/renderer.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/trainer/range/renderer.ts)) drives the engine step for step as the current trainer does. The 12 runs recorded from the current trainer replay through it with the same rounds, times and scores, bit for bit in Chrome ([e2e/trainer-next.spec.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/e2e/trainer-next.spec.ts)). Settings and scores stay under the current keys, so both pages share them.
+  - **New settings**: the ADS multiplier (`game::ads`; runs use sensitivity × ADS, and 1 leaves a stored sensitivity as it was) and the replay speed (`game::replay-speed`).
+  - **Under 200 KiB**: 191.5 KiB of JavaScript (gzip) on first load in English, 197.3 KiB in Russian, 196.7 KiB in Chinese, against about 500 kB for the current trainer. Konva, the dialogs, the sounds and the other languages load when they are needed; the trend is a plain SVG, so Recharts stays out.
+  - **Fixed on the way**: one stylesheet (`dist/app.css`) for every new page, which a shared chunk had swallowed; a selected filter chip's count now meets contrast; translated links named `<link>` lost their text (a test now rejects HTML void element names as tags).
+  - **Tests**: 21 Playwright scenarios for `/next` (the current trainer's scenarios on the new page, axe with no violations with every overlay open, the phone viewer, and the 12 recorded runs), and Vitest tests for the catalog, the loadout changes, the score history and plural forms per language.
+
+- **The Trainer's Engine, Split from the Page (M11 Phase 2.1, 2026-10-23)**:
+  - **[client/engine/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/engine/)**: what decides a run, without a DOM, so the new trainer can use it and tests can drive it.
+    - `weapons.ts`: fire modes, magazines, the corrupted stock, attachments and sounds.
+    - `pattern.ts`: patterns scaled for the sensitivity, and the path to follow.
+    - `run.ts`: one spray from the first press to the score, in full auto, bursts and single fire, with shot and finish events.
+    - `target.ts`, `stats.ts`: the target, and the score history with its upgrades of older data.
+    - `point.ts` and the history logic moved here from `client/`.
+  - **The current trainer runs on it**: `client/game.ts` keeps its drawing and sounds and takes the timing and scoring from the engine. The editor now imports the weapon rules from the engine instead of loading the trainer's code.
+  - **Proof it scores the same ([recorded-runs.fixture.json](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/engine/recorded-runs.fixture.json))**: twelve runs were recorded from the trainer before the split, under a paused fake clock in Chrome: full auto on four weapons, the Rampage's thermite grenade, half firing speed, an early release, two burst weapons, and single fire clicked fast, slowly and left idle. Replayed through the engine, every shot fires at the same moment with the same score, and the trainer running on the engine reproduces the recordings bit for bit. [scripts/record-runs.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/record-runs.mjs) records them again while the old page exists.
+  - **Tests**: 40 for the engine, which replace the 4 history tests in `client/`; 129 Vitest tests in all. The 28 Playwright scenarios pass on the trainer running on the engine.
+
 - **Design System in Code, Component Gallery & Shared Foundations (M11 Phase 1, 2026-10-23)**:
   - **Design tokens drive the theme ([client/styles/tokens.json](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/tokens.json))**: the Design System's tokens generate the Tailwind theme at build time: colors, radii, shadows, sizes, fonts and `type-*` text styles, with Tailwind's default palette switched off. [client/styles/app.css](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/app.css) is the new interface's only stylesheet, with self-hosted Chakra Petch, Inter and JetBrains Mono and shadcn/ui's variables mapped onto the tokens. The current pages keep their styles until they are replaced.
   - **Components ([client/components/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/components/))**: 31 shadcn/ui components (Radix) restyled to the design, plus WeaponTile, TierOption, StatTile, ScoreCard, RunResult, ConsentBanner and InputWithUnit. Classes merge with the `cn` package, taught the token names.
@@ -10,7 +53,11 @@
     - `i18n`: English, Russian and Chinese catalogs extracted from the trainer pages and the game code ([client/locales/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/locales/)), with typed keys and a completeness test.
     - `analytics`: the consent state and Google Analytics with Consent Mode v2, loaded only after Accept and only when `site.json` has a measurement ID and a privacy policy; the choice lasts 12 months.
     - `site`: typed access to `site.json` with the ownership rules.
-  - **Tests**: 92 Vitest tests (components, storage, API, translations, analytics, site) and 28 Playwright scenarios.
+  - **Design references for every agent ([docs/design/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/design/README.md))**: the design canvas's seven artboards and the Design System's component previews as PNGs, with the brand book, the tokens, each component's rules and the artboards' markup, so agents that can't open the claude.ai artifacts can work from them. Claude keeps working from the artifacts; [scripts/export-design.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/export-design.mjs) refreshes the snapshot from their files, rendering the artboards with the canvas's own runtime.
+  - **Type scale steps**: every size the type styles use is also a font-size utility (`text-13`, `text-11`), generated from `tokens.json`, so components use no arbitrary sizes; the gallery renders pixel for pixel as before.
+  - **Icons**: Lucide for every generic icon, with each old pug, PNG and SVG icon mapped to its Lucide name in the progress report; the logo and the crosshair placeholder are our own SVG components.
+  - **Design System synced with the app (version 7)**: its tokens now equal the app's copy (the self-hosted font names), and its rules and previews include what building the components taught: radio groups for single-choice controls, underlined links in running text, the selected weapon tile's fire-rate color, keyboard access for tables that scroll sideways, slider names on the thumb, and how the tokens reach Tailwind in code.
+  - **Tests**: 93 Vitest tests (components, storage, API, translations, analytics, site) and 28 Playwright scenarios.
   - **Handoff**: [docs/ui-migration-progress.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-progress.md) records the status, the conventions, the pitfalls and the next steps for whoever continues; AGENTS.md points to it.
 
 - **Spraydown Name & Logo, Phase 0 Tooling and Test Safety Net (M11, 2026-10-22)**:
@@ -316,7 +363,7 @@
     - [`shot_detector.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/shot_detector.py): Added `min_rpm` sanity validation.
     - Added unit test coverage in `test_spec_manager.py` and `test_aggregator.py`, bringing suite to 30/30 passing tests.
   - **Client Math & State Engine ([client/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/))**:
-    - [`point.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/point.ts): Swapped arguments in `Point.atan2()` to `Math.atan2(this.y, this.x)` conforming to standard mathematical convention; added docstrings and aliases `scale`, `scaleX`, `scaleY`.
+    - [`point.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/engine/point.ts): Swapped arguments in `Point.atan2()` to `Math.atan2(this.y, this.x)` conforming to standard mathematical convention; added docstrings and aliases `scale`, `scaleX`, `scaleY`.
     - [`storage.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/storage.ts): Set `attrUpdatesActive = true` before invoking `poke()` in `resumeAttrUpdates()` to prevent dropping initial updates.
     - [`stats.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/stats.ts): Wrapped `loadStats()` in `try/catch` to guard against JSON corruption in `localStorage`; eliminated duplicate push bug during legacy migration.
     - [`main.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/main.ts): Upgraded legacy origin migration redirect to HTTPS.

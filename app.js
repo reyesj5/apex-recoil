@@ -1028,6 +1028,37 @@ async function serveStoredCapture(req, res) {
 app.get('/next/components', function(req, res, next) {
   renderPage(req, res, next, 'next', site.name + ' · Components', false, { entry: 'gallery' });
 });
+// The rebuilt trainer and its Progress page, previewed in each language until they replace the
+// pages below. With the prerender bundle (pnpm build), each page is rendered once with this server's
+// site values and served from memory (server/prerender.mjs); with pnpm dev, or a build without the
+// bundle, the browser renders the page in the views/next.pug shell.
+const prerender = import('./server/prerender.mjs');
+const prerendered = {};
+[
+  ['/next', 'en', 'Recoil trainer for Apex Legends', 'trainer-next'],
+  ['/next/ru', 'ru', 'тренажёр отдачи для Apex Legends', 'trainer-next'],
+  ['/next/zh-CN', 'zh-CN', 'Apex Legends 压枪训练', 'trainer-next'],
+  ['/next/progress', 'en', 'Progress', 'progress-next'],
+  ['/next/ru/progress', 'ru', 'Прогресс', 'progress-next'],
+  ['/next/zh-CN/progress', 'zh-CN', '进度', 'progress-next']
+].forEach(function(page) {
+  app.get(page[0], function(req, res, next) {
+    prerender.then(function(m) {
+      if (devServer || !m.hasBundle()) {
+        return renderPage(req, res, next, 'next', site.name + ' · ' + page[2], false, { entry: page[3], lang: page[1] });
+      }
+      const spec = m.pages.find(function(p) { return p.path === page[0]; });
+      prerendered[page[0]] = prerendered[page[0]] || m.renderPage(spec, site);
+      return prerendered[page[0]].then(function(html) {
+        res.set('Cache-Control', 'no-cache');
+        res.type('html').send(html);
+      }, function(err) {
+        delete prerendered[page[0]];
+        throw err;
+      });
+    }).catch(next);
+  });
+});
 app.use('/editor', express.Router().get('/', function(req, res, next) {
   renderPage(req, res, next, 'editor', site.name + ' Studio', false);
 }));

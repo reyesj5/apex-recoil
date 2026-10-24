@@ -18,10 +18,10 @@ const badgeVariants = cva(
       size: {
         default: 'h-badge px-2.5 text-xs',
         lg: 'h-segment px-2.5 text-xs',
-        sm: 'gap-[5px] px-2 py-0.5 text-[11px]',
+        sm: 'gap-[5px] px-2 py-0.5 text-11',
       },
     },
-    compoundVariants: [{ variant: 'tag', className: 'h-auto px-2 py-0.5 text-[11px]' }],
+    compoundVariants: [{ variant: 'tag', className: 'h-auto px-2 py-0.5 text-11' }],
     defaultVariants: {
       variant: 'neutral',
       size: 'default',

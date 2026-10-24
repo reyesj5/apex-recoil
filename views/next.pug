@@ -1,18 +1,21 @@
 //- The new UI's pages (docs/ui-migration-plan.md): a bare shell for a React entry in
 //- client/entries/ (`entry`), served at /next/... until each page replaces the old one. With pnpm dev
-//- the entry loads from source through Vite; otherwise its build, <entry>.js and <entry>.css.
+//- the entry and the stylesheet load from source through Vite; otherwise their builds, <entry>.js
+//- and app.css (one stylesheet for every new page). `lang` is the page's language (the trainer reads
+//- it to pick its translations). The site values go with the page (client/lib/site.ts reads them), as
+//- in the prerendered pages (server/prerender.mjs), which replace this shell when the build has them.
 doctype html
-html(lang='en')
+html(lang=lang || 'en')
   head
     meta(charset='utf-8')
     meta(name='viewport' content='width=device-width, initial-scale=1')
     meta(name='robots' content='noindex')
     title= title
     link(rel='icon' type='image/svg+xml' href='/favicon.svg')
-    if !devServer
-      link(rel='stylesheet' href='/' + entry + '.css')
+    link(rel='stylesheet' href=devServer ? '/client/styles/app.css' : '/app.css')
   body
     #root
+    script#site-json(type='application/json')!= JSON.stringify(site).replace(/</g, '\\u003c')
     if devServer
       script(type='module' src='/client/entries/' + entry + '.tsx')
     else

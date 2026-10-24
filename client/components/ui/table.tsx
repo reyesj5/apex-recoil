@@ -35,7 +35,7 @@ function Table({ className, 'aria-label': label, ...props }: React.ComponentProp
       <table
         data-slot="table"
         aria-label={label}
-        className={cn('w-full caption-bottom text-[13px]', className)}
+        className={cn('w-full caption-bottom text-13', className)}
         {...props}
       />
     </div>

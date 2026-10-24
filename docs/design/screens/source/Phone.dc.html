@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone, pattern viewer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0C0F}
+*{box-sizing:border-box}
+button,select,input{font:inherit;color:inherit}
+a{color:#C5F23A}a:hover{color:#DDF98A}
+:focus-visible{outline:2px solid #C5F23A;outline-offset:2px}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; display: flex; flex-direction: column; background: #0A0C0F; color: #ECEFF3; font-family: Inter, system-ui, sans-serif; font-size: 14px;">
+  <header style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #1C2128;">
+    <span style="width: 30px; height: 30px; border-radius: 8px; background: #C5F23A; color: #0A0C0F; display: flex; align-items: center; justify-content: center;">
+      <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><circle cx="16" cy="19.95" r="4.6" fill="currentColor"></circle><circle cx="48" cy="19.95" r="4.6" fill="currentColor"></circle><circle cx="24" cy="30.95" r="5.2" fill="currentColor"></circle><circle cx="40" cy="30.95" r="5.2" fill="currentColor"></circle><circle cx="32" cy="42.45" r="6.2" fill="currentColor"></circle></svg>
+    </span>
+    <span style="font-family: 'Chakra Petch', sans-serif; font-weight: 700; font-size: 17px;">Spray<span style="color: #C5F23A;">down</span></span>
+    <label for="lang-m" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;">Language</label>
+    <select id="lang-m" style="margin-left: auto; height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid #262C35; background: #111419; color: #ECEFF3;"><option>EN</option><option>RU</option><option>中文</option></select>
+  </header>
+
+  <div style="flex: 1; overflow: hidden; padding: 18px 16px 0; display: flex; flex-direction: column; gap: 14px;">
+    <div>
+      <h1 style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 26px; font-weight: 700; line-height: 1.15;">Recoil patterns for every weapon</h1>
+      <p style="margin: 8px 0 0; color: #A7B0BC; line-height: 1.5;">Practicing needs a mouse and a larger screen. Here you can study each pattern before you train.</p>
+    </div>
+
+    <div role="group" aria-label="Weapon" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px;">
+      <sc-for list="{{chips}}" as="c" hint-placeholder-count="5">
+        <button type="button" aria-pressed="{{c.pressed}}" style="{{c.style}}">{{c.name}}</button>
+      </sc-for>
+    </div>
+
+    <section aria-label="R-301 pattern" style="display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 16px; background: #111419; border: 1px solid #1C2128;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <img src="/_blob/761827c9b04a0938d6e2dc378c6bb190" alt="R-301" style="width: 92px; height: 36px; object-fit: contain;">
+        <div>
+          <div style="font-family: 'Chakra Petch', sans-serif; font-size: 20px; font-weight: 700;">R-301</div>
+          <div style="font-size: 12px; color: #A7B0BC;">810 RPM · 28 rounds (Lv 2)</div>
+        </div>
+      </div>
+      <div style="position: relative; display: flex; justify-content: center; height: 250px; border-radius: 12px; background-color: #0D1014; background-image: radial-gradient(#1C222A 1px, transparent 1px); background-size: 18px 18px;">
+        <svg role="img" aria-label="R-301 recoil pattern, 28 shots" viewBox="130 200 90 165" style="height: 240px; width: auto;">
+          <defs>
+            <marker id="mdot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.6" markerHeight="2.6"><circle cx="5" cy="5" r="4" fill="#C5F23A"></circle></marker>
+          </defs>
+          <polyline points="160,350 165,339 165,323 171,313 170,301 172,291 171,285 173,280 176,278 180,274 186,275 188,271 184,264 179,258 173,253 167,252 162,252 158,252 157,247 159,243 164,239 169,238 173,235 179,236 182,237 186,237 189,235 189,232" fill="none" stroke="#C5F23A" stroke-opacity="0.55" stroke-width="1" stroke-linejoin="round" marker-mid="url(#mdot)" marker-end="url(#mdot)"></polyline>
+          <circle cx="160" cy="350" r="4" fill="none" stroke="#ECEFF3" stroke-width="1.2"></circle>
+        </svg>
+        <button type="button" style="position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px; border-radius: 999px; border: 0; background: #C5F23A; color: #0A0C0F; font-weight: 700;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>
+          Play spray
+        </button>
+      </div>
+      <div role="group" aria-label="Magazine" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;">
+        <sc-for list="{{tiers}}" as="t" hint-placeholder-count="5">
+          <button type="button" aria-pressed="{{t.pressed}}" style="{{t.style}}">
+            <span style="{{t.bar}}"></span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">{{t.size}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+
+    <section aria-label="Train on a computer" style="display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 14px; border: 1px solid #262C35; background: #151920;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#A7B0BC" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+      <div style="flex: 1; font-size: 13px; color: #A7B0BC; line-height: 1.4;"><strong style="color: #ECEFF3;">Train on a computer.</strong> Send yourself the link.</div>
+      <button type="button" style="height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #343B46; background: #171B21; color: #ECEFF3; font-weight: 600;">Copy link</button>
+    </section>
+  </div>
+
+  <div role="dialog" aria-label="Cookie consent" style="position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 16px; background: #171B21; border: 1px solid #343B46; box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);">
+    <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #C9D0D8;">We use Google Analytics cookies to see how the trainer is used. Nothing is tracked unless you accept. <a href="#" style="color: #C5F23A;">Privacy policy</a></p>
+    <div style="display: flex; gap: 8px;">
+      <button type="button" style="flex: 1; height: 44px; border-radius: 10px; border: 1px solid #343B46; background: #111419; color: #ECEFF3; font-weight: 600;">Reject</button>
+      <button type="button" style="flex: 1; height: 44px; border-radius: 10px; border: 0; background: #C5F23A; color: #0A0C0F; font-weight: 700;">Accept</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const chip = 'flex: 0 0 auto; height: 44px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 600; ';
+    const chips = ['R-301', 'R-99', 'Flatline', 'Volt', 'Spitfire', 'C.A.R.'].map((n) => ({
+      name: n, pressed: String(n === 'R-301'),
+      style: chip + (n === 'R-301' ? 'border: 1px solid #C5F23A; background: rgba(197,242,58,0.12); color: #ECEFF3;' : 'border: 1px solid #262C35; background: #171B21; color: #A7B0BC;')
+    }));
+    const colors = ['#8C96A3', '#E7EBF0', '#4C8DFF', '#B26BFF', '#FF4D5E'];
+    const tiers = [21, 23, 28, 31, 37].map((size, i) => ({
+      size: size, pressed: String(i === 2),
+      bar: 'display: block; width: 100%; height: 3px; border-radius: 2px; background: ' + colors[i] + ';',
+      style: 'display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; height: 48px; padding: 6px 4px; border-radius: 10px; ' + (i === 2 ? 'border: 1px solid #C5F23A; background: rgba(197,242,58,0.12);' : 'border: 1px solid #262C35; background: #151920;')
+    }));
+    return { chips: chips, tiers: tiers };
+  }
+}
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@
 
 # Generated, vendored and data
 dist/
+dist-ssr/
 static/
 public/
 coverage/
@@ -17,6 +18,9 @@ etc/
 assets/
 brand/
 client/specs.json
+client/lib/cn-tables.ts
+# Recorded test data, kept compact
+client/engine/*.fixture.json
 client/raw_recoils.json
 client/styles/theme-tokens.css
 theme.json

@@ -21,7 +21,7 @@ const buttonVariants = cva(
       },
       size: {
         default: 'h-control px-3.5',
-        sm: "h-control-sm gap-2 rounded-control px-3 text-[13px] [&_svg:not([class*='size-'])]:size-4",
+        sm: "h-control-sm gap-2 rounded-control px-3 text-13 [&_svg:not([class*='size-'])]:size-4",
         compact: 'h-icon rounded-control px-3',
         lg: 'h-control-lg rounded-card px-3.5',
         touch: 'h-touch rounded-card px-3.5',

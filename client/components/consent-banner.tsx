@@ -43,7 +43,7 @@ function ConsentBanner({
       )}
       {...props}
     >
-      <p className={cn('m-0 leading-normal text-text-soft', sheet ? 'text-[13px]' : 'text-xs')}>
+      <p className={cn('m-0 leading-normal text-text-soft', sheet ? 'text-13' : 'text-xs')}>
         {text}{' '}
         {privacyUrl && (
           <a href={privacyUrl} className="text-volt underline underline-offset-2 hover:text-volt-bright">

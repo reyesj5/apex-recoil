@@ -2,7 +2,7 @@ import * as React from 'react';
 import { cn } from 'cn';
 
 // A text field: inset fill, a field border (3:1 or more on every surface), 38 px. In the Studio
-// pass `h-control-sm rounded-control px-2.5 text-[13px]`; numbers take `font-mono`.
+// pass `h-control-sm rounded-control px-2.5 text-13`; numbers take `font-mono`.
 function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
   return (
     <input

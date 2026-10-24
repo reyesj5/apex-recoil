@@ -15,8 +15,11 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const port = Number(process.env.PORT || 3210);
 
-if (!fs.existsSync(path.join(root, 'dist', 'trainer.js'))) {
-  console.error('e2e server: dist/ has no build, run pnpm build first');
+if (
+  !fs.existsSync(path.join(root, 'dist', 'trainer.js')) ||
+  !fs.existsSync(path.join(root, 'dist-ssr', 'prerender.mjs'))
+) {
+  console.error('e2e server: dist/ or dist-ssr/ has no build, run pnpm build first');
   process.exit(1);
 }
 

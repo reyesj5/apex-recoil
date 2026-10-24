@@ -74,6 +74,22 @@
   --font-display: "Chakra Petch", "Inter Variable", Inter, system-ui, sans-serif;
   --font-sans: "Inter Variable", Inter, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  /* The type scale's sizes as font-size steps: text-11, text-13 */
+  --text-10: 10px;
+  --text-11: 11px;
+  --text-12: 12px;
+  --text-13: 13px;
+  --text-14: 14px;
+  --text-15: 15px;
+  --text-16: 16px;
+  --text-18: 18px;
+  --text-22: 22px;
+  --text-24: 24px;
+  --text-26: 26px;
+  --text-32: 32px;
+  --text-34: 34px;
+  --text-56: 56px;
+  --text-72: 72px;
 }
 
 @utility type-score-xl {

@@ -2,7 +2,7 @@
 
 This repository enforces a strict **Task Completion Protocol** for all AI coding assistants (Antigravity, Claude, Copilot, Cursor, etc.). Whenever you complete any task, bugfix, or feature, you **MUST** execute and verify each step in this workflow before concluding your response.
 
-> **Work in progress: the UI rebuild.** The trainer and the editor are being rebuilt with React, Tailwind and shadcn/ui ([docs/ui-migration-plan.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-plan.md)). Before you touch the interface, read [docs/ui-migration-progress.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-progress.md): what is done, the conventions to keep, the pitfalls already paid for and the next steps. Update it when you finish a step.
+> **Work in progress: the UI rebuild.** The trainer and the editor are being rebuilt with React, Tailwind and shadcn/ui ([docs/ui-migration-plan.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-plan.md)). Before you touch the interface, read [docs/ui-migration-progress.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-progress.md): what is done, the conventions to keep, the pitfalls already paid for and the next steps. Update it when you finish a step. For the design, Claude reads the design canvas and the Design System artifacts with the Artifact tool; every other agent uses the snapshot in [docs/design/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/design/README.md) (PNGs of every screen and component, with the brand book, tokens and component rules).
 
 ---
 
@@ -58,8 +58,8 @@ Never consider a task complete without executing and passing these checks. Use p
    ```bash
    pnpm build && pnpm test
    ```
-   *Requirement:* All 41 tests must pass across database, queue, storage, and API suites. Without a prior build the bundle-split test is skipped. Tests must never write to `data/recoil.db` or `client/specs.json` (use the `RECOIL_*` path variables).
-   If you touched the job queue, storage, uploads or discovery endpoints, also run the Redis/S3/end-to-end suites: `docker compose up -d && pnpm test:services` (55 tests in total).
+   *Requirement:* All 42 tests must pass across database, queue, storage, and API suites. Without a prior build the two bundle tests are skipped: the trainer split from the editor, and the new pages' first load (at most 200 kB of JavaScript, gzip). Tests must never write to `data/recoil.db` or `client/specs.json` (use the `RECOIL_*` path variables).
+   If you touched the job queue, storage, uploads or discovery endpoints, also run the Redis/S3/end-to-end suites: `docker compose up -d && pnpm test:services` (56 tests in total).
    If you restyled without meaning to change the look (moving CSS from `client/styles/*.css` into Tailwind utilities, renaming classes), capture `node scripts/style-snapshot.mjs` before and after and compare: there must be no differences.
 
 4. **Unit, Component & End-to-End Tests**:
@@ -67,7 +67,7 @@ Never consider a task complete without executing and passing these checks. Use p
    pnpm test:unit
    pnpm build && pnpm test:e2e
    ```
-   *Requirement:* All Vitest tests pass, and all 28 Playwright scenarios pass in Chrome. The scenarios fail on any page error, console error or failed request, and on any accessibility violation beyond the baseline in `e2e/accessibility.spec.ts` (lower a count there when you fix one). The new pages under `/next` have no baseline: no violations at all (`e2e/gallery.spec.ts`). They run the app on throwaway data (`e2e/server.mjs`) and need Python with the processing requirements for the discovery runs (skipped locally without it, required in CI).
+   *Requirement:* All Vitest tests pass, and all 58 Playwright scenarios pass in Chrome. The scenarios fail on any page error, console error or failed request, and on any accessibility violation beyond the baseline in `e2e/accessibility.spec.ts` (lower a count there when you fix one). The new pages under `/next` have no baseline: no violations at all (`e2e/gallery.spec.ts`, `e2e/trainer-next.spec.ts`, `e2e/progress-next.spec.ts`). They run the app on throwaway data (`e2e/server.mjs`) and need Python with the processing requirements for the discovery runs (skipped locally without it, required in CI).
 
 5. **TypeScript Typecheck, Lint & Formatting**:
    ```bash
@@ -78,7 +78,7 @@ Never consider a task complete without executing and passing these checks. Use p
    *Requirement:* 0 TypeScript compilation errors in both configs (`tsconfig.json` for the browser, `tsconfig.node.json` for tool configs and `e2e/`), 0 ESLint errors (legacy code still reports warnings; new code should add none), and every file Prettier formatted (`pnpm format` fixes it).
 
 6. **Asset & Bundle Verification**:
-   If CSS, TypeScript, or static bundling logic was altered, verify that `pnpm build` or `pnpm static` succeeds without crashing.
+   If CSS, TypeScript, or static bundling logic was altered, verify that `pnpm build` (the client into `dist/`, the new pages' prerender into `dist-ssr/`) or `pnpm static` succeeds without crashing.
 
 ---
 

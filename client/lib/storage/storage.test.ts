@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import recorded from './current-app.fixture.json';
 import { createPersistedStore, field, flag, number, readValues, type Values } from './index';
 import { editorFields } from './editor';
-import { trainerFields } from './trainer';
+import { currentTrainerFields, trainerFields } from './trainer';
 
 // The stores read what the current app wrote (current-app.fixture.json, recorded from it) and write
 // changes back in the same format, so players keep their settings and score history.
@@ -21,8 +21,19 @@ const keysOf = (fields: Record<string, { key: string }>) => Object.values(fields
 
 describe('trainer storage', () => {
   it('has a field for every key the current trainer writes', () => {
-    expect(keysOf(trainerFields).sort()).toEqual(Object.keys(recorded.trainerDefaults).sort());
-    expect(Object.keys(recorded.trainer).filter((key) => !keysOf(trainerFields).includes(key))).toEqual([]);
+    expect(keysOf(currentTrainerFields).sort()).toEqual(Object.keys(recorded.trainerDefaults).sort());
+    expect(Object.keys(recorded.trainer).filter((key) => !keysOf(currentTrainerFields).includes(key))).toEqual([]);
+  });
+
+  it('keeps the settings the redesign adds under keys of their own', () => {
+    const added = keysOf(trainerFields).filter((key) => !keysOf(currentTrainerFields).includes(key));
+    expect(added.sort()).toEqual(['game::ads', 'game::replay-speed', 'game::runs']);
+    // An ADS multiplier of 1 leaves runs as the current trainer sets them up
+    expect(readValues(trainerFields, storageWith(recorded.trainer))).toMatchObject({
+      ads: 1,
+      replaySpeed: 1,
+      runs: '[]',
+    });
   });
 
   it('reads the first-visit values as the defaults', () => {
@@ -56,7 +67,7 @@ describe('trainer storage', () => {
 
   it('writes every recorded value back unchanged', () => {
     for (const recording of [recorded.trainerDefaults, recorded.trainer]) {
-      for (const f of Object.values(trainerFields)) {
+      for (const f of Object.values(currentTrainerFields)) {
         const raw = recording[f.key as keyof typeof recording];
         expect(f.codec.format(f.codec.parse(raw) as never), f.key).toBe(raw);
       }

@@ -4,6 +4,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const zlib = require('zlib');
 
 // Point the app at a throwaway database, specs.json, captures and upload folder before it
 // loads: these tests must never touch data/recoil.db or client/specs.json.
@@ -40,6 +41,17 @@ function readEntryGraph(entryFile, seen = new Set()) {
     combined += readEntryGraph(path.resolve(path.dirname(entryFile), m[1]), seen);
   }
   return combined;
+}
+
+// A built file and every chunk it statically imports, without those in `seen`.
+function entryFiles(entryFile, seen = new Set()) {
+  if (seen.has(entryFile)) return seen;
+  seen.add(entryFile);
+  const importRe = /(?:import|from)\s*["'](\.{1,2}\/[^"']+\.js)["']/g;
+  for (const m of fs.readFileSync(entryFile, 'utf8').matchAll(importRe)) {
+    entryFiles(path.resolve(path.dirname(entryFile), m[1]), seen);
+  }
+  return seen;
 }
 
 describe('API Endpoints (SQLite Specs & Versioning)', () => {
@@ -255,5 +267,29 @@ describe('API Endpoints (SQLite Specs & Versioning)', () => {
     assert.ok(!trainerGraph.includes('/api/discovery/process-session'), 'trainer bundle pulls in editor code');
     const editorGraph = readEntryGraph(path.join(distDir, 'editor.js'));
     assert.ok(editorGraph.includes('/api/discovery/process-session'));
+  });
+
+  // The new pages' budget (docs/ui-migration-plan.md, Phase 2): at most 200 kB (200,000 bytes) of
+  // JavaScript, gzip, on first load: the entry, what it imports statically, and on the Russian and
+  // Chinese pages the catalog the page waits for before it renders
+  test('keeps the new pages within 200 kB of JavaScript on first load', { skip: !fs.existsSync(path.join(distDir, 'trainer-next.js')) && 'run `pnpm build` first' }, () => {
+    const gzipSize = (files) => [...files].reduce((sum, file) => sum + zlib.gzipSync(fs.readFileSync(file)).length, 0);
+    const chunks = fs.readdirSync(path.join(distDir, 'chunks'));
+    const catalog = (locale) => {
+      const name = chunks.find((file) => new RegExp(`^${locale}-[\\w-]{8}\\.js$`).test(file));
+      assert.ok(name, `no catalog chunk for ${locale}`);
+      return path.join(distDir, 'chunks', name);
+    };
+    for (const entry of ['trainer-next', 'progress-next']) {
+      const files = entryFiles(path.join(distDir, `${entry}.js`));
+      const sizes = {
+        en: gzipSize(files),
+        ru: gzipSize(entryFiles(catalog('ru'), new Set(files))),
+        'zh-CN': gzipSize(entryFiles(catalog('zh-CN'), new Set(files))),
+      };
+      for (const [locale, size] of Object.entries(sizes)) {
+        assert.ok(size <= 200000, `${entry} in ${locale}: ${(size / 1000).toFixed(1)} kB of JavaScript on first load`);
+      }
+    }
   });
 });

@@ -14,6 +14,7 @@ beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => {
   cleanup();
   server.resetHandlers();
-  localStorage.clear();
+  // Absent in the Node environment, where the prerender's tests run
+  globalThis.localStorage?.clear();
 });
 afterAll(() => server.close());

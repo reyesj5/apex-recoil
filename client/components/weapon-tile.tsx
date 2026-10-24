@@ -53,7 +53,7 @@ function WeaponTile({
       {/* The space keeps "R-301 810 RPM" apart in the tile's name; flex layout doesn't render it */}
       {meta && !compact && ' '}
       {meta && !compact && (
-        <span className="text-[11px] text-text-muted group-data-[state=on]/tile:text-text-secondary">{meta}</span>
+        <span className="text-11 text-text-muted group-data-[state=on]/tile:text-text-secondary">{meta}</span>
       )}
     </ToggleGroupPrimitive.Item>
   );

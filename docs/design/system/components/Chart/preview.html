@@ -1,0 +1,41 @@
+<!-- @dsCard group="Data" height=560 subtitle="Today's trend in the session panel; score per day on the Progress page" -->
+<div class="sd-preview">
+  <div class="sd-trend" style="width: 288px;">
+    <div class="sd-trend__head"><span>Today’s runs</span><span>12 tries</span></div>
+    <svg class="sd-trend__chart" role="img" aria-label="Scores of today’s 12 runs, from 62 to 87, best 91" viewBox="0 0 260 72">
+      <line class="sd-trend__median" x1="0" x2="260" y1="32" y2="32"></line>
+      <polyline class="sd-trend__line" points="2,56 25,44 49,47 72,38 95,30 118,33 142,24 165,32 188,21 211,12 235,29 258,18"></polyline>
+      <circle class="sd-trend__last" cx="258" cy="18" r="4"></circle>
+    </svg>
+    <div class="sd-trend__foot"><span>First run</span><span>Median 78 (dashed)</span></div>
+  </div>
+  <section class="sd-chart-card" aria-labelledby="chart-title">
+    <div class="sd-chart-card__head">
+      <h2 id="chart-title" class="sd-chart-card__title">Score per day</h2>
+      <div class="sd-legend">
+        <span class="sd-legend__item"><span class="sd-legend__line sd-legend__line--best"></span>Best</span>
+        <span class="sd-legend__item"><span class="sd-legend__line"></span>Median</span>
+        <span class="sd-legend__item"><span class="sd-legend__box"></span>Tries</span>
+      </div>
+    </div>
+    <svg class="sd-chart" role="img" aria-label="Best and median score per day over the last 30 days; best rises to 96, median 74" viewBox="0 0 760 270">
+      <path class="sd-chart__grid" d="M40 20H748M40 56H748M40 92H748M40 128H748M40 164H748M40 200H748"></path>
+      <text class="sd-chart__axis" x="32" y="24" text-anchor="end">100</text>
+      <text class="sd-chart__axis" x="32" y="60" text-anchor="end">90</text>
+      <text class="sd-chart__axis" x="32" y="96" text-anchor="end">80</text>
+      <text class="sd-chart__axis" x="32" y="132" text-anchor="end">70</text>
+      <text class="sd-chart__axis" x="32" y="168" text-anchor="end">60</text>
+      <text class="sd-chart__axis" x="32" y="204" text-anchor="end">50</text>
+      <path class="sd-chart__bars" d="M41 250v-10h14v10zM89 250v-22h14v22zM113 250v-36h14v36zM136 250v-30h14v30zM160 250v-12h14v12zM208 250v-30h14v30zM232 250v-20h14v20zM256 250v-34h14v34zM280 250v-20h14v20zM327 250v-16h14v16zM351 250v-28h14v28zM375 250v-22h14v22zM399 250v-26h14v26zM423 250v-18h14v18zM447 250v-10h14v10zM471 250v-16h14v16zM494 250v-20h14v20zM518 250v-6h14v6zM542 250v-10h14v10zM566 250v-18h14v18zM614 250v-28h14v28zM638 250v-14h14v14zM709 250v-24h14v24zM733 250v-36h14v36z"></path>
+      <polyline class="sd-chart__median" points="48,150 96,150 120,146 143,139 167,128 215,139 239,121 263,124 287,128 334,124 358,117 382,121 406,110 430,114 454,106 478,110 501,114 525,106 549,103 573,110 621,96 645,85 716,88 740,92"></polyline>
+      <polyline class="sd-chart__best" points="48,96 96,92 120,88 143,96 167,88 215,70 239,74 263,85 287,67 334,74 358,60 382,70 406,63 430,67 454,56 478,60 501,56 525,56 549,63 573,56 621,60 645,52 716,34 740,42"></polyline>
+      <text class="sd-chart__axis" x="48" y="266" text-anchor="middle">Sep 23</text>
+      <text class="sd-chart__axis" x="167" y="266" text-anchor="middle">Sep 28</text>
+      <text class="sd-chart__axis" x="287" y="266" text-anchor="middle">Oct 3</text>
+      <text class="sd-chart__axis" x="406" y="266" text-anchor="middle">Oct 8</text>
+      <text class="sd-chart__axis" x="525" y="266" text-anchor="middle">Oct 13</text>
+      <text class="sd-chart__axis" x="645" y="266" text-anchor="middle">Oct 18</text>
+      <text class="sd-chart__axis" x="740" y="266" text-anchor="middle">Oct 22</text>
+    </svg>
+  </section>
+</div>
