@@ -15,7 +15,7 @@ Before submitting a pull request, ensure all quality gates pass:
 2. **Schema Verification:** `cd processing && python -m recoil_discovery.cli verify`
 3. **Node.js Test Suites:** `pnpm test`; with `docker compose up -d`, `pnpm test:services` also runs the Redis, S3 and end-to-end suites
 4. **Unit & End-to-End Tests:** `pnpm test:unit`, then `pnpm build && pnpm test:e2e` (Chrome; the discovery scenarios need Python with the processing requirements)
-5. **Typecheck, Lint & Formatting:** `pnpm tsc` (browser and Node configs), `pnpm lint` and `pnpm format:check` (`pnpm format` fixes formatting)
+5. **Typecheck, Lint & Formatting:** `pnpm tsc` (browser, tools and server configs), `pnpm lint` (ESLint, then the UI's conventions: `app.css` as the only stylesheet, no `@apply`, no hex colors or `dark:` classes) and `pnpm format:check` (`pnpm format` fixes formatting)
 6. **Static & Bundle Build:** `pnpm build` and `pnpm static`
 
 ## Package Manager
@@ -27,13 +27,15 @@ Before submitting a pull request, ensure all quality gates pass:
 ## Development
 
 - Node 22.22+ or 24.15+ (`engines` in `package.json`); 24 LTS is recommended.
-- `pnpm dev` serves the client sources through Vite inside Express: style changes apply in place, code and template changes reload the page, and server changes restart it (nodemon). It listens on this computer only, because Vite also serves project files. `pnpm build` (the client into `dist/`, the new pages' prerender into `dist-ssr/`) and `pnpm start` serve the production build.
+- `pnpm dev` serves the client sources through Vite inside Express: style changes apply in place, code changes reload the page, and changes to `server/` or `shared/` restart the server (nodemon). It listens on this computer only, because Vite also serves project files. `pnpm build` (the client into `dist/`, the new pages' prerender into `dist-ssr/`) and `pnpm start` serve the production build.
+- The server is TypeScript that Node runs as it is ([server/](../server/); `pnpm start` is `node server/main.ts`): imports name the `.ts` file, and only syntax that erases to JavaScript works (no enums, namespaces or parameter properties). `server/app.ts` builds the app (`createApp`) from the routers in `server/routes/`; the API's shapes are zod schemas in [shared/](../shared/), which the browser checks responses with and the server reads requests with.
 
 ## Tests
 
-- End-to-end scenarios live in [e2e/](../e2e/) (Playwright in Chrome). [e2e/server.mjs](../e2e/server.mjs) runs the built app on a throwaway database, specs and captures. A scenario fails on any page error, console error or failed request to the app, and the accessibility scenarios fail on any axe violation beyond the current baseline (the new pages under `/next` allow none). For the new interface, follow [ui-migration-progress.md](ui-migration-progress.md).
+- End-to-end scenarios live in [e2e/](../e2e/) (Playwright in Chrome). [e2e/server.mjs](../e2e/server.mjs) runs the built app on a throwaway database, specs and captures. A scenario fails on any page error, console error or failed request to the app, and the accessibility checks fail on any axe violation (no page has a baseline). For the new interface, follow [ui-migration-progress.md](ui-migration-progress.md).
 - Write scenarios the way a player or editor would work: click, type, then check what the page shows and what it stored (`localStorage`, the API).
 - Unit and component tests sit next to the code as `client/**/*.test.ts(x)` (Vitest, Testing Library, MSW). A request without an MSW handler fails the test.
+- The server's tests are `test/*.test.ts` (`node:test`, run by `pnpm test`). They build the app with `createApp()` around a throwaway database, specs file, captures folder and job queue, never the real ones.
 
 ## Names, Links and IDs
 
@@ -42,11 +44,11 @@ Before submitting a pull request, ensure all quality gates pass:
 
 ## Styles
 
-- Tailwind 4 builds all styles from [client/styles/tailwind.css](../client/styles/tailwind.css). Page layout is utility classes in the templates (`views/*.pug`); the stateful widgets are CSS in `client/styles/` (`components.css`, `trainer.css`, `editor.css`), in a cascade layer below the utilities, so a utility class always overrides them.
-- Colors come only from `theme.json` (`bg-active`, `text-foreground`, `bg-menu`, ...); Tailwind's default palette is not available.
-- Don't give a component a class name that is also a Tailwind utility (`grid`, `flex`, `block`, ...): Tailwind would style it.
-- The trainer page exists in three languages (`views/index.pug`, `index-ru.pug`, `index-zh-CN.pug`): change all three.
-- For a change that should not alter the look, compare `node scripts/style-snapshot.mjs` captures from before and after.
+- Every page is React styled with Tailwind 4 utilities in the components; [client/styles/app.css](../client/styles/app.css) is the only stylesheet (Tailwind, the fonts, shadcn/ui's variables and the base layer). Don't add CSS files or `@apply`; repeated styling becomes a component.
+- Colors, radii, sizes and type styles are the design system's tokens, generated from [client/styles/tokens.json](../client/styles/tokens.json) (`bg-panel`, `text-text-muted`, `rounded-card`, `h-control`, `type-label`). Tailwind's default palette is switched off, and the lint rejects unknown classes.
+- Components come from shadcn/ui, kept and edited in [client/components/ui/](../client/components/ui/); the app's own are in `client/components/`. The gallery at `/next/components` shows each in every state.
+- The trainer's pages exist in three languages from one component tree: add a string to all three catalogs in `client/locales/`. The Studio is in English.
+- The conventions in detail (tokens, icons, accessibility, storage, pages, the Studio) are in [ui-migration-progress.md](ui-migration-progress.md), section 3.
 
 ## Project Roadmap & AI Guidelines
 

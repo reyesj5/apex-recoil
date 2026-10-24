@@ -1,4 +1,6 @@
-# Privacy Policy
+<!-- description: What data Spraydown processes and why: your settings and scores stay in your browser, and Google Analytics runs only if you accept it. -->
+
+# Privacy policy
 
 *Spraydown · Effective [EFFECTIVE DATE]*
 
@@ -6,8 +8,8 @@ This policy explains what data Spraydown ("we") processes when you use the websi
 
 ## Who is responsible
 
-[OWNER NAME]
-[POSTAL ADDRESS]
+[OWNER NAME]\
+[POSTAL ADDRESS]\
 Email: [CONTACT EMAIL]
 
 We are the controller of the personal data described here under the EU General Data Protection Regulation (GDPR) and the UK GDPR.
@@ -62,11 +64,9 @@ Google Analytics 4 does not log or store IP addresses. It sets cookies (`_ga` an
 
 ## 4. Your consent choice
 
-We remember whether you accepted or rejected analytics, so that we do not ask on every visit. The choice is stored on your device ([CONSENT STORAGE, today a first-party cookie named `tarteaucitron`]) for [CONSENT DURATION, for example 12 months]. Keeping a record of your choice is needed to respect it (Art. 6(1)(c) GDPR), and the storage is strictly necessary for that.
+We remember whether you accepted or rejected analytics, so that we do not ask on every visit. The choice is stored on your device, in this site's local storage under `consent:analytics`, for 12 months; then the site asks again. Keeping a record of your choice is needed to respect it (Art. 6(1)(c) GDPR), and the storage is strictly necessary for that.
 
 ## 5. Other websites and content
-
-[Until the redesigned site is live: the pages load fonts from Google Fonts, so your browser sends your IP address to Google when a page loads. Delete this paragraph once the fonts are self-hosted.]
 
 The trainer loads no other third-party scripts. Links to Electronic Arts, Respawn Entertainment, the Apex Legends Wiki and other sites lead to services with their own privacy policies.
 
@@ -93,7 +93,7 @@ Our hosting provider stores data in [HOSTING LOCATION]. Google may process analy
 | Settings and scores in your browser | Until you delete them |
 | Server logs | [LOG RETENTION] |
 | Google Analytics data | [GA RETENTION] |
-| Your consent choice | [CONSENT DURATION] |
+| Your consent choice | 12 months |
 | [Studio uploads] | [UPLOAD RETENTION] |
 
 ## 10. Your rights

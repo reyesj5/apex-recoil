@@ -85,7 +85,6 @@
     "title": "Loadout",
     "count_one": "{{count}} weapon",
     "count_other": "{{count}} weapons",
-    "meta": "{{class}} · {{rpm}} RPM",
     "rpm": "{{rpm}} RPM",
     "filter": "Filter weapons",
     "classes": "Weapon class",
@@ -228,7 +227,7 @@
     "shortcuts": "Keyboard shortcuts",
     "fireMode": "Switch fire mode",
     "search": "Search weapons",
-    "resultStyle": "Show results the next way",
+    "resultStyle": "Switch result style",
     "middleClick": "Middle click"
   },
   "consent": {
@@ -242,15 +241,23 @@
     "title": "Recoil patterns for every weapon",
     "intro": "Practicing needs a mouse and a larger screen. Here you can study each pattern before you train.",
     "weapon": "Weapon",
-    "section": "{{weapon}} pattern",
-    "pattern": "{{weapon}} recoil pattern, {{shots}}",
-    "meta": "{{rpm}} RPM · {{capacity}} ({{tier}})",
-    "play": "Play spray",
     "computer": "Train on a computer.",
     "computerText": "Send yourself the link.",
     "computerLabel": "Train on a computer",
     "copy": "Copy link",
     "copied": "Link copied"
+  },
+  "patterns": {
+    "title": "Recoil patterns",
+    "description": "The recoil pattern of every Apex Legends weapon, for each magazine and fire mode. Watch each spray shot by shot, then practice it in your browser.",
+    "intro": "Each weapon's spray, drawn as the path your aim follows to keep the shots on the start point. Pick a weapon to study it, then practice with it.",
+    "library": "Pattern library",
+    "section": "{{weapon}} pattern",
+    "pattern": "{{weapon}} recoil pattern, {{shots}}",
+    "meta": "{{rpm}} RPM · {{capacity}} ({{tier}})",
+    "play": "Play spray",
+    "practice": "Practice with this weapon",
+    "read": "Start on the ring and follow the line with your aim as the gun climbs: your shots stay on the ring."
   },
   "progress": {
     "title": "Progress",
@@ -301,5 +308,14 @@
     "csvTries": "Tries",
     "csvMedian": "Median",
     "csvBest": "Best"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "There is nothing at this address. The link may be wrong, or the page may have moved.",
+    "home": "Go to the trainer"
+  },
+  "serverError": {
+    "title": "Something went wrong",
+    "text": "The server couldn't complete this request. Try again in a moment, or go back to the trainer."
   }
 }

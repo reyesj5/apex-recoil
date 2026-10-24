@@ -16,7 +16,7 @@
  */
 
 // Weapons as the trainer uses them: fire modes, magazines, attachments and sounds. Moved from
-// client/game.ts; plain functions without a DOM, shared by the current trainer and the new one.
+// client/game.ts; plain functions without a DOM, shared by the trainer and the Recoil Editor.
 
 export type FireMode = 'auto' | 'burst' | 'single';
 

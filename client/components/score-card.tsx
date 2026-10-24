@@ -28,7 +28,8 @@ function ScoreCard({
 
 /**
  * How a run compares with today's median: a pill with an arrow and the difference, then the words.
- * Only the positive case is designed; a run below the median uses the neutral colors for now.
+ * Above the median the pill is volt; below it the pill is neutral, as is the result card's score
+ * (RunResult's `below`), since volt marks good results.
  */
 function ScoreDelta({
   className,
@@ -59,13 +60,14 @@ function ScoreDelta({
 }
 
 /**
- * The result card that floats over the range when a run ends: the score in volt, the delta, the
- * setup, and Replay and Next run. It announces itself.
+ * The result card that floats over the range when a run ends: the score (in volt, neutral below
+ * today's median), the delta, the setup, and Replay and Next run. It announces itself.
  */
 function RunResult({
   className,
   title,
   score,
+  below = false,
   delta,
   meta,
   replayLabel,
@@ -76,6 +78,8 @@ function RunResult({
 }: Omit<React.ComponentProps<'div'>, 'title'> & {
   title: string;
   score: number;
+  /** The run scored below today's median: the score is neutral, since volt marks good results */
+  below?: boolean;
   /** The pill and its words, from ScoreDelta */
   delta?: React.ReactNode;
   /** The setup: weapon, magazine and mode */
@@ -97,7 +101,7 @@ function RunResult({
     >
       <div className="type-section-label text-text-muted">{title}</div>
       <div className="flex items-baseline gap-2">
-        <span className="type-score-xl text-volt">{score}</span>
+        <span className={cn('type-score-xl', below ? 'text-text' : 'text-volt')}>{score}</span>
         <span className="text-base text-text-muted">/ 100</span>
       </div>
       {delta}

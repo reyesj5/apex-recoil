@@ -90,17 +90,34 @@ These replace the palette in `theme.json`; Phase 1 generates Tailwind `@theme` t
 | `card` | `#151920` | Cards inside panels | |
 | `raised` | `#171B21` | Buttons, popovers, toasts | |
 | `hover` | `#1F242C` | Hover and pressed states | |
-| `divider` | `#262C35` | Separators only | |
+| `canvas` | `#0B0D11` | The Studio canvas around the wall screenshot | |
+| `wall` | `#14181E` | The wall screenshot's frame while no image is loaded | |
+| `divider` | `#262C35` | Separators; the selected item of neutral segmented controls and Studio tabs | 1.4:1 off the inset track (see below) |
+| `outline` | `#1C2128` | 1 px outline of panels and the range, the rules under the top bar and over the status bar | Decorative, 1.1:1 on panel |
+| `outline-card` | `#232830` | 1 px outline of cards and tiles inside panels | Decorative, 1.2:1 on card |
+| `outline-strong` | `#343B46` | 1 px outline of raised controls and overlays (secondary buttons, keys, toasts, the consent card); dashed for empty states and the median line | |
 | `field` | `#646D79` | Borders of inputs and selects | 3.5:1 on panel, 3.6:1 on inset |
 | `text` | `#ECEFF3` | Primary text | 16:1 on panel |
+| `text-soft` | `#C9D0D8` | Running text in compact overlays (the consent card) | 11.1:1 on raised |
 | `text-secondary` | `#A7B0BC` | Secondary text | 8.4:1 on panel |
-| `text-muted` | `#848E9B` | Labels, captions | 5.2:1 or more on every surface |
+| `text-muted` | `#848E9B` | Labels, captions | 5.6:1 on panel, 4.7:1 on hover (its lowest) |
+| `icon-disabled` | `#5B6470` | Disabled icons, the placeholder weapon icon; never text | 3.1:1 on panel |
 | `volt` | `#C5F23A` | Accent, primary actions, good results | 14.2:1 on panel |
 | `volt-ink` | `#0A0C0F` | Text on volt | 15:1 |
+| `volt-bright` | `#DDF98A` | Link hover | 15.8:1 on panel |
+| `volt-wash` / `volt-wash-strong` / `volt-ink-wash` | volt at 12 % / 15 %, volt-ink at 14 % | Selected chips, tiles and tier options, the positive badge; the success icon's disc; a key hint inside a volt button | text 12.1:1 and volt 10.7:1 on volt-wash; volt-ink 11.2:1 on volt-ink-wash |
 | `target` | `#5AD2F4` | Paths and targets on canvases | 10.5:1 on panel |
-| `warning` | `#FFB547` | Unsaved changes, attention | |
-| `danger` | `#FF5A5F` | Errors, destructive actions | 6.0:1 on panel |
+| `pattern-ink` | `#E7EBF0` | The weapon's pattern drawn faintly: its line at 16 to 22 %, its dots at 35 to 60 % | |
+| `range-dot` / `canvas-dot` | `#1C222A` / `#181D24` | 1 px dot grids: the range (24 px pitch), the phone pattern view (18 px), the Studio canvas (20 px) | Decorative |
+| `warning` | `#FFB547` | Unsaved changes, attention | 10.5:1 on panel, 8.4:1 on warning-wash |
+| `warning-wash` | warning at 12 % | Warning badges | |
+| `danger` | `#FF5A5F` | Errors, destructive actions | 6.0:1 on panel, 5.4:1 on danger-wash |
+| `danger-wash` / `danger-line` | danger at 10 % / 45 % | Destructive buttons' fill and outline | The outline is 2.1:1 on panel (see below) |
 | `tier-base` / `tier-1` / `tier-2` / `tier-3` / `tier-corrupted` | `#8C96A3` / `#E7EBF0` / `#4C8DFF` / `#B26BFF` / `#FF4D5E` | Magazine tiers | 5.4:1 or more on card |
+| `chart-bar` | `#2B323C` | Bars counting tries in the score chart | 1.4:1 on panel (see below) |
+| `panel-glass` | panel at 94 % | The run result card over the range | |
+
+Three marks stand under the 3:1 that WCAG 1.4.11 asks of the parts of a control or chart that carry meaning: the destructive button's outline, whose label says what it does in danger's color; the selected item of a neutral segmented control or Studio tab, which also turns its text from text-secondary to text; and the tries bars, whose counts the chart's tooltip shows as text (and the CSV export lists). The roadmap keeps the decision open (accept them, or raise them to 3:1).
 
 shadcn/ui mapping: `background` ground, `card` panel, `popover` raised, `primary` volt with `primary-foreground` volt-ink, `secondary` raised, `muted` hover with text-muted, `accent` hover, `destructive` danger, `border` divider, `input` field, `ring` volt, `chart-1` volt, `chart-2` text-secondary, `chart-3` target, `chart-4` warning, `chart-5` tier-3.
 
@@ -169,7 +186,7 @@ Rules: the game engine owns the canvas and talks to React through events; stores
 
 ## 8. Open items for the owner
 
-- Final name and domain. "Spraydown" is a placeholder name with its own logo: five shots in a downward chevron and a Chakra Petch wordmark, with "down" in volt (files and usage rules in `brand/README.md`). The domain is `[SITE URL]`.
+- Final name and domain (no domain yet, 2026-10-24). "Spraydown" is a placeholder name with its own logo: five shots in a downward chevron and a Chakra Petch wordmark, with "down" in volt (files and usage rules in `brand/README.md`). The domain is `[SITE URL]`.
 - Your Google Analytics 4 measurement ID and your privacy policy, both required before the new trainer goes live with analytics.
 - Support or donation link, if any (`supportUrl` in `site.json`; the original author's link is gone).
-- Whether the Patterns page and the phone pattern viewer ship with the first release or later.
+- ~~Whether the Patterns page and the phone pattern viewer ship with the first release or later.~~ Decided 2026-10-24: both ship with the first release (built at `/next/patterns`).

@@ -7,12 +7,14 @@
 //   E2E_ANALYTICS  1: analytics on with a test measurement ID, for the consent scenarios
 import fs from 'node:fs';
 import http from 'node:http';
-import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createApp } from '../server/app.ts';
+import { DatabaseService } from '../server/db.ts';
+import { JobQueue } from '../server/job-queue.ts';
+import { loadSite, root } from '../server/site.ts';
+import { AssetStorageService } from '../server/storage.ts';
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const port = Number(process.env.PORT || 3210);
 
 if (
@@ -28,21 +30,20 @@ const dataDir = path.join(os.tmpdir(), `spraydown-e2e-${port}`);
 fs.rmSync(dataDir, { recursive: true, force: true });
 fs.mkdirSync(dataDir, { recursive: true });
 fs.copyFileSync(path.join(root, 'client', 'specs.json'), path.join(dataDir, 'specs.json'));
-Object.assign(process.env, {
-  RECOIL_DB_PATH: path.join(dataDir, 'recoil.db'),
-  RECOIL_SPECS_PATH: path.join(dataDir, 'specs.json'),
-  RECOIL_CAPTURES_DIR: path.join(dataDir, 'captures'),
-  RECOIL_UPLOAD_TMP_DIR: path.join(dataDir, 'uploads'),
-});
-delete process.env.REDIS_URL;
-delete process.env.STORAGE_PROVIDER;
 
-const require = createRequire(import.meta.url);
-const app = require('../app.js');
-if (process.env.E2E_ANALYTICS === '1') {
-  // The pages read site.json through this object (see pageLocals in app.js)
-  Object.assign(app.locals.site, { gaMeasurementId: 'G-E2ETEST000', privacyUrl: '/privacy' });
-}
+const storage = new AssetStorageService({ provider: 'local', localBaseDir: path.join(dataDir, 'captures') });
+const app = await createApp({
+  db: new DatabaseService(path.join(dataDir, 'recoil.db'), path.join(dataDir, 'specs.json')),
+  storage,
+  jobQueue: new JobQueue({ storage }),
+  uploadDir: path.join(dataDir, 'uploads'),
+  dev: false,
+  // The pages render with these values (client/lib/site.ts)
+  site:
+    process.env.E2E_ANALYTICS === '1'
+      ? { ...loadSite(), gaMeasurementId: 'G-E2ETEST000', privacyUrl: '/privacy' }
+      : loadSite(),
+});
 
 http.createServer(app).listen(port, '127.0.0.1', () => {
   console.log(`e2e server on http://127.0.0.1:${port}, data in ${dataDir}`);

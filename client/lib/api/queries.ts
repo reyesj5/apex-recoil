@@ -3,6 +3,7 @@ import { submitAnalysis, type Upload } from './analysis';
 import { apiRequest } from './client';
 import {
   cancelledJob,
+  discoveryStatus,
   jobResponse,
   savedSpec,
   screenshotList,
@@ -22,6 +23,7 @@ export const queryKeys = {
   sessions: ['captures', 'sessions'] as const,
   screenshots: ['captures', 'screenshots'] as const,
   job: (id: string) => ['jobs', id] as const,
+  status: ['discovery', 'status'] as const,
 };
 
 /** The app's query client: data counts as fresh for 30 s, and failed reads are tried once more */
@@ -103,6 +105,15 @@ export function useJob(id: string | undefined) {
     queryFn: () => apiRequest(`/api/discovery/jobs/${encodeURIComponent(id!)}`, jobResponse),
     select: (data) => data.job,
     enabled: Boolean(id),
+  });
+}
+
+/** Where the server keeps captures and how it runs analyses (the Studio's status bar) */
+export function useDiscoveryStatus() {
+  return useQuery({
+    queryKey: queryKeys.status,
+    queryFn: () => apiRequest('/api/discovery/status', discoveryStatus),
+    staleTime: Infinity,
   });
 }
 

@@ -14,16 +14,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { localeNames, locales, type Locale } from '@/lib/i18n';
 import { site } from '@/lib/site';
-import { progressHref, trainerHref } from './links';
+import { patternsHref, progressHref, trainerHref } from './links';
 import { openDialog } from './session';
 
-const pages = { train: trainerHref, progress: progressHref };
+const pages = { train: trainerHref, patterns: patternsHref, progress: progressHref };
 
 /**
  * The top bar: logo, navigation and language, and on the trainer the weapon search (Ctrl K), the
- * Studio, help and settings
+ * Studio, help and settings. A document page (the privacy policy, the FAQ) is in English only, so it
+ * has no language select.
  */
-export function TopBar({ locale, page }: { locale: Locale; page: keyof typeof pages }) {
+export function TopBar({ locale, page }: { locale: Locale; page: keyof typeof pages | 'doc' }) {
   const { t } = useTranslation();
   const train = page === 'train';
   return (
@@ -34,6 +35,9 @@ export function TopBar({ locale, page }: { locale: Locale; page: keyof typeof pa
       <nav aria-label={t('topBar.nav')} className="flex gap-1">
         <NavLink href={trainerHref(locale)} current={train}>
           {t('topBar.train')}
+        </NavLink>
+        <NavLink href={patternsHref(locale)} current={page === 'patterns'}>
+          {t('topBar.patterns')}
         </NavLink>
         <NavLink href={progressHref(locale)} current={page === 'progress'}>
           {t('topBar.progress')}
@@ -51,18 +55,20 @@ export function TopBar({ locale, page }: { locale: Locale; page: keyof typeof pa
         </button>
       )}
       <div className="ml-auto flex items-center gap-2">
-        <Select value={locale} onValueChange={(v) => location.assign(pages[page](v as Locale))}>
-          <SelectTrigger aria-label={t('topBar.language')} className="h-icon rounded-control border-divider bg-panel">
-            <SelectValue>{localeNames[locale]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {locales.map((l) => (
-              <SelectItem key={l} value={l} lang={l}>
-                {localeNames[l]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {page !== 'doc' && (
+          <Select value={locale} onValueChange={(v) => location.assign(pages[page](v as Locale))}>
+            <SelectTrigger aria-label={t('topBar.language')} className="h-icon rounded-control border-divider bg-panel">
+              <SelectValue>{localeNames[locale]}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {locales.map((l) => (
+                <SelectItem key={l} value={l} lang={l}>
+                  {localeNames[l]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {train && (
           <>
             <IconLink href="/editor" label={t('topBar.studio')} icon={WrenchIcon} />

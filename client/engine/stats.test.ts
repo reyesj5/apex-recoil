@@ -45,7 +45,7 @@ describe('distanceScore', () => {
 describe('the score history', () => {
   const setup: TrialSetup = { weapon: 'r99', mag: 0, hint: false, moving: true };
 
-  it('reads what the current trainer stored', () => {
+  it('reads what the previous trainer stored', () => {
     const stats = parseStats(recorded.trainer['game::stats'], 20261023);
     expect(stats).toHaveLength(1);
     expect(statsForSetup(stats, setup)).toMatchObject({ v: 3, todayResults: [0], bestAllTime: 0 });

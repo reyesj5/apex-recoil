@@ -1,6 +1,23 @@
+/**
+ * Copyright 2021 Mikhail Goncharov
+ * Modified by [OWNER NAME], 2025-2026.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import type { Howl } from 'howler';
 
-// The range's sounds, as the current trainer plays them: the magazine's recorded spray in full auto,
+// The range's sounds, as the previous trainer played them: the magazine's recorded spray in full auto,
 // at the firing speed, and a shot per round in single and burst fire. Howler loads the first time a
 // sound is needed, so a player who keeps the sound off never downloads it.
 

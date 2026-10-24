@@ -1,10 +1,12 @@
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { markdownToHtml } from './scripts/markdown-plugin.mjs';
 
 // Unit and component tests for client/ (pnpm test:unit). Server tests stay on node:test (pnpm test).
 export default defineConfig({
-  plugins: [react()],
+  // markdownToHtml: the doc pages import docs/*.md?html (vite.config.mjs)
+  plugins: [react(), markdownToHtml()],
   resolve: {
     alias: [
       { find: '@', replacement: fileURLToPath(new URL('./client', import.meta.url)) },

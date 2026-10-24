@@ -5,7 +5,7 @@ import path from 'node:path';
 
 export { expect };
 
-export const root = path.join(__dirname, '..');
+export const root = path.join(import.meta.dirname, '..');
 export const specs: { name: string; rpm: number; mags: { size: number }[]; x: number[] }[] = JSON.parse(
   fs.readFileSync(path.join(root, 'client', 'specs.json'), 'utf8'),
 );

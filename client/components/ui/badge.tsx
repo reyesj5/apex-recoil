@@ -4,7 +4,8 @@ import { cn } from 'cn';
 import { Slot } from 'radix-ui';
 
 // Status badges: a state that lasts (unsaved changes, the capture connection, the trigger), always
-// in words, with an optional dot. The tag variant names a product area, such as Studio.
+// in words, with an optional dot. The tag variant names a product area, such as Studio. Danger (a
+// major discrepancy, a failed analysis) isn't designed yet: the warning badge with danger's colors.
 const badgeVariants = cva(
   'inline-flex w-fit shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-pill whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3',
   {
@@ -13,6 +14,7 @@ const badgeVariants = cva(
         neutral: 'bg-hover text-text-secondary',
         warning: 'bg-warning-wash font-semibold text-warning',
         positive: 'bg-volt-wash font-semibold text-volt',
+        danger: 'bg-danger-wash font-semibold text-danger',
         tag: 'border border-outline-strong font-semibold tracking-[0.06em] text-text-secondary uppercase',
       },
       size: {
@@ -33,6 +35,7 @@ const dotColor = {
   neutral: 'bg-text-muted',
   warning: 'bg-warning',
   positive: 'bg-volt',
+  danger: 'bg-danger',
   tag: 'bg-text-muted',
 } as const;
 

@@ -1,46 +1,12 @@
 import specs from '@/specs.json';
 import { isSingleShellShotgun, type Weapon } from '@/engine/weapons';
+import { weaponClasses, weaponEntry, weaponPosition, type WeaponClass } from './weapon-list';
 
 // The trainer's weapons: each spec in client/specs.json (exported from the spec database, and bundled
-// so the trainer also runs on the static host) with its class and its art in assets/images, in the
-// order the current trainer page lists them: by class, as the game does.
+// so the trainer also runs on the static host) with its class and its art in assets/images
+// (weapon-list.ts), in the order the previous trainer page listed them: by class, as the game does.
 
-export const weaponClasses = ['ar', 'smg', 'lmg', 'marksman', 'sniper', 'shotgun', 'pistol'] as const;
-export type WeaponClass = (typeof weaponClasses)[number];
-
-const listed: [id: string, weaponClass: WeaponClass, art: string][] = [
-  ['flatline', 'ar', 'flatline.png'],
-  ['r301', 'ar', 'r301.png'],
-  ['havoc_tc', 'ar', 'havoc.png'],
-  ['hemlok', 'ar', 'hemlok.png'],
-  ['nemesis', 'ar', 'nemesis.svg'],
-  ['alternator', 'smg', 'alternator.png'],
-  ['prowler', 'smg', 'prowler.png'],
-  ['r99', 'smg', 'r99.png'],
-  ['volt', 'smg', 'volt.png'],
-  ['car', 'smg', 'car.png'],
-  ['devotion_tc', 'lmg', 'devotion.png'],
-  ['lstar', 'lmg', 'lstar.png'],
-  ['spitfire', 'lmg', 'spitfire.png'],
-  ['rampage', 'lmg', 'rampage.png'],
-  ['g7_scout', 'marksman', 'g7_scout.svg'],
-  ['triple_take', 'marksman', 'triple_take.svg'],
-  ['3030_repeater', 'marksman', '3030_repeater.svg'],
-  ['bocek', 'marksman', 'bocek.svg'],
-  ['charge_rifle', 'sniper', 'charge_rifle.svg'],
-  ['longbow', 'sniper', 'longbow.svg'],
-  ['sentinel', 'sniper', 'sentinel.svg'],
-  ['kraber', 'sniper', 'kraber.svg'],
-  ['eva8', 'shotgun', 'eva8.svg'],
-  ['mastiff', 'shotgun', 'mastiff.svg'],
-  ['mozambique', 'shotgun', 'mozambique.svg'],
-  ['mozambique_akimbo', 'shotgun', 'mozambique_akimbo.svg'],
-  ['peacekeeper', 'shotgun', 'peacekeeper.svg'],
-  ['re45', 'pistol', 're45.png'],
-  ['p2020', 'pistol', 'p2020.svg'],
-  ['p2020_akimbo', 'pistol', 'p2020_akimbo.svg'],
-  ['wingman', 'pistol', 'wingman.svg'],
-];
+export { weaponClasses, type WeaponClass } from './weapon-list';
 
 export interface TrainerWeapon {
   /** The spec's name, as stored (game::weapon) */
@@ -65,19 +31,14 @@ function toWeapon(s: (typeof specs)[number]): Weapon {
   };
 }
 
-const position = (id: string) => {
-  const i = listed.findIndex(([listedId]) => listedId === id);
-  return i < 0 ? listed.length : i;
-};
-
 export const weapons: TrainerWeapon[] = specs
   .map((s) => {
-    const entry = listed.find(([id]) => id === s.name);
-    return { id: s.name, weaponClass: entry?.[1], art: entry && `/images/${entry[2]}`, spec: toWeapon(s) };
+    const { weaponClass, art } = weaponEntry(s.name);
+    return { id: s.name, weaponClass, art, spec: toWeapon(s) };
   })
-  .sort((a, b) => position(a.id) - position(b.id));
+  .sort((a, b) => weaponPosition(a.id) - weaponPosition(b.id));
 
-/** The stored weapon, or the R-99 (the current trainer's default) for a name that isn't one */
+/** The stored weapon, or the R-99 (the previous trainer's default) for a name that isn't one */
 export function findWeapon(id: string): TrainerWeapon {
   return weapons.find((w) => w.id === id) ?? weapons.find((w) => w.id === 'r99') ?? weapons[0];
 }

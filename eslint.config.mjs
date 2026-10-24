@@ -1,13 +1,11 @@
-// ESLint (flat config). New React code gets the strict rules; the legacy client modules that the
-// UI rebuild replaces (docs/ui-migration-plan.md, phases 2 and 3) are linted with warnings only.
+// ESLint (flat config): the recommended JavaScript and TypeScript rules everywhere, and in the client
+// React's hooks, accessibility and Tailwind class rules as well.
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss';
 import globals from 'globals';
-
-const legacyClient = ['client/*.ts', 'client/modules/**/*.ts'];
 
 export default tseslint.config(
   {
@@ -45,40 +43,23 @@ export default tseslint.config(
   {
     files: ['client/**/*.tsx'],
     plugins: { 'better-tailwindcss': betterTailwindcss },
-    rules: { ...betterTailwindcss.configs['correctness-error'].rules },
+    // Unknown, conflicting and concatenated classes, and the stylistic rules Prettier doesn't cover. Class
+    // order and line wrapping are Prettier's (its Tailwind plugin), and the canonical forms rule stays off: it
+    // would rewrite the shadcn components' variants into forms with a lower specificity
+    rules: {
+      ...betterTailwindcss.configs['correctness-error'].rules,
+      'better-tailwindcss/no-deprecated-classes': 'error',
+      'better-tailwindcss/no-duplicate-classes': 'error',
+      'better-tailwindcss/no-unnecessary-whitespace': 'error',
+    },
     // The new UI's stylesheet: the design system's tokens (client/styles/tokens.json) and shadcn's variables
     settings: { 'better-tailwindcss': { entryPoint: 'client/styles/app.css' } },
   },
 
-  // Node code: server, scripts, tests and tool configs
+  // Node code: the server, the tests, scripts and tool configs (shared/ runs in both, so it gets no globals)
   {
-    files: ['**/*.{js,mjs,cjs}', 'e2e/**/*.ts', '*.config.{ts,mts}'],
+    files: ['**/*.{js,mjs,cjs}', 'server/**/*.ts', 'test/**/*.ts', 'e2e/**/*.ts', '*.config.{ts,mts}'],
     ignores: ['client/**'],
     languageOptions: { globals: globals.node },
-  },
-  {
-    files: ['app.js', 'server/**/*.js', 'test/**/*.js'],
-    languageOptions: { sourceType: 'commonjs' },
-    rules: {
-      '@typescript-eslint/no-require-imports': 'off',
-      // `const crypto = require('crypto')` is module-scoped in CommonJS, not a second global
-      'no-redeclare': ['error', { builtinGlobals: false }],
-    },
-  },
-
-  // Legacy code: keep the signal without blocking on old patterns
-  {
-    files: [...legacyClient, 'app.js', 'server/**/*.js', 'test/**/*.js', 'scripts/**/*.mjs'],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
-      '@typescript-eslint/no-unused-expressions': 'warn',
-      'no-empty': 'warn',
-      'prefer-const': 'warn',
-      'no-var': 'warn',
-      'no-useless-assignment': 'warn',
-      'preserve-caught-error': 'warn',
-      'no-regex-spaces': 'warn',
-    },
   },
 );

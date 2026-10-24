@@ -19,7 +19,7 @@
 // engine's Run (client/engine/run.ts) from animation frames and the mouse, and draws the aim, the
 // target, the path, the shots and, once the run ends, its trails in the chosen result style. It
 // follows the Shooting and Target classes of client/game.ts step for step, so a run scores exactly as
-// on the current page (e2e/trainer-next.spec.ts replays recorded runs to check); only the drawing
+// on the previous page (e2e/trainer.spec.ts replays recorded runs to check); only the drawing
 // changed, to the redesign's colors. No React here: RangeCanvas mounts it and passes the settings in,
 // and nothing in React renders while a run goes on.
 
@@ -85,7 +85,7 @@ export interface RangeEvents {
 
 declare global {
   interface Window {
-    /** What the last run scored, shot by shot, for the parity checks (as the current page sets it) */
+    /** What the last run scored, shot by shot, for the parity checks (as the previous page set it) */
     __spraydownLastRun?: { finishedAt: number; score: number; shots: number; hitTimes: number[]; hitScores: number[] };
   }
 }
@@ -595,7 +595,7 @@ export class RangeRenderer {
     this.requestFrame();
   }
 
-  // The start area: where a spray can start with the whole pattern on the range (the current page's
+  // The start area: where a spray can start with the whole pattern on the range (the previous page's
   // start rectangle), which the moving target glides around in
   private updateArea() {
     const s = this.settings;

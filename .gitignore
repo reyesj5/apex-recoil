@@ -3,6 +3,9 @@ public/
 static/
 dist/
 dist-ssr/
+# Lighthouse CI (lighthouserc.json): its working folder and reports
+.lighthouseci/
+lighthouse-results/
 
 # Logs
 logs

@@ -4,6 +4,7 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
 import { compileToSource, mergeConfigs } from 'cn/compiler';
 import { defaultConfig } from 'cn/config';
+import { markdownToHtml } from './scripts/markdown-plugin.mjs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -13,89 +14,6 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 function writeIfChanged(file, content) {
   const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
   if (content !== current) fs.writeFileSync(file, content);
-}
-
-// Tailwind color name for a theme.json key: focusBorder -> focus-border,
-// attachment_1 -> attachment-1, colorStartCircle -> start-circle
-function tokenName(key) {
-  return key
-    .replace(/^color(?=[A-Z])/, '')
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/_/g, '-')
-    .toLowerCase();
-}
-
-// Lighter background shades and translucent theme colors used by the stylesheets, computed exactly
-// as Sass's adjust-color()/rgba() did when the styles were written in SCSS
-function derivedTokens(theme) {
-  const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  const toHex = (c) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
-  const lighten = (hex, percent) => {
-    const [r, g, b] = rgb(hex).map((v) => v / 255);
-    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
-    let h = 0;
-    let s = 0;
-    const l = Math.min(1, Math.max(0, (max + min) / 2 + percent / 100));
-    if (d) {
-      s = (max + min) / 2 > 0.5 ? d / (2 - max - min) : d / (max + min);
-      h = (max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4) / 6;
-    }
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
-    const channel = (t) => {
-      t = (t + 1) % 1;
-      const v = t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p;
-      return Math.round(v * 255);
-    };
-    return toHex([channel(h + 1 / 3), channel(h), channel(h - 1 / 3)]);
-  };
-  const alpha = (hex, a) => `rgba(${rgb(hex).join(', ')}, ${a})`;
-  return [
-    ['menu', lighten(theme.background, 2)],
-    ['panel', lighten(theme.background, 3)],
-    ['modal', lighten(theme.background, 5)],
-    ['background-a95', alpha(theme.background, 0.95)],
-    ...[20, 30, 40, 50, 60, 70].map((p) => [`active-a${p}`, alpha(theme.active, p / 100)]),
-    ...[1, 2, 3].map((i) => [`attachment-${i}-a50`, alpha(theme[`attachment_${i}`], 0.5)]),
-    ...[40, 50, 60, 85].map((p) => [`attachment-4-a${p}`, alpha(theme.attachment_4, p / 100)])
-  ].map(([name, value]) => `  --color-${name}: ${value};`);
-}
-
-// theme.json is the single source of the color theme: game.ts imports it directly and the
-// stylesheets read it through client/styles/theme-tokens.css (Tailwind theme variables), which is
-// regenerated here only when its content changes.
-function themeJsonToStyles() {
-  const jsonPath = resolve(__dirname, 'theme.json');
-  const tokensPath = resolve(__dirname, 'client/styles/theme-tokens.css');
-
-  return {
-    name: 'theme-json-to-styles',
-    buildStart() {
-      this.addWatchFile(jsonPath);
-      const theme = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-
-      const tokens = [];
-      for (const [key, value] of Object.entries(theme)) {
-        if (Array.isArray(value)) {
-          value.forEach((v, i) => tokens.push(`  --color-${tokenName(key).replace(/-gradient$/, '')}-${i}: ${v};`));
-        } else {
-          tokens.push(`  --color-${tokenName(key)}: ${value};`);
-        }
-      }
-      writeIfChanged(tokensPath, [
-        '/* Generated from theme.json by vite.config.mjs; edit theme.json instead. */',
-        '@theme {',
-        '  /* Only the project palette: no Tailwind default colors */',
-        '  --color-*: initial;',
-        '  --color-white: #fff;',
-        '  --color-black: #000;',
-        ...tokens,
-        '  /* Derived shades and alpha variants */',
-        ...derivedTokens(theme),
-        '}',
-        ''
-      ].join('\n'));
-    }
-  };
 }
 
 // A token value from tokens.json as CSS: a theme's value (the first theme, the only one so far),
@@ -133,37 +51,41 @@ function designTokensToTheme() {
             `font-weight: ${style.fontWeight};`,
             style.letterSpacing && `letter-spacing: ${style.letterSpacing};`,
             // The type grammar has no text-transform; styles whose usage says uppercase get it
-            /uppercase/i.test(style.usage || '') && 'text-transform: uppercase;'
+            /uppercase/i.test(style.usage || '') && 'text-transform: uppercase;',
           ].filter(Boolean);
           return `@utility type-${style.name} {\n${declarations.map((d) => `  ${d}`).join('\n')}\n}`;
-        })
+        }),
       );
       // Every size in the type scale as a font-size step (text-13, text-11) for text that takes a
       // size without a whole type style; like an arbitrary size, it leaves the line height alone
-      const fontSizes = [...new Set(tokens.type.groups.flatMap((group) => group.styles.map((style) => style.fontSize)))]
-        .sort((a, b) => parseFloat(a) - parseFloat(b));
-      writeIfChanged(cssPath, [
-        '/* Generated from tokens.json by vite.config.mjs; edit tokens.json (the design system) instead. */',
-        '@theme static {',
-        '  /* Only the design system: no Tailwind default colors, radii or shadows */',
-        '  --color-*: initial;',
-        '  --radius-*: initial;',
-        '  --shadow-*: initial;',
-        '  --color-white: #fff;',
-        '  --color-black: #000;',
-        ...tokens.color.tokens.map((t) => `  --color-${t.name}: ${tokenValue(t.value, 'color-')};`),
-        ...tokens.radius.tokens.map((t) => `  --${t.name}: ${t.value};`),
-        ...tokens.shadow.tokens.map((t) => `  --${t.name}: ${tokenValue(t.value, '')};`),
-        '  /* Control and tile heights as spacing values: h-control, size-icon, h-touch */',
-        ...tokens.size.tokens.map((t) => `  --spacing-${t.name.replace(/^size-/, '')}: ${t.value};`),
-        ...Object.entries(tokens.type.families).map(([key, stack]) => `  --font-${key}: ${stack};`),
-        '  /* The type scale\'s sizes as font-size steps: text-11, text-13 */',
-        ...fontSizes.map((size) => `  --text-${parseFloat(size)}: ${size};`),
-        '}',
-        '',
-        ...typeUtilities,
-        ''
-      ].join('\n'));
+      const fontSizes = [
+        ...new Set(tokens.type.groups.flatMap((group) => group.styles.map((style) => style.fontSize))),
+      ].sort((a, b) => parseFloat(a) - parseFloat(b));
+      writeIfChanged(
+        cssPath,
+        [
+          '/* Generated from tokens.json by vite.config.mjs; edit tokens.json (the design system) instead. */',
+          '@theme static {',
+          '  /* Only the design system: no Tailwind default colors, radii or shadows */',
+          '  --color-*: initial;',
+          '  --radius-*: initial;',
+          '  --shadow-*: initial;',
+          '  --color-white: #fff;',
+          '  --color-black: #000;',
+          ...tokens.color.tokens.map((t) => `  --color-${t.name}: ${tokenValue(t.value, 'color-')};`),
+          ...tokens.radius.tokens.map((t) => `  --${t.name}: ${t.value};`),
+          ...tokens.shadow.tokens.map((t) => `  --${t.name}: ${tokenValue(t.value, '')};`),
+          '  /* Control and tile heights as spacing values: h-control, size-icon, h-touch */',
+          ...tokens.size.tokens.map((t) => `  --spacing-${t.name.replace(/^size-/, '')}: ${t.value};`),
+          ...Object.entries(tokens.type.families).map(([key, stack]) => `  --font-${key}: ${stack};`),
+          "  /* The type scale's sizes as font-size steps: text-11, text-13 */",
+          ...fontSizes.map((size) => `  --text-${parseFloat(size)}: ${size};`),
+          '}',
+          '',
+          ...typeUtilities,
+          '',
+        ].join('\n'),
+      );
       // A later class replaces an earlier one of the same kind: h-touch after h-control,
       // rounded-card after rounded-control-lg, bg-panel after bg-card, type-label after type-micro
       const config = mergeConfigs(defaultConfig(), {
@@ -175,18 +97,21 @@ function designTokensToTheme() {
             spacing: tokens.size.tokens.map((t) => t.name.replace(/^size-/, '')),
             font: Object.keys(tokens.type.families),
             // The type scale's sizes as font-size steps (text-13)
-            text: fontSizes.map((size) => String(parseFloat(size)))
+            text: fontSizes.map((size) => String(parseFloat(size))),
           },
           classGroups: {
-            'type-style': [{ type: tokens.type.groups.flatMap((group) => group.styles.map((style) => style.name)) }]
-          }
-        }
+            'type-style': [{ type: tokens.type.groups.flatMap((group) => group.styles.map((style) => style.name)) }],
+          },
+        },
       });
-      writeIfChanged(tablesPath, compileToSource(config, {
-        lang: 'ts',
-        banner: '// Generated from tokens.json by vite.config.mjs (cn\'s merge tables); edit tokens.json instead.'
-      }));
-    }
+      writeIfChanged(
+        tablesPath,
+        compileToSource(config, {
+          lang: 'ts',
+          banner: "// Generated from tokens.json by vite.config.mjs (cn's merge tables); edit tokens.json instead.",
+        }),
+      );
+    },
   };
 }
 
@@ -200,39 +125,46 @@ const output = {
       return '[name].css';
     }
     return 'assets/[name]-[hash].[ext]';
-  }
+  },
 };
 
 const clientBuild = {
   outDir: 'dist',
   emptyOutDir: true,
   sourcemap: true,
-  minify: 'esbuild',
+  // Oxc, Vite 8's own minifier, leaves about 5 kB (gzip) less JavaScript per new page than esbuild
+  minify: 'oxc',
   rollupOptions: {
     input: {
-      // Route bundles: views/layout.pug loads trainer.js, views/editor.pug loads editor.js.
-      trainer: resolve(__dirname, 'client/trainer_main.ts'),
-      editor: resolve(__dirname, 'client/editor_main.ts'),
-      // Legacy /bundle.js: tiny router that lazy-loads the bundle for the current route.
-      bundle: resolve(__dirname, 'client/main.ts'),
-      // All styles (Tailwind with the project's base, component and page CSS)
-      tailwind: resolve(__dirname, 'client/styles/tailwind.css'),
       // The new UI (docs/ui-migration-plan.md): one stylesheet for every new page (app.css, linked
-      // by views/next.pug and the prerendered pages; the entries don't import it, or it would land in a
-      // shared chunk's CSS) and one React entry per page. The component gallery is served at
-      // /next/components, the rebuilt trainer at /next and its Progress page at /next/progress (named
-      // apart from the current trainer's bundle until they replace it).
+      // by the prerendered pages and views/next.pug; the entries don't import it, or it would land
+      // in a shared chunk's CSS) and one React entry per page: the trainer at /, /ru and /zh-CN, its
+      // Patterns and Progress pages after each, the documents (/privacy, /faq, /changelog and the
+      // 404 page), and the component gallery at /next/components.
       app: resolve(__dirname, 'client/styles/app.css'),
+      trainer: resolve(__dirname, 'client/entries/trainer.tsx'),
+      patterns: resolve(__dirname, 'client/entries/patterns.tsx'),
+      progress: resolve(__dirname, 'client/entries/progress.tsx'),
+      docs: resolve(__dirname, 'client/entries/docs.tsx'),
       gallery: resolve(__dirname, 'client/entries/gallery.tsx'),
-      'trainer-next': resolve(__dirname, 'client/entries/trainer-next.tsx'),
-      'progress-next': resolve(__dirname, 'client/entries/progress-next.tsx')
     },
-    output
-  }
+    output,
+  },
+};
+
+// The Studio, the rebuilt Recoil Editor previewed at /editor/next (vite build --mode studio, which
+// pnpm build runs after the client build), builds on its own into dist/: a page that shares chunks
+// with the trainer's splits them further, which costs the trainer's first load (the Studio cost it
+// 3.2 kB), while the Studio, a tool for the specs' maintainers, can carry its own copy of React.
+const studioBuild = {
+  ...clientBuild,
+  emptyOutDir: false,
+  copyPublicDir: false,
+  rollupOptions: { input: { studio: resolve(__dirname, 'client/entries/studio.tsx') }, output },
 };
 
 // The prerender (vite build --ssr, which pnpm build runs after the client build): the new pages as a
-// Node module, dist-ssr/prerender.mjs, that server/prerender.mjs renders into HTML. The client build
+// Node module, dist-ssr/prerender.mjs, that server/prerender.ts renders into HTML. The client build
 // emits the assets it links; dist-ssr/ is outside dist/, so Express never serves it.
 const ssrBuild = {
   ssr: true,
@@ -242,32 +174,33 @@ const ssrBuild = {
   sourcemap: true,
   rollupOptions: {
     input: { prerender: resolve(__dirname, 'client/entries/prerender.tsx') },
-    // .mjs, since package.json doesn't declare the project's modules as ES modules
-    output: { ...output, entryFileNames: '[name].mjs', chunkFileNames: 'chunks/[name]-[hash].mjs' }
-  }
+    // .mjs (from before package.json declared ES modules), the name the server and the tests look for
+    output: { ...output, entryFileNames: '[name].mjs', chunkFileNames: 'chunks/[name]-[hash].mjs' },
+  },
 };
 
-export default defineConfig(({ isSsrBuild }) => ({
+export default defineConfig(({ isSsrBuild, mode }) => ({
   root: '.',
   publicDir: 'etc',
   resolve: {
     alias: [
       { find: '@', replacement: resolve(__dirname, 'client') },
       // shadcn/ui components import `cn` from "cn"; ours is configured with the design tokens
-      { find: /^cn$/, replacement: resolve(__dirname, 'client/lib/utils.ts') }
-    ]
+      { find: /^cn$/, replacement: resolve(__dirname, 'client/lib/utils.ts') },
+    ],
   },
   plugins: [
-    themeJsonToStyles(),
     designTokensToTheme(),
+    // docs/*.md?html: the documents the doc pages show, as HTML
+    markdownToHtml(),
     tailwindcss(),
     react(),
     // React Compiler (automatic memoization) for components; Babel only sees .jsx/.tsx files,
     // so the legacy TypeScript modules are not parsed twice
-    babel({ include: /\.[jt]sx$/, presets: [reactCompilerPreset()] })
+    babel({ include: /\.[jt]sx$/, presets: [reactCompilerPreset()] }),
   ],
-  build: isSsrBuild ? ssrBuild : clientBuild,
+  build: isSsrBuild ? ssrBuild : mode === 'studio' ? studioBuild : clientBuild,
   server: {
-    port: 3000
-  }
+    port: 3000,
+  },
 }));

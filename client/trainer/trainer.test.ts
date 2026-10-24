@@ -62,7 +62,7 @@ describe('loadout changes', () => {
     expect(state().fireMode).toBe('single');
   });
 
-  it('stores attachments and the practice mode as the current trainer does', () => {
+  it('stores attachments and the practice mode as the previous trainer did', () => {
     actions.setMod('revved_up', true);
     expect(localStorage.getItem('game::mods')).toBe('revved_up');
     actions.setMod('revved_up', false);
@@ -86,7 +86,7 @@ describe('loadout changes', () => {
 describe('score history', () => {
   const setup = { weapon: 'r301', mag: 2, hint: true, moving: false };
 
-  it('adds a run in the current trainer’s format and sums up today', () => {
+  it('adds a run in the previous trainer’s format and sums up today', () => {
     const raw = withResult(withResult('[]', 80, setup), 91, setup);
     expect(JSON.parse(raw)).toEqual([
       { v: 3, setup, bestAllTime: 91, today: today(), todayResults: [80, 91], dayResults: [] },

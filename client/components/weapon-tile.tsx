@@ -48,7 +48,12 @@ function WeaponTile({
       )}
       {...props}
     >
-      {art ? <img src={art} alt="" className="h-8.5 max-w-full object-contain" /> : <CrosshairPlaceholder />}
+      {/* Lazy: a grid of 31 tiles shouldn't fetch every image first (nor have the server preload them) */}
+      {art ? (
+        <img src={art} alt="" loading="lazy" className="h-8.5 max-w-full object-contain" />
+      ) : (
+        <CrosshairPlaceholder />
+      )}
       <span className="type-label">{name}</span>
       {/* The space keeps "R-301 810 RPM" apart in the tile's name; flex layout doesn't render it */}
       {meta && !compact && ' '}
@@ -66,7 +71,12 @@ function SelectedWeapon({
   art,
   meta,
   ...props
-}: React.ComponentProps<'div'> & { name: string; art?: string; meta: string }) {
+}: React.ComponentProps<'div'> & {
+  name: string;
+  art?: string;
+  /** The line under the name, such as "Assault rifle · 810 RPM" */
+  meta: React.ReactNode;
+}) {
   return (
     <div
       data-slot="selected-weapon"

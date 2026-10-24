@@ -108,7 +108,13 @@ fs.writeFileSync(
 
 // --- Render the PNGs ---
 
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml' };
+const types = {
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+};
 const blobs = fs.readdirSync(path.join(canvasDir, '_blob'));
 // The Design System's assets are the logos, which brand/ holds under the same names
 const logoFiles = new Map();
@@ -185,7 +191,11 @@ for (const name of canvas.order) {
 for (const name of components) {
   const fragment = fs.readFileSync(path.join(out, 'system', 'components', name, 'preview.html'), 'utf8');
   const height = Number(/height=(\d+)/.exec(fragment)?.[1] ?? 300);
-  await shoot(`${base}/preview/${name}`, { width: 960, height }, path.join(out, 'system', 'components', name, 'preview.png'));
+  await shoot(
+    `${base}/preview/${name}`,
+    { width: 960, height },
+    path.join(out, 'system', 'components', name, 'preview.png'),
+  );
 }
 
 await browser.close();

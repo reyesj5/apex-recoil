@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -17,19 +18,19 @@ jobs:
         node-version: [22.x, 24.x]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     # Version comes from devEngines.packageManager in package.json (pnpm 12 needs v6.1+)
     - uses: pnpm/action-setup@v6
 
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
         node-version: ${{ matrix.node-version }}
         cache: pnpm
 
     # The job queue tests spawn Python processes
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v7
       with:
         python-version: '3.12'
 
@@ -62,16 +63,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - uses: pnpm/action-setup@v6
 
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v7
       with:
         node-version: 24.x
         cache: pnpm
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v7
       with:
         python-version: '3.12'
         cache: pip
@@ -110,13 +111,78 @@ jobs:
 
     - name: Playwright report
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: playwright-report
         path: |
           playwright-report/
           test-results/
         retention-days: 7
+
+  # The trainer's pages with Lighthouse (docs/ui-migration-plan.md, Phase 2 exit): performance and
+  # accessibility of 90 or more on the desktop profile, the trainer's platform (it needs a mouse);
+  # the phone profile is recorded, its performance only warned about. The reports are kept as an
+  # artifact. lighthouserc.json and lighthouserc.mobile.json hold the pages and thresholds.
+  lighthouse:
+    name: Lighthouse
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: pnpm/action-setup@v6
+
+    - name: Use Node.js 24
+      uses: actions/setup-node@v7
+      with:
+        node-version: 24.x
+        cache: pnpm
+
+    - name: Install
+      run: pnpm install --frozen-lockfile
+
+    - name: Build
+      run: pnpm build
+
+    # Lighthouse CI drives the Google Chrome that the runner image already has
+    - name: Lighthouse, desktop
+      run: pnpm dlx @lhci/cli@0.15.1 autorun --config=lighthouserc.json
+
+    - name: Lighthouse, phone
+      run: pnpm dlx @lhci/cli@0.15.1 autorun --config=lighthouserc.mobile.json
+
+    - name: Lighthouse reports
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: lighthouse-results
+        path: lighthouse-results/
+        retention-days: 30
+
+  # A version tag is a release: it fails while site.json, NOTICE, the copyright headers or the documents the
+  # pages render still hold placeholders (scripts/check-release.mjs, docs/ownership-register.md), then builds
+  # the server's files and the static site
+  release:
+    name: Release check
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: pnpm/action-setup@v6
+
+    - name: Use Node.js 24
+      uses: actions/setup-node@v7
+      with:
+        node-version: 24.x
+        cache: pnpm
+
+    - name: Install
+      run: pnpm install --frozen-lockfile
+
+    - name: Placeholders, then the build and the static site
+      run: pnpm release
 
   processing:
     name: Processing (Python 3.12)
@@ -126,9 +192,9 @@ jobs:
         working-directory: processing
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v7
       with:
         python-version: '3.12'
         cache: pip

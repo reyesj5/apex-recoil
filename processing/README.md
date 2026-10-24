@@ -16,7 +16,7 @@ processing/
 │   ├── aggregator.py       # Multi-spray median-delta integration, proportional accumulation & outlier detection
 │   ├── spec_manager.py     # Schema verification, patch diff reporting & matplotlib visualization
 │   ├── pipeline.py         # End-to-end orchestrator for video clips, images, and sessions
-│   ├── db.py               # SQLite store shared with server/db.js: lossless versioned specs, specs.json sync
+│   ├── db.py               # SQLite store shared with server/db.ts: lossless versioned specs, specs.json sync
 │   ├── shadow_parity.py    # Dual-run shadow parity verification (specs.json vs SQLite)
 │   └── cli.py              # Unified CLI interface
 ├── tests/                  # 43 automated unit tests (pytest)

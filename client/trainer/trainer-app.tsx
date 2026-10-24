@@ -46,18 +46,23 @@ function Trainer({ locale }: { locale: Locale }) {
   return (
     <>
       {/* On wide screens the page fits the window, so the range and its corners stay in view: the
-          weapon grid takes the loadout's spare height and the session panel scrolls on its own */}
-      <div className="hidden min-h-screen flex-col md:flex xl:h-screen">
-        <TopBar locale={locale} page="train" />
-        <div className="flex flex-1 flex-wrap items-stretch gap-4 px-5 pt-4 pb-5 xl:min-h-0 xl:flex-nowrap">
-          <LoadoutPanel className="max-w-85 flex-[1_1_300px] xl:min-h-0 xl:overflow-y-auto" />
-          <main className="flex min-w-0 flex-[999_1_560px]">
-            <RangePanel live={wide} />
-          </main>
-          <SessionPanel locale={locale} className="max-w-80 flex-[1_1_260px] xl:min-h-0 xl:overflow-y-auto" />
+          weapon grid takes the loadout's spare height and the session panel scrolls on its own. Each
+          layout is a Suspense boundary, so the prerendered page hydrates in two shorter tasks */}
+      <Suspense fallback={null}>
+        <div className="hidden min-h-screen flex-col md:flex xl:h-screen">
+          <TopBar locale={locale} page="train" />
+          <div className="flex flex-1 flex-wrap items-stretch gap-4 px-5 pt-4 pb-5 xl:min-h-0 xl:flex-nowrap">
+            <LoadoutPanel className="max-w-85 flex-[1_1_300px] xl:min-h-0 xl:overflow-y-auto" />
+            <main className="flex min-w-0 flex-[999_1_560px]">
+              <RangePanel live={wide} />
+            </main>
+            <SessionPanel locale={locale} className="max-w-80 flex-[1_1_260px] xl:min-h-0 xl:overflow-y-auto" />
+          </div>
         </div>
-      </div>
-      <PhoneViewer locale={locale} className="flex min-h-screen flex-col md:hidden" />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PhoneViewer locale={locale} className="flex min-h-screen flex-col md:hidden" />
+      </Suspense>
       <ConsentPrompt sheet={!wide} />
       {dialogsWanted && (
         <Suspense fallback={null}>

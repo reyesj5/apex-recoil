@@ -52,4 +52,22 @@ describe('RunResult', () => {
     expect(onReplay).toHaveBeenCalledOnce();
     expect(onNext).toHaveBeenCalledOnce();
   });
+
+  it('keeps volt for good results: a score below today’s median is neutral', () => {
+    const card = (score: number, below?: boolean) => (
+      <RunResult
+        title="Run complete"
+        score={score}
+        below={below}
+        meta="R-301"
+        replayLabel="Replay"
+        nextLabel="Next run"
+      />
+    );
+    const { rerender } = render(card(87));
+    expect(screen.getByText('87')).toHaveClass('text-volt');
+    rerender(card(71, true));
+    expect(screen.getByText('71')).toHaveClass('text-text');
+    expect(screen.getByText('71')).not.toHaveClass('text-volt');
+  });
 });

@@ -40,11 +40,11 @@
       "eva8": "EVA-8连发霰弹枪",
       "mastiff": "敖犬霰弹枪",
       "mozambique": "莫桑比克",
-      "mozambique_akimbo": "莫桑比克 (双持)",
+      "mozambique_akimbo": "莫桑比克（双持）",
       "peacekeeper": "和平捍卫者",
       "re45": "RE-45",
       "p2020": "P2020",
-      "p2020_akimbo": "P2020 (双持)",
+      "p2020_akimbo": "P2020（双持）",
       "wingman": "辅助手枪"
     },
     "classLong": {
@@ -70,8 +70,8 @@
     "patterns": "弹道图",
     "search": "搜索武器",
     "language": "语言",
-    "studio": "压枪编辑器",
-    "support": "支援",
+    "studio": "后坐力工作室",
+    "support": "支持",
     "help": "帮助",
     "settings": "设置"
   },
@@ -84,7 +84,6 @@
   "loadout": {
     "title": "装备",
     "count_other": "{{count}} 把武器",
-    "meta": "{{class}} · {{rpm}} 发/分",
     "rpm": "{{rpm}} 发/分",
     "filter": "筛选武器",
     "classes": "武器类别",
@@ -175,7 +174,7 @@
     "title": "开始之前",
     "pointer": "在 Windows 鼠标设置中关闭“提高指针精确度”。<guide>方法</guide>",
     "sensitivity": "输入游戏内灵敏度，让弹道与游戏一致。<settings>设置</settings>",
-    "pointerUrl": "https://www.google.com/search?q=turn+off+enhance+pointer+precision"
+    "pointerUrl": "https://cn.bing.com/search?q=Windows+关闭+提高指针精确度"
   },
   "legal": {
     "nav": "法律与帮助",
@@ -194,10 +193,10 @@
     "sensitivity": "灵敏度",
     "sensitivityHint": "你在游戏中的鼠标灵敏度。",
     "ads": "ADS 倍率",
-    "adsHint": "游戏中的开镜灵敏度倍率；练习使用 灵敏度 × ADS。如果你的灵敏度已经包含它，请保持 1.0。",
+    "adsHint": "游戏中的开镜灵敏度倍率；练习时使用“灵敏度 × ADS”。如果你的灵敏度已包含该倍率，请保持 1.0。",
     "invertY": "反转 Y 轴",
     "practice": "练习",
-    "recoilMoves": "后坐力移动",
+    "recoilMoves": "后坐力作用于",
     "recoilAim": "准星",
     "recoilTarget": "目标",
     "recoilHint": "移动目标更贴近游戏中的手感。",
@@ -237,15 +236,23 @@
     "title": "每把武器的后坐力弹道",
     "intro": "练习需要鼠标和更大的屏幕。你可以先在这里研究每把武器的弹道。",
     "weapon": "武器",
-    "section": "{{weapon}} 弹道",
-    "pattern": "{{weapon}} 后坐力弹道，{{shots}}",
-    "meta": "{{rpm}} 发/分 · {{capacity}}（{{tier}}）",
-    "play": "播放扫射",
     "computer": "在电脑上练习。",
     "computerText": "把链接发给自己。",
     "computerLabel": "在电脑上练习",
     "copy": "复制链接",
     "copied": "链接已复制"
+  },
+  "patterns": {
+    "title": "后坐力弹道",
+    "description": "Apex Legends 每把武器在各种弹匣和射击模式下的后坐力弹道。逐发观看每次扫射，然后直接在浏览器中练习。",
+    "intro": "每把武器的扫射弹道，即准星为了让子弹停留在起点而需要移动的路径。选择一把武器研究它的弹道，然后用它练习。",
+    "library": "弹道库",
+    "section": "{{weapon}} 弹道",
+    "pattern": "{{weapon}} 后坐力弹道，{{shots}}",
+    "meta": "{{rpm}} 发/分 · {{capacity}}（{{tier}}）",
+    "play": "播放扫射",
+    "practice": "用这把武器练习",
+    "read": "先把准星放在圆环上，枪口上跳时让准星沿着线移动，子弹就会停留在圆环上。"
   },
   "progress": {
     "title": "进度",
@@ -256,7 +263,7 @@
     "period": "时间范围",
     "days7": "7 天",
     "days30": "30 天",
-    "allTime": "全部",
+    "allTime": "全部时间",
     "export": "导出 CSV",
     "runs": "尝试次数",
     "runsNote7": "最近 7 天",
@@ -295,5 +302,14 @@
     "csvTries": "次数",
     "csvMedian": "中位数",
     "csvBest": "最高"
+  },
+  "notFound": {
+    "title": "找不到页面",
+    "text": "此地址没有内容。链接可能有误，或页面已移动。",
+    "home": "前往训练器"
+  },
+  "serverError": {
+    "title": "出错了",
+    "text": "服务器无法完成此请求。请稍后再试，或返回训练器。"
   }
 }

@@ -1,5 +1,67 @@
 # v260922
 
+- **Lock-in (M11 Phase 5, 2026-10-24)**:
+  - **Checked on every change**: `pnpm lint` runs [scripts/check-conventions.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/check-conventions.mjs) after ESLint, which fails on a stylesheet besides `app.css`, on `@apply`, and on a hex color or a `dark:` class in the client. The Tailwind lint also refuses deprecated, duplicated and badly spaced classes.
+  - **Checked before a release**: `pnpm release` stops while a placeholder is left in `site.json`, `NOTICE`, the copyright headers or the privacy policy, FAQ and changelog ([scripts/check-release.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/check-release.mjs)), then builds the server's files and the static site. CI runs it for a version tag. Today it lists 47 placeholders, all values the owner has to provide.
+  - **Deleted**: the dependencies nothing used (`hotkeys-js`, `json-diff`, `stats-lite` and their types, `ts-assert-exists`, `tslib`, `react-hook-form`, `@hookform/resolvers`) and four shadcn components no page used (collapsible, form, sheet, sidebar).
+  - **Formatting**: Prettier formats the build scripts, `vite.config.mjs` and `app.css` too; only generated files, data, the Design System's `tokens.json` and the docs keep their own layout.
+  - **Dev tools' advisories**: `minimatch`, `brace-expansion` and `picomatch` are pinned to their fixed versions; the remaining moderate advisory is in a build-time parser the typography plugin pins.
+  - **CI**: `actions/checkout`, `setup-node`, `setup-python` and `upload-artifact` move to v7, their releases on the Node 24 action runtime.
+  - **The redesign's color table** ([docs/ui-redesign.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-redesign.md)) lists every color of the tokens with its contrast, and the three marks under 3:1 with what carries their meaning.
+  - **The ownership register** marks the header logo and the release history done; renaming the `apex` identifiers waits for the final name.
+  - **A run below today's median**: the result card's score turns neutral as well as its pill, since volt marks good results ([score-card.tsx](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/components/score-card.tsx); the owner approved the design on 2026-10-24). The component gallery shows both states.
+
+- **The Server in TypeScript, Split into Routers (M11 Phase 4, 2026-10-24)**:
+  - **No pug**: the Studio and the component gallery get a bare shell from the server ([server/prerender.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/prerender.ts)), and a request the server fails gets an error page in the new design, prerendered like the 404 page, with the error's status (and in development the error itself under it); anything but a browser gets plain text. `views/` and the `pug` dependency are gone, and `pnpm static` writes `editor.html` from the same shell.
+  - **Express 5 and multer 2**: Express 5.3, multer 2.5 (1.4.5-lts.1 was deprecated, and multer before 2.5 has a denial-of-service advisory) and morgan 1.12 (log injection fixed). `cookie-parser`, `debug` and `http-errors` are gone, and `pnpm-workspace.yaml` pins the `undici` that node-gyp brings to 6.29.1 (two advisories). `pnpm audit --prod` finds nothing.
+  - **TypeScript that Node runs as it is**: `app.js`, `bin/www` and `server/*.js` became [server/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/): `createApp()` in [server/app.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/app.ts), routers for the specs, discovery, jobs, captures and pages in [server/routes/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/routes/), and upload staging and the error handler in modules of their own. Node strips the types, so there is no build step (`pnpm start` is `node server/main.ts`); `pnpm tsc` checks the server with `tsconfig.server.json`, and the package is ES modules (`"type": "module"`).
+  - **One set of schemas for the API**: the zod schemas moved from `client/lib/api/` to [shared/api.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/shared/api.ts), and the server's responses are typed with them. [shared/requests.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/shared/requests.ts) reads requests as leniently as the API always did (form fields arrive as text, and a setting the server can't use falls back to the discovery CLI's default), with two differences for malformed requests: a spec whose pattern holds anything but numbers is refused (400), and an analysis setting that isn't a positive number is left out instead of reaching the CLI (`--zoom NaN` failed the job).
+  - **`pnpm start` no longer restarts on file changes** (it ran nodemon, which waits for a change after a crash instead of exiting); `pnpm dev` still restarts the server, on changes to `server/` and `shared/`. `GET /api/discovery/status` names the queue the server runs on, not the one `REDIS_URL` suggests.
+  - **Lint**: the server, the tests and the scripts follow the same rules as the client; the 219 warnings the JavaScript had are gone.
+  - **License notices**: the original's copyright line and the `Modified by` line are on every file that holds code moved or ported out of the original project's files. An audit added them to the 17 files that lacked them: the score history ([client/engine/stats.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/engine/stats.ts)), the trainer's sound and settings, the Studio's analysis, calibration, capture, live capture, decal finder and spec export, and every server file split out of `app.js`. The [ownership register](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ownership-register.md) lists the 24 files.
+  - **Tests**: the Node tests are TypeScript (`node:test`, which stays the server's runner) and build the app around a throwaway database, storage and job queue instead of environment variables; 5 new tests cover the request parsing and the CLI arguments it makes (50 in `pnpm test`, 64 with Redis and S3). A Playwright scenario and a Node test cover the error page (59 scenarios).
+
+- **The Studio Replaces the Recoil Editor (M11 Phase 3, 2026-10-24)**:
+  - **The Studio at `/editor`** ([client/studio/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/studio/)), rebuilt from the Studio artboard in React with Tailwind, shadcn/ui and react-konva: a top bar with the weapon picker, the unsaved-changes badge, undo, redo, the shortcuts and Save spec; an icon rail for Capture, the screenshot library, saved sessions and Import; the canvas with its tool palette (select, pan, align, correct shots, fit), zoom, spray navigator and status pill; the inspector (fire rate, multiplier, magazine sizes, sample count, layers, visual scale, the shown pattern, the comparison and the saved versions); and a status bar with the job queue and the storage. `/editor/next`, where it was previewed, redirects there.
+  - **Saves change only what was edited**. The Recoil Editor's save rewrote parts of a spec nobody touched: each magazine's sound became `<weapon>_<size>` (sounds the trainer doesn't have), a weapon with one magazine got three, and the shot times became even intervals (the Devotion's spin-up and the Nemesis' and Hemlok's bursts were lost); an edit without a screenshot rescaled a pattern taller than the canvas; and shots that weren't moved were measured again, so a merged spec's values could shift by 0.01. A changed fire rate now moves the shot times with it (even times stay even, a burst keeps its shape).
+  - **Editing**: the canvas edits the weapon's spec wherever it is shown (a screenshot, a session's spray, or the spec's own units), and an edit comes back through the same placement. Correct shots (C) adds a shot where it fits the sequence; Align (A) moves the whole spray onto the decals; a right click removes a shot and a middle click marks an anchor. Undo covers the pattern, its anchors and where it sits.
+  - **The analysis' result**: progress by stage, then the shots found against a full magazine, the measured fire rate (clips only: screenshots reported the one sent), the convergence, how the samples went in, and a check against the saved spec, with Save and Compare. An analysis that finds no shots leaves the spec as it was. Results are checked as they arrive, so a changed pipeline fails with a message naming the field.
+  - **The save checkpoint and the comparison** keep the Recoil Editor's figures and thresholds (recorded from it and compared in the tests): shot count, average and largest stray, a shortened, longer or inverted pattern.
+  - **The live capture** runs on a tested sequence (the gunfire sensor, the re-aim buffer, Snap wall, the 20 s cut-off, the playback mute) and keeps recording while you switch tabs or sections. Screen capture can't run in automated tests: [docs/studio-capture-check.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/studio-capture-check.md) is the check by hand.
+  - **Kept between visits**: the weapon, the capture setup (distance, field of view, optic), the color correction, the trigger level and the re-aim time (new keys under `editor:`), with the editor's layout, tab and visual scale as before.
+  - **The Manual tab's decal finder** no longer runs out of stack on a large dark area, finds the same targets in the image's own pixels, and adds them where they are.
+  - **The Studio builds on its own** (`vite build --mode studio`), so the trainer's first load stays as it was (sharing chunks with it would have cost the trainer 3.2 kB).
+  - **Server**: `GET /api/discovery/status` tells the Studio's status bar where captures are kept (local or S3) and how analyses run (in-process or Redis).
+  - **Deleted**: `views/editor.pug` and its icon mixins, `client/modules/`, `client/editor.ts` and the other editor scripts, `client/styles/base.css`, `components.css`, `editor.css`, `tailwind.css` and `theme-tokens.css`, `theme.json`, `scripts/style-snapshot.mjs`, and the editor's accessibility baseline: every page now has no axe violations. The error page keeps its template until Phase 4.1, on the new stylesheet.
+  - **Tests**: 69 Vitest tests for the Studio's logic and store, and 14 Playwright scenarios in place of the editor's 12 (the Python discovery runs included).
+
+- **The New Pages Replace the Old Trainer (M11 Phase 2.7 and 2.8, 2026-10-24)**:
+  - **The switch**: the rebuilt trainer serves `/`, `/ru` and `/zh-CN`, with its Patterns and Progress pages after each (`/patterns`, `/ru/progress`, ...). The `/next/...` previews redirect to them (301), except the component gallery at `/next/components`. Settings and score history carry over: the pages read the keys the old trainer wrote.
+  - **The privacy policy, FAQ and changelog are pages** (`/privacy`, `/faq`, `/changelog`): Markdown in `docs/`, converted to HTML at build time by a Vite plugin ([scripts/markdown-plugin.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/markdown-plugin.mjs)) and shown between the top bar and the legal footer in English. Headings can be linked to (`/faq#controller-support`), wide tables scroll in their own box on phones, and each document's description comes from a comment on its first line. `site.json` can point `privacyUrl`, `faqUrl` and `changelogUrl` to them once their placeholders are filled; the footer opens the app's own pages in place.
+  - **A changelog for players** ([docs/changelog.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/changelog.md)); the original project's release history moved to [docs/history/upstream-release-notes.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/history/upstream-release-notes.md) (ownership register, item 16). The FAQ no longer describes the old page (its warning text and FPS counter), and a few garbled sentences read properly.
+  - **Unknown addresses return 404**, with a page of their own for browsers and a bare 404 for files and the API (the owner's decision; it was planned for Phase 4.1). A missing stylesheet or script no longer comes back as the trainer's HTML.
+  - **Deleted**: the trainer templates (`views/index*.pug`), `client/game.ts`, `client/stats.ts`, `client/trainer_main.ts`, `client/styles/trainer.css`, the legacy `bundle.js` router, Plotly and `plot.js`, tarteaucitron, the old trainer's images and icons, the Google Fonts links and `scripts/record-runs.mjs` (the recorded runs stay, and still replay in the tests). The Recoil Editor keeps its page until Phase 3; it now self-hosts Inter and JetBrains Mono and has `lang="en"`, which removes one of its accessibility violations.
+  - **Privacy policy**: section 4 says where the consent choice is kept (local storage, `consent:analytics`, 12 months), and the Google Fonts paragraph is gone.
+  - **Static site**: a folder per page (`ru/patterns/index.html`), `404.html`, and the trainer still under `index.html`, `index-ru.html` and `index-zh-CN.html`, so servers set up for the old files keep working; the nginx example serves the 404 page.
+  - **Faster first paint**: the server renders every page when it starts; the pages preload the fonts of their first paint, which removes the text shift as they arrive; the weapon grid's images load lazily instead of 31 preloads; and the trainer and Patterns pages hydrate each layout separately. Measured with Playwright under 4× CPU (Lighthouse's curves on Chrome's own metrics), the trainer's blocking time fell from 488 to 136 ms.
+  - **Lighthouse in CI**: a `lighthouse` job checks the trainer, Patterns, Progress and FAQ pages on the desktop profile (90 or more for performance and accessibility) and records the phone profile ([lighthouserc.json](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/lighthouserc.json)).
+  - **Tests**: the specs drop their `-next` names and test the real addresses (57 Playwright scenarios: 5 new for the documents and the 404 page; the old trainer's scenarios and its accessibility baselines went with it), a Node test for the redirects and 404s, and a prerender test for the documents and the 404 page.
+
+- **The Patterns Page, Previewed at `/next/patterns` (M11 Phase 2.2, 2026-10-24)**:
+  - **[client/trainer/patterns/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/trainer/patterns/)**, the redesign's pattern library, at `/next/patterns`, `/next/ru/patterns` and `/next/zh-CN/patterns`, prerendered like the other new pages with its own title and description. The top bar now reads Train, Patterns, Progress, as in the design:
+    - **The library**: every weapon's pattern with the chosen magazine and fire mode, filtered by class. All patterns share one scale and start point ([pattern-frame.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/trainer/pattern-frame.ts)), so a short burst looks short beside a long spray.
+    - **The selected pattern**: drawn large, with Play spray (the rounds appear as they fire), its magazines and fire modes, and Practice with this weapon, which opens the trainer with it picked (both pages share the settings).
+    - **Phones**: the pattern viewer, now at the same shared scale. Its language select keeps you on the page you were on.
+  - **Fixed on the way**: the fire rate under a weapon's name no longer breaks inside "выстр./мин" in Russian, and Play spray stops when you pick another weapon mid-spray.
+  - **Smaller downloads**: the build minifies with Oxc, Vite 8's own minifier, instead of esbuild, which leaves 5.4 kB (gzip) less JavaScript on every new page. A third page had split the shared code into more chunks and cost the trainer 3.4 kB. First loads: the trainer 189.0 to 194.3 kB, the Patterns page 172.2 to 177.4 kB, the Progress page 172.5 to 177.7 kB.
+  - **Tests**: 6 Playwright scenarios for the Patterns page (the library and the selected pattern, magazines, fire modes and Play spray, the way to the trainer, Russian and Chinese, without JavaScript, the phone), a Vitest test for its prerender, and the budget test covers it.
+
+- **Translation Review (2026-10-24)**: every Russian and Chinese string checked against the English, at the owner's request.
+  - **Russian**: the page title starts with a capital after the separator ("Spraydown · Тренажёр отдачи для Apex Legends"). The weapon count reads "Всего: 31" instead of the slang "31 ствол", and "Искажённый" gets its ё like the rest. Play spray is "Показать стрельбу", no longer "Показать очередь", which clashed with the Burst fire mode ("Очередь") in the same panel. The cookie banner is labelled "Аналитические cookie". The sensitivity tip and the Progress page's two empty states now read more naturally, and the pointer-precision link searches for the label Windows uses.
+  - **Chinese**: the support link reads 支持 (support the project) instead of 支援 (in-game backup), the Studio 后坐力工作室, the period chip 全部时间, and the akimbo weapons take full-width parentheses. The ADS hint and the "Recoil moves" label read more naturally. The pointer-precision link searches Bing in Chinese, since Google can't be reached from mainland China.
+  - **English**: the middle-click shortcut is "Switch result style", like "Switch fire mode".
+  - **Kept**: the weapon names from the original pages (the game's localized names) and the EA disclaimer in English. Two Chinese weapon names look doubtful and are left for a native speaker: G7侦灵枪 and 猎手冲锋枪.
+
 - **Prerendered Pages and Consent on `/next` (M11 Phase 2.4 to 2.6, 2026-10-23)**:
   - **Prerendered in each language**: `pnpm build` also builds the new pages for Node ([client/entries/prerender.tsx](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/entries/prerender.tsx)), and [server/prerender.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/prerender.mjs) renders each of the six pages (the trainer and the Progress page in English, Russian and Chinese) into HTML with the server's `site.json` values. Express renders a page on its first request and serves it from memory; `pnpm static` writes `static/next/.../index.html`. A page shows before its JavaScript runs, or without it; the browser then hydrates it and loads the stored settings and history.
   - **A title and meta description per page and language**: written for the trainer and the Progress page in English, Russian and Chinese, replacing the old site's English sentence about the Studio.
@@ -617,151 +679,3 @@
 - **Automated Video Discovery Engine**: Python pipeline in `processing/recoil_discovery` that automatically discovers rate of fire (RPM), shot count, and chronological bullet decals from video clips without manual lookup.
 - **Weapon RPM Calibration**: Fully calibrated in-game firing rates across all weapons in `client/specs.json` (Volt: 720 RPM, Devotion TC: 900 RPM peak, Prowler: 800 RPM burst, RE-45: 780 RPM, Rampage: 300 RPM, CAR: 930 RPM).
 - **Server Port Fallback**: Express server automatically falls back to port 3001 if port 3000 is in use by other background dev services.
-
-# v240915
-
-- Added splash screen about current state of the project;
-
-- Updated recoils of Flatline and R99.
-
-# v240907
-
-First update since 2021!
-
-- Added donation button for supporters;
-
-- R301 recoils are updated (many others are still out of date!);
-
-- using a YYMMDD as a version number now;
-
-# v19
-
-- C.A.R. recoils;
-
-- updated crosshair to be easily distinguishable from hit markers;
-
-- added scale: it's useful if your sensitivity is too high and pattern is very small. You can also set is proportional to 4:3 (e.g. 1.3 x 1).
-
-# v18
-
-Now shooting is interrupted when you release the mouse button. Score is computed for the bullets already shot and not recorded.
-
-# v17
-
-Simplified Chinese translation. Thank you, @SkywalkerJi!
-
-# v16
-
-Updates to L-STAR mag size after [evolution collection event](https://www.ea.com/en-gb/games/apex-legends/news/evolution-collection-event).
-
-# v15
-
-Recoils and weapons updates for the Season 10.
-
-- Prowler is removed as it only has burst mode.
-
-- Added mag levels for L-Star.
-
-- Added special fixed mag for drop weapons (Spitfire and Alternator).
-
-- Added Rampage and ad toggle for it's "Revved Up" mod.
-
-# v14
-
-- "Invert Y" setting.
-
-# v13
-
-- Russian locale.
-
-- Fix: tooltips not being fully visible.
-
-# v12 small updates
-
-- Fixed a bug when moving target disappeared after switching back to the app from other tab.
-
-- Added a note and AHK script on how to lower window sens if in-game sensitivity is very low.
-
-- Added scrolling to the control panel if windows height is too small.
-
-# v11 Moving target and UI
-
-- Added "moving target" mode, stats are tracked separately for it. Speed is not taken in account as there are many variables to consider beside that.
-
-- Updated UI controls to make mode selection easier.
-
-- Added hints to many controls.
-
-# v10 Firing area and spitfire mag size
-
-- Added a dotted region that shows a good starting position for a spray. If region is too small user will see a warning.
-
-- Updated mag size and audio for Spitfire with a purple mag.
-
-- Now versions are just sequential numbers as I realized that the game is useful already and it's not clear what should be "v1.0".
-
-# v0.9 Reworked simulation
-
-- Added a new "stationary target" option. If unchecked then crosshair will be pinned to the initial position, the target and hit markers will move. That experience should feel closer to the game. Thank you [u/Fartikus](https://www.reddit.com/user/Fartikus) for the suggestion!
-
-- Removed the "show pacer" option as "target" fulfills its purpose naturally. Statistic records with "hints" on and "pacer" off are dropped.
-
-# v0.8 L-STAR patterns
-
-- added L-STAR patterns. That completes the list!
-
-# v0.7 scores graph
-
-- Graph of best / median scores by day.
-
-- Minor layout fixes.
-
-# v0.6 updated spitfire and havoc patterns
-
-- Updated spitfire and havoc patterns after the season 9 patch has landed. Difference in mean recoils is quite small. See https://www.reddit.com/r/apexlegends/comments/n50ps9/oc_changes_in_spitfire_and_havoc_recoils_in/.
-
-# v0.5 all weapons
-
-- All weapons are here! Havoc and Devotion have a Turbocharger. It does not affect their recoils, only makes them brrr faster.
-
-- Rearranged weapons to match in-game order (AR, SMG, LMG, Pistols).
-
-- Small style and performance improvements.
-
-# v0.4 stats updates
-
-- Fixed few issues with statistics storage.
-
-- Added counter of "today tries" to the interface.
-
-- Added Alternator (not verified in-game yet but should be very close).
-
-# v0.3 slow-mode
-
-- Added a "slow-mode": o. Statistics are not recorded for "slow-mode".
-
-- Minor visual improvements and simple page for devices with width less than 900px.
-
-# v0.2 Accurate pattern scale, scoring, performance, and more
-
-[v.01 announce on reddit](https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils) got some attention to the app and users pointed out multiple improvement points.
-
-- Improved the method to collect recoil patterns found that previous patterns were bigger by around 15%. I have also found, by trying to accurately compensate with different scopes and FOV from 70 to 110, that recoil is absolute and does not scale with ADS or FOV. So there is not need to introduce ADS and FOV settings. Confirmed that new patterns are *identical with the game*.
-
-- Reworked scoring [old formula](https://www.desmos.com/calculator/ptb2ipcscr), [new formula](https://www.desmos.com/calculator/j7vjbzvuly). Now they are more forgiving for small errors.
-
-- Removed attachments level selection. The reason is twofold: 1) It's generally recommended to practice with no attachments. 2) The difference between trails is mostly in vertical scale, not form ([r99 diff](./res/r99_diff.png), [flatline diff](./res/faltline_diff.png)). In-game better attachments decrease randomness; training patterns are averages so randomness is removed. Keeping that in mind, the effort to record and support different types of attachments seems redundant. Typically it takes me around 1h to collect and process ~10 trails for one weapon config. Oh yes, it also means that **new weapon types will be added soon**er than I initially planned!
-
-- Improved performance and added FPS display.
-
-- Removed the "Real trace" option that was used to pick the "raw" pattern. Mean one is much more useful for training.
-
-- Added a custom "red dot" cursor. Disabled right mouse click on the area.
-
-- Added weapon titles.
-
-- Added FAQ page, including controller settings.
-
-# v0.1 Initial version
-
-First version with r99, r301, Flatline, and Volt x 4 possible attachment levels.

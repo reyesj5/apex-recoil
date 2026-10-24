@@ -1,5 +1,5 @@
 // The trainer's engine: weapons, patterns, runs, the target and the score history, without a DOM.
-// The current trainer (client/game.ts) and the new one share it.
+// The trainer's pages run on it, as the previous trainer (client/game.ts, gone since 2026-10-24) did.
 export * from './loadout';
 export * from './pattern';
 export * from './point';

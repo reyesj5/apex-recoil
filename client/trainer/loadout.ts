@@ -1,6 +1,23 @@
+/**
+ * Copyright 2021 Mikhail Goncharov
+ * Modified by [OWNER NAME], 2025-2026.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { loadoutWeapon } from '@/engine/loadout';
+import { loadoutWeapon, type LoadoutSettings } from '@/engine/loadout';
 import {
   formatMods,
   getWeaponModeConfig,
@@ -13,11 +30,11 @@ import {
   type FireMode,
 } from '@/engine/weapons';
 import { useTrainerSettings } from '@/lib/storage/trainer';
-import { findWeapon, magazineTiers } from './catalog';
+import { findWeapon, magazineTiers, type TrainerWeapon } from './catalog';
 import type { RangeSettings } from './range/renderer';
 
 // The loadout as the trainer shows and runs it, derived from the stored settings, and the changes a
-// player makes, written the way the current trainer writes them.
+// player makes, written the way the previous trainer wrote them.
 
 export type Practice = 'path' | 'still' | 'moving';
 
@@ -75,6 +92,34 @@ export const actions = {
 export function practiceOf(hint: boolean, moving: boolean): Practice {
   if (moving) return 'moving';
   return hint ? 'path' : 'still';
+}
+
+/**
+ * Any weapon with the stored magazine, fire mode and attachments, as the Patterns page draws each:
+ * the magazine falls back to the weapon's largest, the fire mode to its default
+ */
+export function weaponSetup(
+  entry: TrainerWeapon,
+  s: Pick<LoadoutSettings, 'mag' | 'fireMode' | 'mods' | 'corruptedStock'>,
+) {
+  const weapon = loadoutWeapon(entry.spec, s);
+  return {
+    weapon,
+    capacity: magSize(weapon, s.mag, s.corruptedStock),
+    mode: resolveFireMode(weapon.name, s.fireMode),
+  };
+}
+
+/** The stored settings that set a weapon up (weaponSetup) */
+export function useSetupSettings() {
+  return useTrainerSettings(
+    useShallow((state) => ({
+      mag: state.mag,
+      fireMode: state.fireMode,
+      mods: state.mods,
+      corruptedStock: state.corruptedStock,
+    })),
+  );
 }
 
 /** The selected weapon and everything the loadout panel shows about it */

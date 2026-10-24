@@ -6,7 +6,7 @@ import recorded from './recorded-runs.fixture.json';
 import { Run, type RunResult } from './run';
 import type { Weapon } from './weapons';
 
-// The engine against the current trainer: each recorded run (recorded-runs.fixture.json) is replayed
+// The engine against the previous trainer: each recorded run (recorded-runs.fixture.json) is replayed
 // event by event the way the old page handled them (a press starts a run or presses the trigger
 // again, a release lets go, a frame advances the run), and every shot must fire at the same time
 // with the same score.
@@ -64,7 +64,7 @@ function replay(run: RecordedRun): { run: Run; result: RunResult } {
   return { run: current!, result: current!.result! };
 }
 
-describe('Run, against runs recorded from the current trainer', () => {
+describe('Run, against runs recorded from the previous trainer', () => {
   it.each(runs.map((r) => [r.name, r] as const))('%s', (_name, recordedRun) => {
     const { run, result } = replay(recordedRun);
     expect(run.shots.map((s) => s.t)).toEqual(recordedRun.result.hitTimes);

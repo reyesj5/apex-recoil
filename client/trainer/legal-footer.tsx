@@ -56,12 +56,13 @@ export function LegalFooter({ className }: { className?: string }) {
     >
       {(links.length > 0 || analytics) && (
         <nav aria-label={t('legal.nav')} className="flex flex-wrap gap-x-3 gap-y-1">
+          {/* The app's own pages (/privacy) open in place, other sites in a new tab */}
           {links.map(([label, href]) => (
             <a
               key={label}
               href={href}
-              target="_blank"
-              rel="noopener noreferrer"
+              target={href.startsWith('/') ? undefined : '_blank'}
+              rel={href.startsWith('/') ? undefined : 'noopener noreferrer'}
               className="text-text-secondary hover:text-text"
             >
               {label}

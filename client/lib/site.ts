@@ -1,9 +1,9 @@
 import data from '../../site.json';
 
-// Owner-specific names, links and IDs from site.json at the repository root, which the current pages
-// read too. The rules are the ownership register's (docs/ownership-register.md): a link that is not
-// set is left out, so the page hides it; a value in square brackets is a placeholder shown as is; and
-// analytics runs only with both a measurement ID and a privacy policy.
+// Owner-specific names, links and IDs from site.json at the repository root, which the server and
+// the Recoil Editor read too. The rules are the ownership register's (docs/ownership-register.md):
+// a link that is not set is left out, so the page hides it; a value in square brackets is a
+// placeholder shown as is; and analytics runs only with both a measurement ID and a privacy policy.
 
 const linkKeys = [
   'siteUrl',

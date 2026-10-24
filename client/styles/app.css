@@ -10,20 +10,25 @@
  *   component uses `bg-panel` instead.
  * - Style with utilities in the components: no @apply, and no other CSS files.
  */
-@import "tailwindcss" source(none);
-@import "tw-animate-css";
-@import "@fontsource/chakra-petch/600.css";
-@import "@fontsource/chakra-petch/700.css";
-@import "@fontsource-variable/inter";
-@import "@fontsource-variable/jetbrains-mono";
-@import "./design-tokens.css";
+@import 'tailwindcss' source(none);
+@import 'tw-animate-css';
+@import '@fontsource/chakra-petch/600.css';
+@import '@fontsource/chakra-petch/700.css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+@import './design-tokens.css';
+
+/* prose: the documents of docs/ as pages (the privacy policy, the FAQ, the changelog), restyled on
+   the tokens where they show (client/trainer/docs/doc-app.tsx) */
+@plugin '@tailwindcss/typography';
 
 /* Only the new UI's code uses these utilities */
-@source "../components";
-@source "../entries";
-@source "../gallery";
-@source "../lib";
-@source "../trainer";
+@source '../components';
+@source '../entries';
+@source '../gallery';
+@source '../lib';
+@source '../studio';
+@source '../trainer';
 
 /* One theme and no .dark class, so shadcn/ui's dark: classes never apply (Tailwind's default dark
    variant would follow the operating system's setting instead) */

@@ -21,6 +21,9 @@ server {
     gzip_vary on;
     gzip_types text/plain text/css application/javascript application/json image/svg+xml application/xml;
 
+    # Every page is a folder with an index.html (patterns/, ru/progress/); an address the site
+    # doesn't have gets the 404 page
+    error_page 404 /404.html;
     location / {
         # First attempt to serve request as file, then
         # as directory, then fall back to displaying a 404.
@@ -31,12 +34,14 @@ server {
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri =404;
     }
-    # Pages and the entry files that keep their names (trainer.js, editor.js, tailwind.css):
-    # browsers check for a new version every time
+    # Pages and the entry files that keep their names (trainer.js, patterns.js, progress.js,
+    # docs.js, editor.js, app.css, tailwind.css): browsers check for a new version every time
     location ~* \.(html|js|css)$ {
         add_header Cache-Control "no-cache";
         try_files $uri =404;
     }
+    # /ru and /zh-CN from index-ru.html and index-zh-CN.html, as before the new pages; ru/index.html
+    # and zh-CN/index.html hold the same pages, so these two blocks may also go
     location ~ ^/ru/?$ {
        rewrite ^/ru/?(.*)$ /$1 break;
        index index-ru.html;

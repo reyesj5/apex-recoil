@@ -202,7 +202,7 @@ export function SettingsDialog() {
   );
 }
 
-// Whether the recoil moves the aim (the current trainer's default) or the target, as in the game
+// Whether the recoil moves the aim (the previous trainer's default) or the target, as in the game
 function RecoilMoves({ stationary, onChange }: { stationary: boolean; onChange: (stationary: boolean) => void }) {
   const { t } = useTranslation();
   const id = useId();

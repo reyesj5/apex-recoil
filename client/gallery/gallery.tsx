@@ -574,6 +574,9 @@ function Feedback() {
             Connected
           </Badge>
           <Badge dot>Trigger idle</Badge>
+          <Badge variant="danger" dot>
+            Major discrepancy
+          </Badge>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant="warning" size="lg" dot>
@@ -683,13 +686,26 @@ function Data() {
           <SummaryTile label="Median score" value={74} note="+15 since the first week" />
         </dl>
       </Item>
-      <Item title="Score card" description="The last score in the session panel, and the result after a run." wide>
+      <Item
+        title="Score card"
+        description="The last score in the session panel, and the result after a run: above today’s median, and below it (no volt)."
+        wide
+      >
         <div className="flex flex-wrap items-start gap-5">
           <ScoreCard label="Last score" hint="Your first run today shows up here." className="w-65" />
           <RunResult
             title="Run complete"
             score={87}
             delta={<ScoreDelta delta={9}>above today’s median</ScoreDelta>}
+            meta="R-301 · Lv 2 magazine (28) · Follow path"
+            replayLabel="Replay"
+            nextLabel="Next run"
+          />
+          <RunResult
+            title="Run complete"
+            score={71}
+            below
+            delta={<ScoreDelta delta={-7}>below today’s median</ScoreDelta>}
             meta="R-301 · Lv 2 magazine (28) · Follow path"
             replayLabel="Replay"
             nextLabel="Next run"

@@ -8,7 +8,7 @@ import {
   type TrialStats,
 } from '@/engine/stats';
 
-// The score history in game::stats, as the current trainer keeps it: per setup (weapon, magazine,
+// The score history in game::stats, as the previous trainer kept it: per setup (weapon, magazine,
 // mode), today's scores and a median and best for each earlier day. Only a full magazine at full
 // speed is saved.
 

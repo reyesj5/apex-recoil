@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import recorded from './current-app.fixture.json';
 import { createPersistedStore, field, flag, number, readValues, type Values } from './index';
 import { editorFields } from './editor';
-import { currentTrainerFields, trainerFields } from './trainer';
+import { previousTrainerFields, trainerFields } from './trainer';
 
 // The stores read what the current app wrote (current-app.fixture.json, recorded from it) and write
 // changes back in the same format, so players keep their settings and score history.
@@ -20,15 +20,15 @@ function fallbacks<F extends Record<string, { fallback: unknown }>>(fields: F) {
 const keysOf = (fields: Record<string, { key: string }>) => Object.values(fields).map((f) => f.key);
 
 describe('trainer storage', () => {
-  it('has a field for every key the current trainer writes', () => {
-    expect(keysOf(currentTrainerFields).sort()).toEqual(Object.keys(recorded.trainerDefaults).sort());
-    expect(Object.keys(recorded.trainer).filter((key) => !keysOf(currentTrainerFields).includes(key))).toEqual([]);
+  it('has a field for every key the previous trainer wrote', () => {
+    expect(keysOf(previousTrainerFields).sort()).toEqual(Object.keys(recorded.trainerDefaults).sort());
+    expect(Object.keys(recorded.trainer).filter((key) => !keysOf(previousTrainerFields).includes(key))).toEqual([]);
   });
 
   it('keeps the settings the redesign adds under keys of their own', () => {
-    const added = keysOf(trainerFields).filter((key) => !keysOf(currentTrainerFields).includes(key));
+    const added = keysOf(trainerFields).filter((key) => !keysOf(previousTrainerFields).includes(key));
     expect(added.sort()).toEqual(['game::ads', 'game::replay-speed', 'game::runs']);
-    // An ADS multiplier of 1 leaves runs as the current trainer sets them up
+    // An ADS multiplier of 1 leaves runs as the previous trainer set them up
     expect(readValues(trainerFields, storageWith(recorded.trainer))).toMatchObject({
       ads: 1,
       replaySpeed: 1,
@@ -38,11 +38,11 @@ describe('trainer storage', () => {
 
   it('reads the first-visit values as the defaults', () => {
     const values = readValues(trainerFields, storageWith(recorded.trainerDefaults));
-    // The current trainer replaces fire mode 'default' with the weapon's mode on its first visit
+    // The previous trainer replaced fire mode 'default' with the weapon's mode on its first visit
     expect(values).toEqual({ ...fallbacks(trainerFields), fireMode: 'auto' });
   });
 
-  it('reads the settings and history the current trainer saved', () => {
+  it('reads the settings and history the previous trainer saved', () => {
     const values = readValues(trainerFields, storageWith(recorded.trainer));
     expect(values).toMatchObject({
       weapon: 'r99',
@@ -67,7 +67,7 @@ describe('trainer storage', () => {
 
   it('writes every recorded value back unchanged', () => {
     for (const recording of [recorded.trainerDefaults, recorded.trainer]) {
-      for (const f of Object.values(currentTrainerFields)) {
+      for (const f of Object.values(previousTrainerFields)) {
         const raw = recording[f.key as keyof typeof recording];
         expect(f.codec.format(f.codec.parse(raw) as never), f.key).toBe(raw);
       }

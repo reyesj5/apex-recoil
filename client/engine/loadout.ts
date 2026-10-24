@@ -1,6 +1,6 @@
 // What a run needs from the player's settings: the weapon with its attachments, the rounds in the
-// magazine, the fire mode and the pattern scaled for the sensitivity. The current trainer reads the
-// settings from its attributes and the new one from lib/storage; both set up runs the same way.
+// magazine, the fire mode and the pattern scaled for the sensitivity. The trainer reads the settings
+// from lib/storage and sets up runs the way the previous trainer did from its attributes.
 
 import { recoilPattern, sensitivityScale } from './pattern';
 import type { RunSetup } from './run';

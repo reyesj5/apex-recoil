@@ -11,6 +11,7 @@ import type { FireMode } from '@/engine/weapons';
 import { classCounts, weaponClasses, weapons, type WeaponClass } from './catalog';
 import { actions, useLoadout } from './loadout';
 import { useNames } from './names';
+import { WeaponMeta } from './weapon-meta';
 
 const counts = classCounts();
 
@@ -43,7 +44,7 @@ export function LoadoutPanel({ className }: { className?: string }) {
       <SelectedWeapon
         name={names.weapon(entry.id)}
         art={entry.art}
-        meta={t('loadout.meta', { class: names.weaponClassLong(entry.weaponClass), rpm: weapon.rpm })}
+        meta={<WeaponMeta weaponClass={entry.weaponClass} rpm={weapon.rpm} />}
       />
 
       <Input

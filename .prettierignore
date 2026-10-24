@@ -1,9 +1,11 @@
-# Prettier formats new code only. The legacy files below are replaced by the UI rebuild
-# (docs/ui-migration-plan.md) or keep their own style; reformatting them would only add noise.
+# What Prettier leaves alone: generated and vendored files, data, copies that must stay byte for byte as
+# their source, other projects, and the documentation's hand-written layout. All code is formatted.
 
 # Generated, vendored and data
 dist/
 dist-ssr/
+.lighthouseci/
+lighthouse-results/
 static/
 public/
 coverage/
@@ -19,11 +21,13 @@ assets/
 brand/
 client/specs.json
 client/lib/cn-tables.ts
+client/styles/design-tokens.css
+# A copy of the Design System artifact's tokens.json, kept identical to it
+client/styles/tokens.json
 # Recorded test data, kept compact
 client/engine/*.fixture.json
+client/studio/**/*.fixture.json
 client/raw_recoils.json
-client/styles/theme-tokens.css
-theme.json
 **/.venv/
 
 # Other projects, editor settings and hand-written YAML
@@ -31,18 +35,6 @@ arduino_mouse/
 .vscode/
 .github/
 compose.yaml
-
-# Legacy code and templates
-app.js
-bin/
-server/
-test/
-scripts/
-views/
-client/*.ts
-client/modules/
-client/styles/
-vite.config.mjs
 
 # Documentation keeps its hand-written layout
 *.md

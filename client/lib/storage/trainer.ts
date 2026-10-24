@@ -1,9 +1,9 @@
 import { createPersistedStore, field, flag, number, oneOf, text } from './index';
 
-// The trainer's settings and score history, under the keys the current trainer writes (client/game.ts
-// and client/stats.ts, namespace 'game:', so every key starts with 'game::'). Fallbacks are the
-// current defaults.
-export const currentTrainerFields = {
+// The trainer's settings and score history, under the keys the previous trainer wrote (client/game.ts
+// and client/stats.ts, namespace 'game:', so every key starts with 'game::'), so players keep them.
+// Fallbacks are its defaults.
+export const previousTrainerFields = {
   weapon: field('game::weapon', text, 'r99'),
   /** The magazine's index in the weapon's list, 0 for the base magazine */
   mag: field('game::mag', number, 0),
@@ -36,11 +36,11 @@ export const currentTrainerFields = {
   stats: field('game::stats', text, '[]'),
 };
 
-// Settings the redesign adds, under new keys the current trainer never reads
+// Settings the redesign adds, under new keys the previous trainer never read
 export const trainerFields = {
-  ...currentTrainerFields,
+  ...previousTrainerFields,
   /**
-   * The game's ADS sensitivity multiplier. Runs use sensitivity × ADS, as the current trainer asks
+   * The game's ADS sensitivity multiplier. Runs use sensitivity × ADS, as the previous trainer asked
    * players to enter by hand, so 1 leaves a stored sensitivity meaning what it did.
    */
   ads: field('game::ads', number, 1),

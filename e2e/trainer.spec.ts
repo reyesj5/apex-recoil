@@ -1,92 +1,128 @@
-import { ANALYTICS_URL, expect, site, specs, storage, test } from './fixtures';
+import { AxeBuilder } from '@axe-core/playwright';
+import type { Page } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { ANALYTICS_URL, expect, root, site, specs, storage, test } from './fixtures';
 
-// The trainer pages (/, /ru, /zh-CN), driven like a player would. Phase 2 of
-// docs/ui-migration-plan.md rebuilds them; these scenarios must keep passing.
+// The trainer at /, /ru and /zh-CN (docs/ui-migration-plan.md, Phase 2): the previous trainer's
+// scenarios, asserting on the same data (stored settings and scores); the runs recorded from the
+// previous trainer replayed through the range; and, as on every new page, no accessibility
+// violations at all.
 
-const tile = (name: string) => `#weapon-select [data-weapon="${name}"]`;
+async function violations(page: Page) {
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+  return violations.map((v) => `${v.id}: ${v.nodes.length} element(s) (${v.help}) ${v.nodes[0].target.join(' ')}`);
+}
+
+const weaponGrid = (page: Page) => page.getByRole('radiogroup', { name: 'Weapon', exact: true });
+const weapon = (page: Page, name: string) => weaponGrid(page).getByRole('radio', { name: new RegExp(`^${name} \\d`) });
+const fireModes = (page: Page) => page.getByRole('radiogroup', { name: 'Fire mode' });
+const magazines = (page: Page) => page.getByRole('radiogroup', { name: 'Magazine' });
+const range = (page: Page) => page.getByRole('region', { name: 'Practice range' });
+
+const google = /^https:\/\/(www\.googletagmanager\.com|[\w.-]*google-analytics\.com)\//;
+const consentBanner = (page: Page) => page.getByRole('dialog', { name: 'Analytics cookies' });
+/** The stored consent choice: 'granted', 'denied' or undefined */
+const consent = async (page: Page) =>
+  (JSON.parse((await storage(page, 'consent:analytics'))['consent:analytics'] ?? '{}') as { choice?: string }).choice;
 
 test('lists every weapon and selects one', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(`${site.name} · Recoil trainer for Apex Legends`);
-  await expect(page.locator('#weapon-select > .btn')).toHaveCount(specs.length);
-  await expect(page.locator(tile('r99'))).toHaveClass(/\bselected\b/);
-  await expect(page.locator('#score-stats')).toHaveText("Today's tries -, median -, best -\nAll time best -", {
-    useInnerText: true,
-  });
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  // The stylesheet reached the page (a missing one would be served the trainer's HTML)
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(10, 12, 15)');
+  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(specs.length);
+  await expect(weapon(page, 'R-99')).toHaveAttribute('aria-checked', 'true');
+  const session = page.getByRole('complementary', { name: 'Session' });
+  await expect(session.getByText('Your first run today shows up here.')).toBeVisible();
 
-  await page.locator(tile('r301')).click();
-  await expect(page.locator(tile('r301'))).toHaveClass(/\bselected\b/);
-  await expect(page.locator(tile('r99'))).not.toHaveClass(/\bselected\b/);
+  await weapon(page, 'R-301').click();
+  await expect(weapon(page, 'R-301')).toHaveAttribute('aria-checked', 'true');
+  await expect(weapon(page, 'R-99')).toHaveAttribute('aria-checked', 'false');
+  expect(await storage(page, 'game::weapon')).toEqual({ 'game::weapon': 'r301' });
+  expect(await violations(page), 'accessibility violations').toEqual([]);
 });
 
-test('filters weapons by search and category', async ({ page }) => {
+test('filters weapons by search and class', async ({ page }) => {
   await page.goto('/');
-  const shown = page.locator('#weapon-select > .btn:visible');
-  const names = () => shown.evaluateAll((tiles) => tiles.map((t) => t.getAttribute('data-weapon')));
-
-  await page.locator('#weapon-search-input').fill('r9');
+  const shown = weaponGrid(page).getByRole('radio');
+  await page.getByRole('searchbox', { name: 'Filter weapons' }).fill('r9');
   await expect(shown).toHaveCount(1);
-  expect(await names()).toEqual(['r99']);
-  await page.locator('#weapon-search-input').fill('');
+  await expect(shown).toHaveAttribute('data-weapon', 'r99');
+  await page.getByRole('searchbox', { name: 'Filter weapons' }).fill('');
   await expect(shown).toHaveCount(specs.length);
 
-  await page.locator('.cat-pill[data-category="smg"]').click();
-  const smgs = await page.locator('#weapon-select > .btn[data-category="smg"]').count();
-  expect(smgs).toBeGreaterThan(0);
-  await expect(shown).toHaveCount(smgs);
-  await expect(page.locator('.cat-pill[data-category="smg"]')).toHaveClass(/\bactive\b/);
-  await page.locator('.cat-pill[data-category="all"]').click();
+  const classes = page.getByRole('radiogroup', { name: 'Weapon class' });
+  await classes.getByRole('radio', { name: /^SMG/ }).click();
+  await expect(classes.getByRole('radio', { name: /^SMG/ })).toHaveAttribute('aria-checked', 'true');
+  expect(await shown.evaluateAll((tiles) => tiles.map((t) => t.getAttribute('data-weapon')))).toEqual([
+    'alternator',
+    'prowler',
+    'r99',
+    'volt',
+    'car',
+  ]);
+  await classes.getByRole('radio', { name: /^All/ }).click();
   await expect(shown).toHaveCount(specs.length);
 });
 
 test('switches fire modes, magazines and attachments', async ({ page }) => {
   await page.goto('/');
-  const modes = page.locator('#fire-mode-select');
 
   // The Prowler fires bursts or full auto and keeps the R-99's auto; B toggles between them
-  await page.locator(tile('prowler')).click();
-  await expect(modes.locator('.fire-mode-auto')).toHaveClass(/\bselected\b/);
-  await expect(modes.locator('.fire-mode-single')).toBeHidden();
-  await modes.locator('.fire-mode-burst').click();
-  await expect(modes.locator('.fire-mode-burst')).toHaveClass(/\bselected\b/);
+  await weapon(page, 'Prowler').click();
+  await expect(fireModes(page).getByRole('radio', { name: 'Auto' })).toHaveAttribute('aria-checked', 'true');
+  await expect(fireModes(page).getByRole('radio', { name: 'Single' })).toHaveCount(0);
+  await fireModes(page).getByRole('radio', { name: 'Burst' }).click();
+  await expect(fireModes(page).getByRole('radio', { name: 'Burst' })).toHaveAttribute('aria-checked', 'true');
   expect(await storage(page, 'game::fire-mode')).toEqual({ 'game::fire-mode': 'burst' });
-  await page.keyboard.press('b');
-  await expect(modes.locator('.fire-mode-auto')).toHaveClass(/\bselected\b/);
+  await page.locator('body').press('b');
+  await expect(fireModes(page).getByRole('radio', { name: 'Auto' })).toHaveAttribute('aria-checked', 'true');
 
   // The Hemlok has no full auto, so it falls back to its bursts
-  await page.locator(tile('hemlok')).click();
-  await expect(modes.locator('.fire-mode-burst')).toHaveClass(/\bselected\b/);
-  await expect(modes.locator('.fire-mode-auto')).toBeHidden();
+  await weapon(page, 'Hemlok').click();
+  await expect(fireModes(page).getByRole('radio', { name: 'Burst' })).toHaveAttribute('aria-checked', 'true');
+  await expect(fireModes(page).getByRole('radio', { name: 'Auto' })).toHaveCount(0);
 
   // Magazines show the R-301's capacities; the corrupted stock takes 4 rounds off each
   const r301 = specs.find((s) => s.name === 'r301')!;
-  await page.locator(tile('r301')).click();
-  await expect(page.locator('#mag-select > [class^="mag-"]:not(.mag-drop):visible')).toHaveCount(r301.mags.length);
-  await page.locator('#mag-select .mag-2').click();
-  await expect(page.locator('#mag-select .mag-2')).toHaveClass(/\bselected\b/);
-  await expect(page.locator('#mag-select .mag-2 .mag-cap')).toHaveText(String(r301.mags[2].size));
-  await page.locator('#mag-select .mod-corrupted_stock').click();
-  await expect(page.locator('#mag-select .mod-corrupted_stock')).toHaveClass(/\bselected\b/);
-  await expect(page.locator('#mag-select .mag-2 .mag-cap')).toHaveText(String(r301.mags[2].size - 4));
+  await weapon(page, 'R-301').click();
+  await expect(magazines(page).getByRole('radio')).toHaveCount(r301.mags.length);
+  const level2 = magazines(page).getByRole('radio', { name: /^Level 2 magazine/ });
+  await level2.click();
+  await expect(level2).toHaveAttribute('aria-checked', 'true');
+  await expect(level2).toHaveAccessibleName(`Level 2 magazine, ${r301.mags[2].size} rounds`);
+  await page.getByRole('switch', { name: 'Corrupted stock' }).click();
+  await expect(page.getByRole('switch', { name: 'Corrupted stock' })).toHaveAttribute('aria-checked', 'true');
+  await expect(level2).toHaveAccessibleName(`Level 2 magazine, ${r301.mags[2].size - 4} rounds`);
 
   // Only the Rampage takes a thermite grenade
-  await expect(page.locator('.mod-revved_up')).toBeHidden();
-  await page.locator(tile('rampage')).click();
-  await page.locator('.mod-revved_up').click();
-  await expect(page.locator('.mod-revved_up')).toHaveClass(/\bselected\b/);
+  await expect(page.getByRole('switch', { name: 'Thermite grenade' })).toHaveCount(0);
+  await weapon(page, 'Rampage').click();
+  await page.getByRole('switch', { name: 'Thermite grenade' }).click();
+  await expect(page.getByRole('switch', { name: 'Thermite grenade' })).toHaveAttribute('aria-checked', 'true');
   expect(await storage(page, 'game::mods')).toEqual({ 'game::mods': 'revved_up' });
 });
 
 test('keeps the settings across a reload', async ({ page }) => {
   await page.goto('/');
-  await page.locator(tile('r301')).click();
-  await page.locator('#mag-select .mag-3').click();
-  await page.locator('#fire-mode-select .fire-mode-single').click();
-  await page.locator('#invert-y-btn').click();
-  await page.locator('#mode-moving').click();
-  await page.locator('#recoil-target').click();
-  await page.locator('#trace-2').click();
-  await page.locator('#unmuted').click();
+  await weapon(page, 'R-301').click();
+  await magazines(page)
+    .getByRole('radio', { name: /^Level 3 magazine/ })
+    .click();
+  await fireModes(page).getByRole('radio', { name: 'Single' }).click();
+  await page.getByRole('radio', { name: 'Moving target' }).click();
+  await page.getByRole('radio', { name: 'Lines' }).click();
+  await page.getByRole('button', { name: 'Mute sounds' }).click();
+  // Invert Y and what the recoil moves, in the settings
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await settings.getByRole('switch', { name: 'Invert Y' }).click();
+  await settings.getByRole('radio', { name: 'The target' }).click();
+  await page.keyboard.press('Escape');
 
   const saved = await storage(page, 'game::');
   expect(saved).toMatchObject({
@@ -102,115 +138,284 @@ test('keeps the settings across a reload', async ({ page }) => {
 
   await page.reload();
   expect(await storage(page, 'game::')).toEqual(saved);
-  await expect(page.locator(tile('r301'))).toHaveClass(/\bselected\b/);
-  await expect(page.locator('#mag-select .mag-3')).toHaveClass(/\bselected\b/);
-  await expect(page.locator('#fire-mode-select .fire-mode-single')).toHaveClass(/\bselected\b/);
-  await expect(page.locator('#invert-y-btn')).toHaveClass(/\bselected\b/);
-  await expect(page.locator('#muted')).toBeVisible();
-  await expect(page.locator('#unmuted')).toBeHidden();
+  await expect(weapon(page, 'R-301')).toHaveAttribute('aria-checked', 'true');
+  await expect(magazines(page).getByRole('radio', { name: /^Level 3 magazine/ })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await expect(fireModes(page).getByRole('radio', { name: 'Single' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('radio', { name: 'Moving target' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('radio', { name: 'Lines' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('button', { name: 'Mute sounds' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: /^Sensitivity 5\.0\s*ADS 1\.0×\s*Invert Y on$/ })).toBeVisible();
 });
 
-test('scores a full spray, keeps the result and charts it', async ({ page }) => {
+test('scores a full spray and keeps the result', async ({ page }) => {
   await page.goto('/');
-  await page.locator('#unmuted').click();
-  await page.locator('#show-instructions-btn').click();
-  await expect(page.locator('#instructions')).toBeVisible();
-  await page.locator('#dismiss-instructions').click();
-  await expect(page.locator('#instructions')).toBeHidden();
+  await page.getByRole('button', { name: 'Mute sounds' }).click();
 
   // Hold the trigger through a whole R-99 magazine (18 rounds at 1080 RPM, about a second)
-  const box = (await page.locator('#stage .konvajs-content').boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.6);
+  const box = (await page.locator('[data-slot="range-canvas"]').boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.5);
   await page.mouse.down();
   await page.waitForTimeout(1600);
   await page.mouse.up();
 
-  await expect(page.locator('#score-stats')).toHaveText(/^Today's tries 1, median \d+, best \d+\nAll time best \d+$/, {
-    useInnerText: true,
-  });
+  const result = page.getByRole('status').filter({ hasText: 'Run complete' });
+  await expect(result).toBeVisible();
+  await expect(result).toContainText('Your first run today');
+  await expect(result).toContainText('R-99 · Base magazine (18) · Follow path');
   const stats = JSON.parse((await storage(page, 'game::stats'))['game::stats']);
-  expect(stats).toHaveLength(1);
+  expect(stats).toEqual([expect.objectContaining({ setup: { weapon: 'r99', mag: 0, hint: true, moving: false } })]);
+  const points = stats[0].todayResults[0];
+  const session = page.getByRole('complementary', { name: 'Session' });
+  await expect(
+    session.getByRole('img', { name: `Scores of today’s runs, from ${points} to ${points}, best ${points}` }),
+  ).toBeVisible();
+  expect(await violations(page), 'accessibility violations after a run').toEqual([]);
 
-  await page.locator('#stats-graph-btn').click();
-  await expect(page.locator('#detailed-stats')).toBeVisible();
-  await expect(page.locator('#plotly_area .main-svg').first()).toBeVisible();
-  await page.locator('#hide-stats').click();
-  await expect(page.locator('#detailed-stats')).toBeHidden();
+  // Replay shows the run again; Next run goes back to the pattern
+  await result.getByRole('button', { name: 'Replay' }).click();
+  await result.getByRole('button', { name: 'Next run' }).click();
+  await expect(result).toBeHidden();
+  await expect(range(page).getByRole('img', { name: 'R-99 recoil pattern' })).toBeVisible();
 
   await page.reload();
-  await expect(page.locator('#score-stats')).toHaveText(/^Today's tries 1, /);
+  await expect(session.getByRole('img', { name: /^Scores of today’s runs/ })).toBeVisible();
+});
+
+test('meets WCAG 2.1 A and AA with every overlay open', async ({ page }) => {
+  await page.goto('/');
+  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(specs.length);
+  const cases = [
+    { open: () => page.getByRole('button', { name: 'Settings' }).click(), role: 'dialog', name: 'Settings' },
+    { open: () => page.getByRole('button', { name: 'Help' }).click(), role: 'dialog', name: 'How to practice' },
+    {
+      open: () => page.getByRole('button', { name: /^Search weapons/ }).click(),
+      role: 'dialog',
+      name: 'Search weapons',
+    },
+    { open: () => page.getByRole('button', { name: /^Sensitivity/ }).click(), role: 'dialog', name: 'Mouse settings' },
+  ] as const;
+  for (const { open, role, name } of cases) {
+    await open();
+    const overlay = page.getByRole(role, { name });
+    await expect(overlay).toBeVisible();
+    // Colors are checked once the overlay has faded in
+    await overlay.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
+    expect(await violations(page), `accessibility violations with "${name}" open`).toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(overlay).toBeHidden();
+  }
+  // Ctrl K opens the weapon search, and picking a weapon selects it
+  await page.locator('body').press('Control+k');
+  await page.getByRole('combobox', { name: 'Search weapons' }).fill('flatl');
+  await page.keyboard.press('Enter');
+  await expect(weapon(page, 'Flatline')).toHaveAttribute('aria-checked', 'true');
 });
 
 test('serves the Russian and Chinese pages', async ({ page }) => {
   await page.goto('/ru');
-  await expect(page).toHaveTitle(`${site.name} · тренажёр отдачи для Apex Legends`);
-  await expect(page.locator('#weapon-select > .btn')).toHaveCount(specs.length);
-  await expect(page.locator('#score-stats')).toContainText('Сегодня: - попытки');
+  await expect(page).toHaveTitle(`${site.name} · Тренажёр отдачи для Apex Legends`);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+  await expect(page.getByRole('radiogroup', { name: 'Оружие', exact: true }).getByRole('radio')).toHaveCount(
+    specs.length,
+  );
+  await expect(page.getByRole('complementary', { name: 'Сессия' })).toContainText('Попытки');
+  expect(await violations(page), 'accessibility violations in Russian').toEqual([]);
 
   await page.goto('/zh-CN');
   await expect(page).toHaveTitle(`${site.name} · Apex Legends 压枪训练`);
-  await expect(page.locator('#weapon-select > .btn')).toHaveCount(specs.length);
-  await expect(page.locator('#score-stats')).toContainText('今天尝试: - 次');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
+  await expect(page.getByRole('radiogroup', { name: '武器', exact: true }).getByRole('radio')).toHaveCount(
+    specs.length,
+  );
+  await expect(page.getByRole('complementary', { name: '本次练习' })).toContainText('尝试次数');
+
+  // The language select goes to the same page in another language
+  await page.getByRole('combobox', { name: '语言' }).click();
+  await page.getByRole('option', { name: 'English' }).click();
+  await expect(page).toHaveURL(/:3210\/$/);
 });
 
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
-  test('shows the desktop notice instead of the game', async ({ page }) => {
+  test('shows the pattern viewer instead of the range', async ({ page }) => {
     for (const path of ['/', '/ru', '/zh-CN']) {
       await page.goto(path);
-      await expect(page.locator('#mobile-info')).toBeVisible();
-      await expect(page.locator('#weapon-select')).toBeHidden();
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await expect(page.locator('[data-slot="range-canvas"]')).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
     }
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1, name: 'Recoil patterns for every weapon' })).toBeVisible();
+    const weapons = page.getByRole('radiogroup', { name: 'Weapon' });
+    await weapons.getByRole('radio', { name: 'R-301' }).click();
+    await expect(page.getByRole('region', { name: 'R-301 pattern' })).toBeVisible();
+    await page.getByRole('button', { name: 'Play spray' }).click();
+    expect(await violations(page), 'accessibility violations on a phone').toEqual([]);
+  });
+
+  test('asks for consent in a bottom sheet', async ({ page }) => {
+    await page.route(google, (route) => route.fulfill({ contentType: 'text/javascript', body: '' }));
+    await page.goto(`${ANALYTICS_URL}/`);
+    const banner = consentBanner(page);
+    await expect(banner).toBeVisible();
+    for (const name of ['Reject', 'Accept']) {
+      expect((await banner.getByRole('button', { name }).boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    expect(await violations(page), 'accessibility violations with the consent sheet').toEqual([]);
+    await banner.getByRole('button', { name: 'Accept' }).click();
+    await expect(banner).toBeHidden();
+    expect(await consent(page)).toBe('granted');
   });
 });
 
-test.describe('analytics', () => {
-  const google = /^https:\/\/(www\.googletagmanager\.com|[\w.-]*google-analytics\.com)\//;
+test.describe('without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
 
-  test('stays off without a measurement ID', async ({ page }) => {
-    const requests: string[] = [];
-    page.on('request', (req) => requests.push(req.url()));
+  test('shows the prerendered page in each language', async ({ page }) => {
+    for (const [path, lang, title, description, grid] of [
+      [
+        '/',
+        'en',
+        'Recoil trainer for Apex Legends',
+        /^Practice the spray pattern of every Apex Legends weapon/,
+        'Weapon',
+      ],
+      ['/ru', 'ru', 'Тренажёр отдачи для Apex Legends', /^Отрабатывайте отдачу каждого оружия Apex Legends/, 'Оружие'],
+      ['/zh-CN', 'zh-CN', 'Apex Legends 压枪训练', /^在浏览器中练习 Apex Legends/, '武器'],
+    ] as const) {
+      await page.goto(path);
+      await expect(page).toHaveTitle(`${site.name} · ${title}`);
+      await expect(page.locator('html')).toHaveAttribute('lang', lang);
+      await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', description);
+      // The pages are live: search engines may index them
+      await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+      await expect(page.getByRole('radiogroup', { name: grid, exact: true }).getByRole('radio')).toHaveCount(
+        specs.length,
+      );
+    }
     await page.goto('/');
-    await expect(page.locator('#weapon-select > .btn')).toHaveCount(specs.length);
-    expect(requests.filter((url) => google.test(url) || url.includes('/tarteaucitron'))).toEqual([]);
-    await expect(page.locator('#tarteaucitronRoot')).toHaveCount(0);
+    await expect(weapon(page, 'R-99')).toHaveAttribute('aria-checked', 'true');
+    await expect(range(page)).toContainText('Click and hold anywhere in the range to spray');
+    await expect(
+      page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Progress' }),
+    ).toHaveAttribute('href', '/progress');
   });
+});
 
-  test('loads the Google tag only after consent', async ({ page }) => {
-    // Nothing reaches Google: the tag requests are answered here and only counted
-    const tagRequests: string[] = [];
-    await page.route(google, (route) => {
-      tagRequests.push(route.request().url());
-      return route.fulfill({ contentType: 'text/javascript', body: '' });
+test('stays off without a measurement ID', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', (req) => requests.push(req.url()));
+  await page.goto('/');
+  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(specs.length);
+  expect(requests.filter((url) => google.test(url))).toEqual([]);
+  await expect(consentBanner(page)).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Cookie settings' })).toHaveCount(0);
+});
+
+test('loads the Google tag only after consent', async ({ page }) => {
+  // Nothing reaches Google: the tag requests are answered here and only counted
+  const tagRequests: string[] = [];
+  await page.route(google, (route) => {
+    tagRequests.push(route.request().url());
+    return route.fulfill({ contentType: 'text/javascript', body: '' });
+  });
+  const banner = consentBanner(page);
+
+  // Reject: the banner goes away for good and no tag loads
+  await page.goto(`${ANALYTICS_URL}/`);
+  await expect(banner).toBeVisible();
+  await expect(banner.getByRole('link', { name: 'Privacy policy' })).toHaveAttribute('href', '/privacy');
+  expect(await violations(page), 'accessibility violations with the consent banner').toEqual([]);
+  await banner.getByRole('button', { name: 'Reject' }).click();
+  await expect(banner).toBeHidden();
+  expect(await consent(page)).toBe('denied');
+  await page.reload();
+  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(specs.length);
+  await expect(banner).toBeHidden();
+
+  // Cookie settings asks again; accepting loads the tag with the configured measurement ID
+  await page.getByRole('link', { name: 'Cookie settings' }).click();
+  await expect(banner).toBeVisible();
+  expect(tagRequests).toEqual([]);
+  await banner.getByRole('button', { name: 'Accept' }).click();
+  await expect(banner).toBeHidden();
+  expect(await consent(page)).toBe('granted');
+  await expect.poll(() => tagRequests).toContain('https://www.googletagmanager.com/gtag/js?id=G-E2ETEST000');
+
+  // The Progress page keeps the choice (its own page load requests the tag again), and an address
+  // ending in #cookies opens the settings there
+  await page.goto(`${ANALYTICS_URL}/progress#cookies`);
+  await expect(banner).toBeVisible();
+  await expect.poll(() => tagRequests.length).toBe(2);
+  await banner.getByRole('button', { name: 'Reject' }).click();
+  await expect(banner).toBeHidden();
+  expect(await consent(page)).toBe('denied');
+});
+
+// The runs recorded from the previous trainer (client/engine/recorded-runs.fixture.json, made with
+// scripts/record-runs.mjs) replayed through the new range: the same mouse events at the same times,
+// under the same paused clock, give the same rounds, times and scores, bit for bit (same browser)
+
+interface RecordedRun {
+  name: string;
+  settings: Record<string, string>;
+  events: (['frame', number] | ['move' | 'down' | 'up', number, number, number])[];
+  result: { score: number; shots: number; finishedAt: number; hitTimes: number[]; hitScores: number[] };
+  stored: number | null;
+}
+
+const recorded: { runs: RecordedRun[] } = JSON.parse(
+  fs.readFileSync(path.join(root, 'client', 'engine', 'recorded-runs.fixture.json'), 'utf8'),
+);
+
+test.describe('replays the runs recorded from the previous trainer', () => {
+  for (const run of recorded.runs) {
+    test(run.name, async ({ page }) => {
+      await page.clock.install({ time: new Date('2026-10-23T12:00:00Z') });
+      await page.addInitScript((settings) => {
+        for (const [key, value] of Object.entries(settings)) localStorage.setItem(key, value);
+      }, run.settings);
+      await page.goto('/');
+      const canvas = page.locator('[data-slot="range-canvas"]');
+      await canvas.locator('canvas').first().waitFor();
+      // As when recording: real time stops, then the press comes 532 ms into the paused minute, at
+      // the point of the range where it came on the previous page (the scores' last bits depend on
+      // where a spray is, not only on how the mouse moves)
+      await page.clock.pauseAt(new Date('2026-10-23T12:01:00Z'));
+      await page.clock.runFor(500);
+      const box = (await canvas.boundingBox())!;
+      const first = run.events.find((e) => e[0] === 'down') as ['down', number, number, number];
+      await page.mouse.move(box.x + first[2], box.y + first[3]);
+      await page.clock.runFor(32);
+      const t0 = await page.evaluate(() => Date.now());
+
+      let now = 0;
+      for (const e of run.events) {
+        if (e[1] > now) {
+          await page.clock.runFor(e[1] - now);
+          now = e[1];
+        }
+        if (e[0] === 'move') await page.mouse.move(box.x + e[2], box.y + e[3]);
+        else if (e[0] === 'down') await page.mouse.down();
+        else if (e[0] === 'up') await page.mouse.up();
+      }
+      await page.clock.runFor(3000);
+
+      const last = await page.evaluate(
+        () => (window as unknown as { __spraydownLastRun?: RecordedRun['result'] }).__spraydownLastRun,
+      );
+      expect(last, 'the run finished').toBeDefined();
+      expect(last!.shots).toBe(run.result.shots);
+      expect(last!.hitTimes.map((t) => t - t0)).toEqual(run.result.hitTimes);
+      expect(last!.hitScores).toEqual(run.result.hitScores);
+      expect(last!.score).toBe(run.result.score);
+      expect(last!.finishedAt - t0).toBe(run.result.finishedAt);
+      const stats = JSON.parse((await storage(page, 'game::stats'))['game::stats'] ?? '[]');
+      expect(stats[0]?.todayResults.at(-1) ?? null).toBe(run.stored);
     });
-    const banner = page.locator('#tarteaucitronAlertBig');
-    // tarteaucitron wires the banner buttons 500 ms after showing it, so click until the banner
-    // reacts; a click that worked can take a moment to hide it, so never click a hidden banner
-    const answer = (button: string) =>
-      expect(async () => {
-        if (await banner.isVisible()) await page.locator(button).click({ timeout: 1000 });
-        await expect(banner).toBeHidden({ timeout: 1000 });
-      }).toPass({ timeout: 10_000 });
-    const consent = async () => (await page.context().cookies()).find((c) => c.name === 'tarteaucitron')?.value;
-
-    // Deny: the banner goes away for good and no tag loads
-    await page.goto(`${ANALYTICS_URL}/`);
-    await expect(banner).toBeVisible();
-    await answer('#tarteaucitronAllDenied2');
-    expect(await consent()).toBe('!gtag=false');
-    await page.reload();
-    await expect(page.locator('#weapon-select > .btn')).toHaveCount(specs.length);
-    await expect(banner).toBeHidden();
-    expect(tagRequests).toEqual([]);
-
-    // Accept, starting over: the tag loads with the configured measurement ID
-    await page.context().clearCookies();
-    await page.reload();
-    await expect(banner).toBeVisible();
-    expect(tagRequests).toEqual([]);
-    await answer('#tarteaucitronPersonalize2');
-    expect(await consent()).toBe('!gtag=true');
-    await expect.poll(() => tagRequests).toContain('https://www.googletagmanager.com/gtag/js?id=G-E2ETEST000');
-  });
+  }
 });

@@ -36,7 +36,7 @@ export function RangePanel({ live }: { live: boolean }) {
   const section = useRef<HTMLElement>(null);
   const range = useRef<RangeHandle>(null);
 
-  // A new weapon, magazine, fire mode or sensitivity clears the last run, as on the current page
+  // A new weapon, magazine, fire mode or sensitivity clears the last run, as on the previous page
   const { loadout, scale } = settings;
   const loadoutKey = JSON.stringify([settings.weapon.name, loadout, scale]);
   useEffect(() => {
@@ -323,6 +323,7 @@ function RunCard({ end, onReplay, onNext }: { end: RunEnd; onReplay: () => void;
   const magazine = t('result.magazine', { tier: names.tierLong(tier, tiers.length), count: end.mag });
   const practice = names.practice(practiceOf(settings.hint, settings.moving));
   let delta: React.ReactNode;
+  let below = false;
   if (!result.counted) {
     delta = <p className="m-0 text-13 text-text-secondary">{t('result.notSaved')}</p>;
   } else if (summary.today.length <= 1 || summary.median === undefined) {
@@ -331,12 +332,14 @@ function RunCard({ end, onReplay, onNext }: { end: RunEnd; onReplay: () => void;
     delta = <p className="m-0 text-13 text-text-secondary">{t('result.level')}</p>;
   } else {
     const difference = result.points - summary.median;
+    below = difference < 0;
     delta = <ScoreDelta delta={difference}>{difference > 0 ? t('result.above') : t('result.below')}</ScoreDelta>;
   }
   return (
     <RunResult
       title={t('result.title')}
       score={result.points}
+      below={below}
       delta={delta}
       meta={t('result.meta', { weapon: names.weapon(settings.trial.weapon), magazine, mode: practice })}
       replayLabel={t('result.replay')}

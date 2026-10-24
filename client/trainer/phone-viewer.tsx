@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MonitorIcon, PlayIcon } from 'lucide-react';
 import { SpraydownLogo } from '@/components/icons';
@@ -11,50 +11,40 @@ import { site } from '@/lib/site';
 import { useTrainerSettings } from '@/lib/storage/trainer';
 import { weapons } from './catalog';
 import { LegalFooter } from './legal-footer';
-import { trainerHref } from './links';
+import { patternsHref, trainerHref } from './links';
 import { actions, useLoadout } from './loadout';
 import { useNames } from './names';
+import { usePatternFrame } from './pattern-frame';
+import { usePlaySpray } from './play-spray';
 import { PatternPreview } from './range/pattern-preview';
 
 const shortNames: Record<Locale, string> = { en: 'EN', ru: 'RU', 'zh-CN': '中文' };
 
 /**
- * What phones get instead of the trainer: each weapon's real pattern with a Play button, its
- * magazines, and a link to copy for practicing on a computer.
+ * What phones get instead of the trainer and the Patterns page: each weapon's real pattern with a
+ * Play button, its magazines, and a link to copy for practicing on a computer. `page` is the page it
+ * stands in for, which the language select keeps.
  */
-export function PhoneViewer({ locale, className }: { locale: Locale; className?: string }) {
+export function PhoneViewer({
+  locale,
+  page = 'train',
+  className,
+}: {
+  locale: Locale;
+  page?: 'train' | 'patterns';
+  className?: string;
+}) {
   const { t } = useTranslation();
   const names = useNames();
   const loadout = useLoadout();
   const sens = useTrainerSettings((s) => s.sens * s.ads);
   const invertY = useTrainerSettings((s) => s.invertY);
-  const [shown, setShown] = useState<number | undefined>(undefined);
   const [copied, setCopied] = useState(false);
-  const frame = useRef(0);
   const { entry, weapon } = loadout;
   const name = names.weapon(entry.id);
-
-  useEffect(() => () => cancelAnimationFrame(frame.current), []);
-
-  // Play spray: the rounds appear when they fire (all at once with reduced motion)
-  const play = () => {
-    cancelAnimationFrame(frame.current);
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setShown(undefined);
-      return;
-    }
-    const times = weapon.time_points.slice(0, loadout.capacity);
-    const start = performance.now();
-    const step = () => {
-      const elapsed = performance.now() - start;
-      const count = times.filter((at) => at <= elapsed).length;
-      setShown(count);
-      if (count < loadout.capacity) frame.current = requestAnimationFrame(step);
-      else setShown(undefined);
-    };
-    setShown(0);
-    frame.current = requestAnimationFrame(step);
-  };
+  const spray = usePlaySpray(weapon, loadout.capacity);
+  const frame = usePatternFrame();
+  const href = page === 'patterns' ? patternsHref : trainerHref;
 
   const copy = async () => {
     try {
@@ -69,7 +59,7 @@ export function PhoneViewer({ locale, className }: { locale: Locale; className?:
     <div className={className}>
       <header className="flex items-center gap-2.5 border-b border-outline px-4 py-3.5">
         <SpraydownLogo className="h-7.5" />
-        <Select value={locale} onValueChange={(v) => location.assign(trainerHref(v as Locale))}>
+        <Select value={locale} onValueChange={(v) => location.assign(href(v as Locale))}>
           <SelectTrigger
             aria-label={t('topBar.language')}
             className="ml-auto h-touch rounded-card border-divider bg-panel"
@@ -96,11 +86,7 @@ export function PhoneViewer({ locale, className }: { locale: Locale; className?:
           size="touch"
           aria-label={t('phone.weapon')}
           value={entry.id}
-          onValueChange={(id) => {
-            if (!id) return;
-            setShown(undefined);
-            actions.selectWeapon(id);
-          }}
+          onValueChange={(id) => id && actions.selectWeapon(id)}
         >
           {weapons.map((w) => (
             <ToggleGroupItem key={w.id} value={w.id}>
@@ -109,7 +95,7 @@ export function PhoneViewer({ locale, className }: { locale: Locale; className?:
           ))}
         </ToggleGroup>
         <section
-          aria-label={t('phone.section', { weapon: name })}
+          aria-label={t('patterns.section', { weapon: name })}
           className="flex flex-col gap-3 rounded-sheet border border-outline bg-panel p-3.5"
         >
           <div className="flex items-center gap-3">
@@ -117,7 +103,7 @@ export function PhoneViewer({ locale, className }: { locale: Locale; className?:
             <div>
               <div className="type-weapon-name">{name}</div>
               <div className="text-xs text-text-secondary">
-                {t('phone.meta', {
+                {t('patterns.meta', {
                   rpm: weapon.rpm,
                   capacity: names.ammo(weapon.name, loadout.capacity),
                   tier: names.tier(loadout.tiers[loadout.magIndex], loadout.tiers.length),
@@ -133,24 +119,21 @@ export function PhoneViewer({ locale, className }: { locale: Locale; className?:
               sens={sens}
               invertY={invertY}
               tone="volt"
-              shown={shown}
-              label={t('phone.pattern', { weapon: name, shots: names.ammo(weapon.name, loadout.capacity) })}
+              shown={spray.shown}
+              label={t('patterns.pattern', { weapon: name, shots: names.ammo(weapon.name, loadout.capacity) })}
+              frame={frame}
               className="h-full w-auto max-w-full"
             />
-            <Button size="touch" className="absolute right-2.5 bottom-2.5 rounded-pill" onClick={play}>
+            <Button size="touch" className="absolute right-2.5 bottom-2.5 rounded-pill" onClick={spray.play}>
               <PlayIcon className="size-3.5" fill="currentColor" aria-hidden="true" />
-              {t('phone.play')}
+              {t('patterns.play')}
             </Button>
           </div>
           <TierGroup
             count={loadout.tiers.length}
             aria-label={t('loadout.magazine')}
             value={String(loadout.magIndex)}
-            onValueChange={(v) => {
-              if (!v) return;
-              setShown(undefined);
-              actions.setMag(Number(v));
-            }}
+            onValueChange={(v) => v && actions.setMag(Number(v))}
           >
             {loadout.tiers.map((tier, i) => (
               <TierOption
