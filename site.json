@@ -1,0 +1,22 @@
+{
+  "_readme": "Owner-specific names, links and IDs used by the pages. Values in square brackets are placeholders shown as is; an empty link is hidden. Analytics and its cookie banner run only on the public trainer pages, and only when both gaMeasurementId and privacyUrl are set. See docs/ownership-register.md.",
+  "name": "Spraydown",
+  "owner": "[OWNER NAME]",
+  "siteUrl": "",
+  "contactEmail": "",
+  "privacyUrl": "",
+  "faqUrl": "",
+  "changelogUrl": "",
+  "repoUrl": "",
+  "issuesUrl": "",
+  "communityUrl": "",
+  "supportUrl": "",
+  "videoUrl": "",
+  "gaMeasurementId": "",
+  "upstream": {
+    "name": "apex-recoil",
+    "author": "Mikhail Goncharov",
+    "url": "https://github.com/metaflow/apex-recoil",
+    "license": "Apache License 2.0"
+  }
+}

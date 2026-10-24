@@ -1,0 +1,40 @@
+# Optional backing services for the scalable mode (see .env.example):
+#   - redis: BullMQ job queue (REDIS_URL), so analysis jobs survive restarts and can run on
+#     separate worker processes or machines (`pnpm worker`)
+#   - s3:    S3-compatible object storage for captures (STORAGE_PROVIDER=s3). SeaweedFS is used
+#            because MinIO no longer publishes community container images.
+# Without these services the app keeps its default mode: in-process queue + local captures folder.
+#
+#   docker compose up -d
+name: apex-recoil
+
+services:
+  redis:
+    image: redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    # BullMQ needs keys to never be evicted; AOF keeps queued jobs across Redis restarts.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  s3:
+    image: chrislusf/seaweedfs:latest@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    command: ["server", "-s3", "-dir=/data", "-ip.bind=0.0.0.0", "-master.volumeSizeLimitMB=1024"]
+    environment:
+      # Development credentials; must match S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY in .env
+      AWS_ACCESS_KEY_ID: apex-dev
+      AWS_SECRET_ACCESS_KEY: apex-dev-secret
+    ports:
+      - "8333:8333"
+    volumes:
+      - s3-data:/data
+
+volumes:
+  redis-data:
+  s3-data:

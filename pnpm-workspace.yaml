@@ -1,0 +1,27 @@
+# pnpm settings (since pnpm 11 they live here; the "pnpm" field of package.json is not read)
+
+# Dependencies whose install scripts may run. A dependency with an install script that is not
+# listed fails the install (ERR_PNPM_IGNORED_BUILDS) until it is added here.
+allowBuilds:
+  esbuild: true
+  sqlite3: true
+  # Its install script only compiles when no prebuilt binary exists; the prebuilt one comes from
+  # the platform package (@msgpackr-extract/msgpackr-extract-<os>-<arch>)
+  msgpackr-extract: false
+  # Its postinstall only copies the browser service worker; the tests use msw/node
+  msw: false
+minimumReleaseAgeExclude:
+  - i18next@26.5.6
+  - react-i18next@17.1.3
+
+# node-gyp, which builds sqlite3 when no prebuilt binary fits, brings an undici with two
+# advisories (GHSA-4qv8-2p9j-2685 and a denial of service), fixed in 6.29.1
+overrides:
+  'undici@>=6.5.0 <6.29.1': 6.29.1
+  # Dev tools only (eslint-plugin-jsx-a11y's minimatch, nodemon's file watcher): their ReDoS fixes, within the
+  # major versions those tools ask for. postcss-selector-parser 6, under @tailwindcss/typography, has the
+  # same kind of advisory, fixed only in 7, which the plugin doesn't take; it parses the plugin's own
+  # selectors at build time.
+  'minimatch@>=3 <3.1.5': 3.1.5
+  'brace-expansion@>=1 <1.1.21': 1.1.21
+  'picomatch@>=2 <2.3.2': 2.3.2

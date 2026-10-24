@@ -16,7 +16,9 @@ This document outlines the architectural milestones, completed implementations, 
 | **M6: Weapon Arsenal & Attachments** | ✅ Completed | All 31 Apex weapons supported with official SVGs, 5-tier specs, and Corrupted Stock attachment. |
 | **M7: Full-Stack Hardening & Robustness** | ✅ Completed | Comprehensive senior review covering 25 fixes across security, correctness, error handling, and performance. |
 | **M8: UI/UX Modernization & Polish** | ✅ Completed | Google Fonts, instant weapon search & category pills, live mag capacities, toolbar ergonomics, corrupted mag SVG. |
-| **M9: CI/CD Pipeline Automation** | 🟡 Next Priority | GitHub Actions workflow running both Python pytest and TypeScript typecheck on push. |
+| **M9: CI/CD Pipeline Automation** | ✅ Completed | `.github/workflows/ci.yml`: typecheck, Vite build, Node tests and static build (Node 20/22); integration job with Redis + S3 (compose.yaml); pytest, spec verify and shadow parity (Python 3.12). First GitHub run (PR #2, 2026-10-22) passed all four jobs. |
+| **M10: Platform & Architectural Overhaul** | ✅ Completed | Streaming ingestion, in-process or Redis/BullMQ job queue, Vite 8 route bundles, lossless SQLite spec store, local or S3 capture storage with direct uploads, full-document shadow parity, the Recoil Editor split into modules, and all styling in Tailwind 4 (no Sass). Optional: a warm Python worker. |
+| **M11: UI Rebuild (React, Tailwind, shadcn/ui)** | 🚧 Phases 0 to 5 done; open: the manual capture check, the Lighthouse results, two design decisions (radius scale, marks under 3:1) and the owner's values | Trainer and editor rebuilt as React 19 components styled only with Tailwind 4 and shadcn/ui, with a new design and identity; no pug, hand-written CSS, Plotly, tarteaucitron or links to the original project. Plan: [docs/ui-migration-plan.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-plan.md); design: [docs/ui-redesign.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-redesign.md); ownership: [docs/ownership-register.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ownership-register.md). Phase 0 (2026-10-22): React 19 and TypeScript 6 toolchain, ESLint 10 and Prettier, Vite hot reload inside Express, compression and caching, Vitest, and 25 Playwright scenarios on the current app, accessibility checks included. Phase 1 (2026-10-23): the design system in code (tokens, components, a gallery at `/next/components`), storage, API hooks, translations and analytics consent. Phase 2.1 (2026-10-23): the trainer's engine, without a DOM, proved on recorded runs. Phase 2.2 (2026-10-23): the trainer rebuilt at `/next`, scoring bit for bit like the current page. Phase 2.4 to 2.6 (2026-10-23): the new pages prerendered in each language with their own meta descriptions, consent with the server's settings, and under 200 kB of JavaScript on first load, checked by `pnpm test`. 2026-10-24: the Patterns page, the translations reviewed, the privacy policy, FAQ and changelog as pages, and the switch: the new pages serve `/`, `/ru` and `/zh-CN`, and the old trainer is gone. Phase 3 (2026-10-24): the Studio replaces the Recoil Editor at `/editor`. Phase 4 (2026-10-24): no pug, Express 5 and multer 2, and the server in TypeScript that Node runs directly, split into routers, with the API's zod schemas shared by the browser and the server. Phase 5 (2026-10-24): leftovers deleted, and the conventions and a release's placeholders checked (`pnpm lint`, `pnpm release`). Status and handoff: [docs/ui-migration-progress.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-progress.md). |
 
 ---
 
@@ -182,10 +184,138 @@ All 31 weapons in [client/specs.json](file:///c:/Users/micro.VADER/Documents/Pro
 ---
 
 ### Milestone 9: CI/CD Pipeline Automation
-- [ ] **GitHub Actions Workflow**:
-  - Run `python -m pytest tests` on pull requests modifying `processing/`.
-  - Run `python -m recoil_discovery.cli verify` on changes to `client/specs.json`.
-  - Run `npm run tsc` and `gulp public` to ensure frontend builds cleanly.
+- [x] **GitHub Actions Workflow** ([.github/workflows/ci.yml](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/.github/workflows/ci.yml), replaces the Gulp workflow):
+  - Run `python -m pytest tests`, `python -m recoil_discovery.cli verify` and `python -m recoil_discovery.shadow_parity` (full-document parity) on every push/PR to `main`.
+  - Run `pnpm exec tsc --noEmit`, `pnpm build`, `pnpm test` and `pnpm static` on Node 20.x and 22.x.
+  - Integration job: `docker compose up` (Redis + SeaweedFS) and `pnpm test:services`, covering BullMQ, S3 and end-to-end analysis with the real Python CLI.
+- [x] Dry run of all three jobs from a clean copy of the tree (fresh `pnpm install`, fresh Python venv): all green.
+- [ ] Confirm the first workflow run on GitHub (opencv system libraries, sqlite3 native build).
+- [ ] Optional: path filters so Python-only and client-only changes skip the other job.
+
+---
+
+### Milestone 10: Modern Platform & Architectural Overhaul (M10)
+Tracked and executed in alignment with the master [Architectural Migration Plan](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/migration-plan.md):
+
+- [x] **Phase 1: Stabilization & Memory Hardening**:
+  - [x] Switch 150MB Base64 JSON ingestion to streaming `multipart/form-data` with `multer` and binary `FormData` uploads.
+  - [x] Replace synchronous `fs.readdirSync` and `fs.statSync` with async `fs.promises` in [app.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) with 60s memory caching.
+  - [x] Add atomic temp-file swap (`fs.rename` / `Path.replace()`) to [client/specs.json](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json).
+  - [x] Refactor Python video decoder ([pipeline.py](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py)) to keep only the last 21 frames instead of accumulating full-clip arrays (peak 328 MB on a 5 s 1080p clip, constant with clip length).
+- [x] **Phase 2: Compute Worker Service & Asynchronous Job Architecture**:
+  - [x] Establish dedicated asynchronous JobQueue service ([server/job_queue.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/job_queue.js)) with unit testing ([test/job_queue.test.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/test/job_queue.test.js)).
+  - [x] Transition `POST /api/discovery/process-session` and `process-static-image` to asynchronous job dispatch (`202 Accepted` + `job_id`).
+  - [x] Implement Server-Sent Events (SSE) progress streaming (`GET /api/discovery/jobs/:id/events`) and polling fallback (`GET /api/discovery/jobs/:id`).
+  - [x] Add worker concurrency control, 120s task timeouts, process kill guards, and automatic temp-folder cleanup.
+  - [x] Persistent queue with Redis/BullMQ (`REDIS_URL`): jobs survive restarts, standalone workers (`npm run worker`), crash recovery, cross-process cancellation ([server/bull_queue.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/bull_queue.js)).
+- [x] **Phase 3: Modern Frontend Architecture & Component Decomposition**:
+  - [x] Set up Vite 8 bundler with entries `trainer`, `editor`, legacy `bundle` router and `tailwind`, plus `theme.json` → `theme-tokens.css` generation (`vite.config.mjs`).
+  - [x] Separate public Aim Trainer into its own route bundle (`client/trainer_main.ts` + shared stage in `client/stage.ts`): 89 kB gzip without editor code (<150KB budget).
+  - [x] Decompose [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) into reusable modules: [`types.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/types.ts), [`utils.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/utils.ts), and [`DiscrepancyInspector.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/analysis/DiscrepancyInspector.ts) (now used by `editor.ts`).
+  - [x] Split the rest of `client/editor.ts` (5,153 lines) into [client/modules/editor/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/editor/): state, layout, toolbar, canvas, calibration, overlays, weapon manager, capture studio, screenshots, sessions and the analysis dialog; `editor.ts` is a ~100-line entry.
+  - [x] Tailwind 4 foundation: theme.json palette tokens, computed-style snapshot tool ([scripts/style-snapshot.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/style-snapshot.mjs)); trainer footer migrated with zero computed-style change.
+  - [x] Move all styles to Tailwind: `style.scss`/`reset.scss` ported to [client/styles/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/) without Sass, app CSS in a cascade layer below the utilities, trainer and editor page layout as utilities, no `tw:` prefix, WCAG AA/AAA tokens preserved. No preflight (it would restyle images, links, borders and form controls); stateful widgets stay component CSS.
+- [x] **Phase 4: Database Layer & Persistent Asset Storage**:
+  - [x] Deploy SQLite relational schema in [`server/db.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/db.js) and [`processing/recoil_discovery/db.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/db.py) with versioned, lossless weapon specs (`spec_json`, `sort_order`), `spec_revisions` audit logs, and import of external `specs.json` edits before every read/write.
+  - [x] Persist session metadata in `discovery_sessions`, merged into the session list (from capture storage) served to the editor.
+  - [x] `AssetStorageService` ([`server/storage.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/storage.js)) with local and S3-compatible providers (AWS SDK v3); all capture I/O in `app.js` goes through it.
+  - [x] Direct browser uploads to S3 via presigned PUT + signed grants, media streamed by the API at `/captures`, `tmp/` cleanup; tested against SeaweedFS ([compose.yaml](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/compose.yaml)) and in headless Chrome.
+- [x] **Phase 5: Shadow Parity, Benchmarking & Decommissioning**:
+  - [x] Execute automated shadow validation suite ensuring 100% field-level parity (all fields, order, coordinates) across all 31 weapons ([`processing/recoil_discovery/shadow_parity.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/shadow_parity.py)).
+  - [x] Validate microcontroller firmware alignment ([`arduino_mouse/src/recoil.inc`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/arduino_mouse/src/recoil.inc)).
+  - [x] Decommissioned legacy Gulp, Browserify, Tsify, Watchify, and Gulp build configs in favor of pure Vite 8 standalone pipeline; `npm run static` restored via [`scripts/build-static.mjs`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/build-static.mjs).
+- [x] **Phase 6: Frontend Runtime Module Resolution & Weapon Manager Polish**:
+  - [x] Load the Vite ES modules with `type="module"` in [`views/layout.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/layout.pug) (now per route: `/trainer.js`, `/editor.js`).
+  - [x] Persist `mods` and `ping_points` in SQLite schema ([`server/db.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/db.js)) and deduplicate active specs, maintaining 100% parity across layers with zero drift.
+  - [x] Implement "+ New Weapon" creation flow and automatic canvas synchronization in Recoil Editor ([`views/editor.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug), [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts)).
+- [x] **Phase 7: Migration Audit & Hardening (2026-10-19)** — details in the [Audit Log](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/migration-plan.md):
+  - [x] Isolate API tests from `data/recoil.db` / `client/specs.json`; make `DatabaseService.init()` idempotent; prune test rows from the local database (backup in `data/recoil.pre-audit-cleanup.db`).
+  - [x] Lossless, order-preserving, transactional spec store in Node and Python; import external `specs.json` edits before saves; full-document shadow parity.
+  - [x] Fix past-session loading, route bundle wiring, static site build, CI, stale `package-lock.json`, HDR blue channel, zero-frame `NameError`, job-queue completion/kill/progress bugs, upload temp-file leaks, single-screenshot analysis scope, and S3 fake success.
+  - [x] End-to-end checks: headless Chrome loads `/` and `/editor` with no errors; upload → JobQueue → Python CLI → SSE → session index verified with a synthetic spray clip.
+- [x] **Phase 8: Scaled Mode & Styling Foundation (2026-10-21)**:
+  - [x] Redis/BullMQ queue (2.4), S3 storage with direct uploads (4.3), `compose.yaml` services, `.env.example`, `npm run worker`, `npm run test:services`.
+  - [x] Tailwind 4 foundation and first migrated component (3.4), verified with computed-style snapshots.
+  - [x] CI integration job; decoder BGR re-decode (1.4) measured and dropped (+22% CPU for ~130 MB).
+- [x] **Phase 9: Editor Modules, Tailwind Migration & First CI Run (2026-10-22)**:
+  - [x] First CI run on GitHub (PR #2): web (Node 20/22), integration (Redis/BullMQ + S3) and processing jobs all passed.
+  - [x] Recoil Editor split into modules (3.3), verified with a scripted 33-step editor session giving identical DOM, canvas and storage.
+  - [x] All styles in Tailwind 4 without Sass (3.4), verified with zero computed-style differences on 142 recorded page states.
+  - [x] pnpm 12 only: pinned under `devEngines` (npm refuses to run), settings in `pnpm-workspace.yaml` (`allowBuilds`), `package-lock.json` removed, CI on `pnpm/action-setup@v6`; dependencies deduplicated.
+  - [x] Removed the stale `public/` folder (old Gulp and tsc output that Express still served); `tsc` only typechecks.
+
+### Milestone 11: UI Rebuild with React, Tailwind and shadcn/ui (planned)
+Decided 2026-10-22: the trainer and the editor are rebuilt as React 19 components styled only with Tailwind 4, with shadcn/ui for standard controls; no pug, no CSS files besides one Tailwind entry, no Plotly or tarteaucitron. Analysis, stack, conventions and steps: [docs/ui-migration-plan.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-plan.md). The UI gets a new design and identity of its own ("graphite and volt"); the audit, tokens and screens are in [docs/ui-redesign.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-redesign.md). Every reference to the original project is replaced with placeholders following [docs/ownership-register.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ownership-register.md); the license and copyright notices stay.
+- [x] **Design**: UI audit (screenshots and runtime baseline), new identity, six mockups on the design canvas (trainer ready, after a run, progress; Studio; phone pattern viewer; foundations), tokens and component inventory.
+- [x] **Design system** (2026-10-22): a Design System artifact (https://claude.ai/artifact/XK1KCFGz6tF9WzmKUykaFe) with the tokens, 30 components with live previews, the brand book, the shadcn/ui mapping and the logos. Token edits there restyle every preview. For agents that can't open the artifacts, [docs/design/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/design/README.md) holds a snapshot (2026-10-24): PNGs of the canvas's fourteen artboards and of every component preview, with the brand book, tokens, component rules and the artboards' markup. `scripts/export-design.mjs` refreshes it; Claude keeps reading the artifacts.
+  - Follow-ups for Phase 1:
+    - [ ] Settle the radius scale: the mockups use 9 px for 38 px controls and 12 px for cards in panels, where the spec says 8 and 10. The system keeps both as tokens.
+    - [x] Add the mockups' extra colors (outline, outline-card, outline-strong, the washes, text-soft, pattern-ink and the dot grids) to the token table in `docs/ui-redesign.md` (2026-10-24, with every color of `tokens.json` and its contrast).
+    - [ ] Fix or accept three marks under 3:1: the destructive button's outline, the chart's tries bars and the neutral segmented control's selected fill.
+    - [x] Design what the mockups leave out: Dialog, Alert dialog, Drawer, the Command palette, the error toast, a result below the median, and hover for primary buttons. (2026-10-24: in the Design System, with the danger badge and the result card's other lines; overlay titles take `panel-title` and a dialog's Cancel is secondary, and the app follows.)
+    - [x] Generate the Tailwind theme from the system's `tokens.json` (2026-10-23; the old pages keep `theme.json` until they are deleted).
+- [x] **Ownership register** applied (2026-10-22): the original author's analytics ID, donation link, privacy policies, links and domain redirect are gone; pages read owner values from `site.json` (placeholders until the owner provides them); new privacy policy; license notices (`NOTICE`, `Modified by` lines, footer credit).
+- [x] **Phase 0: Tooling and safety net (2026-10-22)**:
+  - [x] Name placeholder "Spraydown" and the logo: mark, wordmark, lockups and favicons in [brand/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/brand/) and `etc/`.
+  - [x] React 19 with the React Compiler, TypeScript 6.0 (separate browser and Node configs, `@/` alias), Konva 10.
+  - [x] ESLint 10 (flat config with typescript-eslint, React Hooks, jsx-a11y and Tailwind class checks) and Prettier with the Tailwind plugin: `pnpm lint`, `pnpm format`.
+  - [x] Node `^22.22.2 || >=24.15.0` in `engines`; CI web job on Node 22 and 24 with lint, formatting, both typechecks and unit tests. Node 24.22.1 is installed with fnm; the default is still 23.10.
+  - [x] `pnpm dev`: Express hosts Vite in middleware mode (hot reload, local only); `npm-run-all` removed.
+  - [x] Brotli or gzip for text responses (not for the analysis event streams), a year of immutable caching for hashed chunks, revalidation for entry files and pages.
+  - [x] Vitest with Testing Library and MSW (`pnpm test:unit`); Playwright with a throwaway-data server (`pnpm test:e2e`): 25 scenarios covering the trainer, the consent banner, the editor (including the Python discovery runs) and accessibility (axe, nothing beyond today's baseline). CI runs them in the integration job.
+  - [x] Fixed what the scenarios found: Konva 10 broke the legacy threshold tools on high-density screens, and tooltips swallowed clicks meant for the controls under them.
+  - Follow-ups:
+    - [x] Make Node 24 the local default (2026-10-23): the system PATH points at fnm's `default` alias (Node 24.22.1), with pnpm 12.14.0 and the other global tools installed for it; `fnm default` now picks the version.
+    - [x] Move the GitHub Actions steps (`checkout`, `setup-node`, `setup-python`, `upload-artifact`) to their releases on the Node 24 action runtime (2026-10-24: v7 of each).
+    - [x] Phases 1 to 3: bring the accessibility baseline to zero (2026-10-24): the rebuilt pages and the Studio have no axe violations, and `e2e/accessibility.spec.ts` went with the Recoil Editor; tarteaucitron went with the old trainer.
+    - [x] Phase 3: the legacy auto-target search no longer recurses (a large dark area overflowed the stack), and the Studio shows a measured fire rate only for recorded clips (screenshots reported the one sent).
+    - [ ] A realistic static-image fixture, so the screenshot scenario can check the detected shots (the small synthetic wall yields none).
+- [x] **Phase 1: Design system and shared foundations** (2026-10-23; status, conventions and next steps in [docs/ui-migration-progress.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/ui-migration-progress.md)):
+  - [x] shadcn/ui (`new-york`, Radix) on the design system's tokens: `client/styles/tokens.json` generates the Tailwind theme and the `type-*` text styles; `client/styles/app.css` is the new UI's only stylesheet, with self-hosted Chakra Petch, Inter and JetBrains Mono.
+  - [x] 31 shadcn/ui components restyled to the design, and the app's own WeaponTile, TierOption, StatTile, ScoreCard, RunResult, ConsentBanner and InputWithUnit, on a gallery at `/next/components` with component tests and three scenarios (axe with no violations, every overlay open, phone width).
+  - [x] `lib/storage` under the existing `localStorage` keys (tested against values recorded from the current app), `lib/api` (zod schemas, TanStack Query hooks, direct uploads, job progress), `lib/i18n` (English, Russian and Chinese catalogs with typed keys), `lib/analytics` (Consent Mode v2) and `lib/site`.
+  - [x] Icons (plan 1.4): Lucide for every generic icon, with the old icons mapped to Lucide names; the redesign needs no game attachment art.
+  - Follow-ups:
+    - [x] Sync the Design System artifact with what the code taught (2026-10-23, version 7): font family names, underlined inline links, radio groups for single-choice controls, the selected tile's fire-rate color, keyboard access for scrolling tables, slider names, and how the tokens reach Tailwind.
+    - [x] Replace the recurring `text-[13px]` and `text-[11px]` with the type scale's size steps (`text-13`, `text-11`), generated from `tokens.json`.
+    - [x] A control for the Rampage's thermite grenade (`game::mods` = `revved_up`): a switch under Corrupted stock in the rebuilt trainer, shown only for the Rampage (2026-10-23; still to add to the design artifacts).
+    - [x] Collapsible, form, sheet and sidebar: the Studio didn't need them; deleted in Phase 5 (2026-10-24).
+    - [x] Review of the Russian and Chinese strings written during extraction (2026-10-24, by Claude at the owner's request; two Chinese weapon names are left for a native speaker, listed in the progress report).
+    - [x] Phase 2: rewrite the consent scenario for the new banner (2026-10-23, in `e2e/trainer-next.spec.ts`).
+    - [x] Phase 2.8: update section 4 of the privacy policy when the new pages replace the current ones (the choice moves to `localStorage`, `consent:analytics`, for 12 months). Done 2026-10-24, with section 5's Google Fonts paragraph removed.
+- [x] **Phase 2: Trainer** (2026-10-24): game engine separated from the UI, one component tree for three locales, prerendered HTML, charts with Recharts; delete the trainer templates, `trainer.css`, Plotly and tarteaucitron.
+  - [x] 2.1 The engine (2026-10-23): [client/engine/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/engine/) holds the weapons, patterns, a run's timing and scoring, the target and the score history, without a DOM; the current trainer runs on it. Twelve runs recorded from the trainer before the split (full auto, bursts, single fire, attachments, half speed, an early release, an idle timeout) replay with the same shot times and scores, in Vitest and again in Chrome.
+  - [x] 2.2 to 2.4, the trainer at `/next` (2026-10-23): [client/trainer/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/trainer/) builds the redesign's trainer in English, Russian and Chinese: the top bar with the weapon search (Ctrl K), the loadout panel, the range on a Konva canvas that drives the engine (Follow path, still and moving targets; results around the target, as dots or as lines; Replay), the session panel with today's trend, the settings and help dialogs, the legal footer, the consent banner, and the phone pattern viewer. The 12 recorded runs replay through it bit for bit in Chrome; the first load is 191.5 to 197.3 KiB of JavaScript (gzip).
+  - [x] The Progress page at `/next/progress` (2026-10-23, [client/trainer/progress/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/trainer/progress/)): runs, best, median with its trend and days practiced over 7 days, 30 days or all time; the score per day (Recharts, loaded after the page); results per weapon; recent runs from a new run log (`game::runs`); CSV export.
+  - [x] The Patterns page at `/next/patterns` (2026-10-24; the owner wants it in the first release): [client/trainer/patterns/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/trainer/patterns/) shows every weapon's pattern in a library filtered by class, all at one scale, and the selected one large with Play spray, its magazines and fire modes, and a link to practice it. Phones get the pattern viewer.
+  - [x] 2.4 to 2.6, prerendering and consent (2026-10-23): each new page is rendered ahead of time in its language, with its own title and meta description ([server/prerender.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/prerender.mjs)), and hydrated in the browser, so it shows before its JavaScript runs. The consent banner works with the server's `site.json` values, Cookie settings and `#cookies` reopen it, and the Google tag loads only after Accept. `cn()` merges with tables compiled at build time (5.6 kB less JavaScript per page), and `pnpm test` checks the 200 kB first-load budget: 191.0 to 196.1 kB on the trainer, 176.6 to 181.8 kB on the Progress page.
+  - [x] 2.7, the privacy policy, FAQ and changelog as pages (2026-10-24): `/privacy`, `/faq` and `/changelog` from Markdown in `docs/`, converted at build time ([scripts/markdown-plugin.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/markdown-plugin.mjs)); a new players' changelog (`docs/changelog.md`), and the original project's release history in `docs/history/` (ownership register, item 16).
+  - [x] 2.8, the switch (2026-10-24): the pages serve `/`, `/ru` and `/zh-CN` with `/patterns` and `/progress` after each; `/next/...` redirects there; unknown addresses get a 404 page. The old trainer's templates, code, styles, Plotly, tarteaucitron, images and Google Fonts are deleted; the Recoil Editor self-hosts its fonts. Lighthouse runs in CI ([lighthouserc.json](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/lighthouserc.json)): 90 or more on the desktop profile, the phone profile recorded.
+  - [ ] Once `siteUrl` is set: canonical and `hreflang` links on the pages.
+  - Follow-ups:
+    - [x] Bring the design artifacts in line with what the trainer added or changed (listed in the progress report): the pattern drawn as the path to follow, the Studio and support links, the settings and help dialogs, the ADS setting, the selected chip's count color, and artboards for the Patterns page, the documents and the 404 page. (2026-10-24: canvas version 20, also with the Studio's panels and dialogs; the support link stays off the artboards, since it shows only when `site.json` sets one.)
+    - [x] Review of the Russian and Chinese strings written for the redesign (2026-10-24, by Claude at the owner's request).
+- [x] **Phase 3: Recoil Editor** (2026-10-24): the Studio at `/editor` ([client/studio/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/studio/)), from the Studio artboard; `editor.pug`, the remaining CSS, `theme.json` and `client/modules/` are deleted.
+  - [x] 3.1 The logic without a DOM, tested ([client/studio/model/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/studio/model/)): specs, calibration, the discrepancy report, placement, pattern editing, undo, the decal finder, the capture sequence as a reducer, analyses. The calibration and the report match results recorded from the Recoil Editor; the decal finder and the color correction match their originals.
+  - [x] 3.2 to 3.4 The store (Zustand, under the editor's keys), the shell (top bar, icon rail, inspector, status bar, shortcuts, dialogs) and the canvas (react-konva: select, pan, align, correct and fit tools, the comparison, smooth dragging at the browser's frame rate).
+  - [x] 3.5 The panels: Live capture, Screenshots, Manual, the library, sessions with clip import, discovery JSON import, the analysis' progress and result, the save checkpoint.
+  - [x] 3.6 The switch: `/editor` serves the Studio; 14 scenarios replace the editor's 12 and its accessibility baseline.
+  - [x] Fixed on the way: a save no longer renames the magazines' sounds, triples a single magazine or evens out the shot times (the Devotion's spin-up, the burst weapons); an edit without a screenshot no longer rescales a tall pattern; shots that weren't moved keep their exact values.
+  - [ ] 3.7 Run the manual capture check ([docs/studio-capture-check.md](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/studio-capture-check.md)) with the game: it needs a person.
+- [x] **Phase 4: Server and build** (2026-10-24): no pug, 404 for unknown paths, `app.js` split into routers, Express 5, multer 2, TypeScript with shared zod schemas.
+  - [x] 4.1 No pug: the shells of the Studio and the gallery come from the server, and failed requests get a prerendered error page.
+  - [x] 4.2 `createApp()` and routers ([server/routes/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/routes/)): specs, discovery, jobs, captures, pages; upload staging and errors in their own modules.
+  - [x] 4.3 Express 5.3, multer 2.5, morgan 1.12; `cookie-parser`, `debug` and `http-errors` removed; `pnpm audit --prod` clean.
+  - [x] 4.4 The server and its tests in TypeScript, run by Node without a build (`tsconfig.server.json` in `pnpm tsc`); the API's schemas in [shared/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/shared/), read by the server's routes.
+  - [x] 4.5 `node:test` stays the server's test runner.
+  - [x] The Redis, S3 and end-to-end analysis suites pass on the TypeScript server (`pnpm test:services`, 64/64).
+  - [x] Dev-only advisories (`pnpm audit`): `minimatch`, `brace-expansion` and `picomatch` overridden to their fixed versions; `postcss-selector-parser` 6 under `@tailwindcss/typography` stays (fixed only in 7, build time only).
+- [x] **Phase 5: Removal and lock-in** (2026-10-24): delete leftovers, CI guards for the Tailwind conventions, docs.
+  - [x] 5.1 Unused dependencies and the four unused shadcn components deleted.
+  - [x] 5.2 `pnpm lint` checks the UI's conventions ([scripts/check-conventions.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/check-conventions.mjs)), the Tailwind lint's rules are errors, and `pnpm release` ([scripts/check-release.mjs](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/check-release.mjs)) fails while placeholders remain; CI runs it for version tags.
+  - [x] 5.3 The ownership register's items done, but for item 18 (the identifiers take the final name's slug).
+  - [x] 5.4 README, AGENTS.md, contributing, roadmap and release notes.
+  - [ ] Fill in the owner's values: `node scripts/check-release.mjs` lists the 47 placeholders (owner).
 
 ---
 
@@ -193,27 +323,47 @@ All 31 weapons in [client/specs.json](file:///c:/Users/micro.VADER/Documents/Pro
 
 Every code change in this repository MUST satisfy the following quality gates before merging:
 
-1. **Python Unit Tests**:
+1. **Python Unit Tests & Shadow Parity**:
    ```bash
    cd processing && python -m pytest tests
+   python -m recoil_discovery.shadow_parity
    ```
-   *Requirement: 30/30 tests passing.*
+   *Requirement: 43/43 pytest tests passing and 31/31 weapons at full-document parity (0 drift).*
 
 2. **Schema Verification**:
    ```bash
    cd processing && python -m recoil_discovery.cli verify
    ```
-   *Requirement: All weapons pass array length, mag size, and RPM checks.*
+   *Requirement: All 31 weapons pass array length, mag size, and RPM checks.*
 
-3. **TypeScript Typecheck**:
+3. **Node.js Automated Test Suites**:
    ```bash
-   cmd /c npm run tsc
+   pnpm build && pnpm test
    ```
-   *Requirement: 0 type errors.*
+   *Requirement: 50/50 tests passing across database, job queue, storage, request parsing and API (the two bundle tests are skipped without a build). With `docker compose up -d`, `pnpm test:services` also runs the Redis, S3 and end-to-end suites (64/64).*
 
-4. **Static Asset Build**:
+4. **TypeScript Typecheck**:
    ```bash
-   npx gulp public
+   pnpm tsc
    ```
-   *Requirement: Successful compilation of styles and client bundle.*
+   *Requirement: 0 type errors in the browser config (`tsconfig.json`), the tools config (`tsconfig.node.json`) and the server config (`tsconfig.server.json`).*
+
+5. **Lint, Formatting and Unit Tests**:
+   ```bash
+   pnpm lint && pnpm format:check && pnpm test:unit
+   ```
+   *Requirement: 0 lint errors and 0 warnings, every file Prettier formatted, all Vitest tests passing.*
+
+6. **End-to-End Scenarios**:
+   ```bash
+   pnpm build && pnpm test:e2e
+   ```
+   *Requirement: 59/59 Playwright scenarios passing in Chrome, with no accessibility violation on any page. The discovery scenarios need Python with the processing requirements; without them they are skipped locally and fail in CI.*
+
+7. **Static Asset Build (Vite 8)**:
+   ```bash
+   pnpm build
+   pnpm static
+   ```
+   *Requirement: Successful compilation of styles and route bundles, and of the static site.*
 

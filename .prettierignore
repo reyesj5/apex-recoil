@@ -1,0 +1,41 @@
+# What Prettier leaves alone: generated and vendored files, data, copies that must stay byte for byte as
+# their source, other projects, and the documentation's hand-written layout. All code is formatted.
+
+# Generated, vendored and data
+dist/
+dist-ssr/
+.lighthouseci/
+lighthouse-results/
+static/
+public/
+coverage/
+test-results/
+playwright-report/
+graphify-out/
+node_modules/
+pnpm-lock.yaml
+processing/
+data/
+etc/
+assets/
+brand/
+client/specs.json
+client/lib/cn-tables.ts
+client/styles/design-tokens.css
+# A copy of the Design System artifact's tokens.json, kept identical to it
+client/styles/tokens.json
+# Recorded test data, kept compact
+client/engine/*.fixture.json
+client/studio/**/*.fixture.json
+client/raw_recoils.json
+**/.venv/
+
+# Other projects, editor settings and hand-written YAML
+arduino_mouse/
+.vscode/
+.github/
+compose.yaml
+
+# Documentation keeps its hand-written layout
+*.md
+docs/

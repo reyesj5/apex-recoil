@@ -1,3 +1,3 @@
-Please check existing issues https://github.com/metaflow/apex-recoil/issues first.
+Please check the existing issues first.
 Include your browser version and platform in case of rendering issues.
 -----------

@@ -1,5 +1,11 @@
+# Output of the old Gulp build, no longer generated; still ignored for older clones
 public/
 static/
+dist/
+dist-ssr/
+# Lighthouse CI (lighthouserc.json): its working folder and reports
+.lighthouseci/
+lighthouse-results/
 
 # Logs
 logs
@@ -106,6 +112,10 @@ processing/data/
 processing/output/
 processing/runs/
 data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 *.webm
 *.mp4
 
@@ -114,6 +124,11 @@ scratch/
 .tempmediaStorage/
 .system_generated/
 arduino_mouse/build/
+
+# Playwright end-to-end output (pnpm test:e2e)
+test-results/
+playwright-report/
+blob-report/
 
 # Knowledge graph outputs (graphify)
 graphify-out/

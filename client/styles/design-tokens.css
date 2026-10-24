@@ -1,0 +1,226 @@
+/* Generated from tokens.json by vite.config.mjs; edit tokens.json (the design system) instead. */
+@theme static {
+  /* Only the design system: no Tailwind default colors, radii or shadows */
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-ground: #0a0c0f;
+  --color-inset: #0d1014;
+  --color-panel: #111419;
+  --color-card: #151920;
+  --color-raised: #171b21;
+  --color-hover: #1f242c;
+  --color-canvas: #0b0d11;
+  --color-wall: #14181e;
+  --color-divider: #262c35;
+  --color-field: #646d79;
+  --color-outline: #1c2128;
+  --color-outline-card: #232830;
+  --color-outline-strong: #343b46;
+  --color-text: #eceff3;
+  --color-text-soft: #c9d0d8;
+  --color-text-secondary: #a7b0bc;
+  --color-text-muted: #848e9b;
+  --color-icon-disabled: #5b6470;
+  --color-volt: #c5f23a;
+  --color-volt-ink: #0a0c0f;
+  --color-volt-bright: #ddf98a;
+  --color-volt-wash: rgba(197, 242, 58, 0.12);
+  --color-volt-wash-strong: rgba(197, 242, 58, 0.15);
+  --color-volt-ink-wash: rgba(10, 12, 15, 0.14);
+  --color-target: #5ad2f4;
+  --color-pattern-ink: #e7ebf0;
+  --color-range-dot: #1c222a;
+  --color-canvas-dot: #181d24;
+  --color-warning: #ffb547;
+  --color-warning-wash: rgba(255, 181, 71, 0.12);
+  --color-danger: #ff5a5f;
+  --color-danger-wash: rgba(255, 90, 95, 0.1);
+  --color-danger-line: rgba(255, 90, 95, 0.45);
+  --color-tier-base: #8c96a3;
+  --color-tier-1: #e7ebf0;
+  --color-tier-2: #4c8dff;
+  --color-tier-3: #b26bff;
+  --color-tier-corrupted: #ff4d5e;
+  --color-chart-bar: #2b323c;
+  --color-panel-glass: rgba(17, 20, 25, 0.94);
+  --radius-key-inset: 4px;
+  --radius-key: 5px;
+  --radius-sm: 6px;
+  --radius-segment: 7px;
+  --radius-control: 8px;
+  --radius-control-lg: 9px;
+  --radius-card: 10px;
+  --radius-card-lg: 12px;
+  --radius-panel: 14px;
+  --radius-sheet: 16px;
+  --radius-pill: 9999px;
+  --shadow-toast: 0 12px 30px rgba(0, 0, 0, 0.4);
+  --shadow-float: 0 18px 40px rgba(0, 0, 0, 0.45);
+  --shadow-sheet: 0 -12px 40px rgba(0, 0, 0, 0.5);
+  /* Control and tile heights as spacing values: h-control, size-icon, h-touch */
+  --spacing-badge: 26px;
+  --spacing-segment-sm: 28px;
+  --spacing-segment: 30px;
+  --spacing-tab: 32px;
+  --spacing-control-sm: 34px;
+  --spacing-icon: 36px;
+  --spacing-control: 38px;
+  --spacing-control-lg: 40px;
+  --spacing-touch: 44px;
+  --spacing-tile: 92px;
+  --font-display: "Chakra Petch", "Inter Variable", Inter, system-ui, sans-serif;
+  --font-sans: "Inter Variable", Inter, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  /* The type scale's sizes as font-size steps: text-11, text-13 */
+  --text-10: 10px;
+  --text-11: 11px;
+  --text-12: 12px;
+  --text-13: 13px;
+  --text-14: 14px;
+  --text-15: 15px;
+  --text-16: 16px;
+  --text-18: 18px;
+  --text-22: 22px;
+  --text-24: 24px;
+  --text-26: 26px;
+  --text-32: 32px;
+  --text-34: 34px;
+  --text-56: 56px;
+  --text-72: 72px;
+}
+
+@utility type-score-xl {
+  font-family: var(--font-display);
+  font-size: 72px;
+  line-height: 0.9;
+  font-weight: 700;
+}
+@utility type-score-lg {
+  font-family: var(--font-display);
+  font-size: 56px;
+  line-height: 1;
+  font-weight: 700;
+}
+@utility type-summary-value {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 700;
+}
+@utility type-page-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+}
+@utility type-page-title-phone {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 700;
+}
+@utility type-stat-value {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+}
+@utility type-weapon-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.1;
+  font-weight: 700;
+}
+@utility type-panel-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+}
+@utility type-score-cell {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+}
+@utility type-section-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+@utility type-lead {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+}
+@utility type-heading {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+}
+@utility type-body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+}
+@utility type-label {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+}
+@utility type-chip {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+}
+@utility type-small {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+@utility type-stat-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+@utility type-legal {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+@utility type-tag {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+@utility type-micro {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 400;
+}
+@utility type-readout {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+}
+@utility type-field-number {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+}
+@utility type-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+@utility type-key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}

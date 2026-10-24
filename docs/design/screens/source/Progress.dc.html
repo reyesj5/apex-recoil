@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trainer, progress</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0C0F}
+*{box-sizing:border-box}
+button,select,input{font:inherit;color:inherit}
+a{color:#C5F23A}a:hover{color:#DDF98A}
+:focus-visible{outline:2px solid #C5F23A;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-direction: column; background: #0A0C0F; color: #ECEFF3; font-family: Inter, system-ui, sans-serif; font-size: 14px;">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid #1C2128; background: #0D1014;">
+    <a href="Main.dc.html" aria-label="Spraydown, home" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #ECEFF3;">
+      <span style="width: 32px; height: 32px; border-radius: 8px; background: #C5F23A; color: #0A0C0F; display: flex; align-items: center; justify-content: center;">
+        <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><circle cx="16" cy="19.95" r="4.6" fill="currentColor"></circle><circle cx="48" cy="19.95" r="4.6" fill="currentColor"></circle><circle cx="24" cy="30.95" r="5.2" fill="currentColor"></circle><circle cx="40" cy="30.95" r="5.2" fill="currentColor"></circle><circle cx="32" cy="42.45" r="6.2" fill="currentColor"></circle></svg>
+      </span>
+      <span style="font-family: 'Chakra Petch', sans-serif; font-weight: 700; font-size: 18px;">Spray<span style="color: #C5F23A;">down</span></span>
+    </a>
+    <nav aria-label="Main" style="display: flex; gap: 4px;">
+      <a href="Main.dc.html" style="padding: 8px 12px; border-radius: 8px; color: #A7B0BC; text-decoration: none;">Train</a>
+      <a href="#" style="padding: 8px 12px; border-radius: 8px; color: #A7B0BC; text-decoration: none;">Patterns</a>
+      <a href="Progress.dc.html" aria-current="page" style="padding: 8px 12px; border-radius: 8px; background: #171B21; color: #ECEFF3; font-weight: 600; text-decoration: none;">Progress</a>
+    </nav>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+      <label for="lang-p" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;">Language</label>
+      <select id="lang-p" style="height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #262C35; background: #111419; color: #ECEFF3;"><option>English</option><option>Русский</option><option>中文</option></select>
+    </div>
+  </header>
+
+  <div style="width: 100%; max-width: 1360px; margin: 0 auto; padding: 24px 20px 32px; display: flex; flex-direction: column; gap: 20px;">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px;">
+      <div>
+        <h1 style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 32px; font-weight: 700;">Progress</h1>
+        <p style="margin: 6px 0 0; color: #A7B0BC;">Stored in this browser only. Clearing site data removes it.</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+        <label style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px; border-radius: 10px; border: 1px solid #262C35; background: #111419; color: #A7B0BC; font-size: 13px;">Weapon
+          <select style="border: 0; background: transparent; color: #ECEFF3; font-weight: 600;"><option>All weapons</option><option>R-301</option><option>R-99</option></select>
+        </label>
+        <div role="group" aria-label="Period" style="display: flex; padding: 3px; gap: 2px; background: #111419; border: 1px solid #262C35; border-radius: 10px;">
+          <button type="button" aria-pressed="false" style="height: 30px; padding: 0 12px; border-radius: 7px; border: 0; background: transparent; color: #A7B0BC; font-size: 12px; font-weight: 600;">7 days</button>
+          <button type="button" aria-pressed="true" style="height: 30px; padding: 0 12px; border-radius: 7px; border: 0; background: #C5F23A; color: #0A0C0F; font-size: 12px; font-weight: 600;">30 days</button>
+          <button type="button" aria-pressed="false" style="height: 30px; padding: 0 12px; border-radius: 7px; border: 0; background: transparent; color: #A7B0BC; font-size: 12px; font-weight: 600;">All time</button>
+        </div>
+        <button type="button" style="height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid #343B46; background: #171B21; color: #ECEFF3; font-weight: 600;">Export CSV</button>
+      </div>
+    </div>
+
+    <dl style="margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+      <sc-for list="{{summary}}" as="s" hint-placeholder-count="4">
+        <div style="padding: 16px; border-radius: 12px; background: #111419; border: 1px solid #1C2128;">
+          <dt style="font-size: 12px; color: #A7B0BC;">{{s.label}}</dt>
+          <dd style="margin: 6px 0 0; display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-family: 'Chakra Petch', sans-serif; font-size: 34px; font-weight: 700;">{{s.value}}</span>
+            <span style="font-size: 12px; color: #848E9B;">{{s.note}}</span>
+          </dd>
+        </div>
+      </sc-for>
+    </dl>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+      <section aria-labelledby="chart-title" style="flex: 999 1 640px; min-width: 0; padding: 18px; border-radius: 14px; background: #111419; border: 1px solid #1C2128;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+          <h2 id="chart-title" style="margin: 0; font-size: 15px; font-weight: 600;">Score per day</h2>
+          <div style="display: flex; gap: 14px; font-size: 12px; color: #A7B0BC;">
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 14px; height: 3px; border-radius: 2px; background: #C5F23A;"></span>Best</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 14px; height: 3px; border-radius: 2px; background: #A7B0BC;"></span>Median</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #2B323C;"></span>Tries</span>
+          </div>
+        </div>
+        <svg role="img" aria-label="{{chartLabel}}" viewBox="0 0 760 270" style="width: 100%; height: auto; margin-top: 14px;">
+          <path d="M40 20H748M40 56H748M40 92H748M40 128H748M40 164H748M40 200H748" stroke="#1F242C" fill="none"></path>
+          <text x="32" y="24" text-anchor="end" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">100</text>
+          <text x="32" y="60" text-anchor="end" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">90</text>
+          <text x="32" y="96" text-anchor="end" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">80</text>
+          <text x="32" y="132" text-anchor="end" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">70</text>
+          <text x="32" y="168" text-anchor="end" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">60</text>
+          <text x="32" y="204" text-anchor="end" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">50</text>
+          <path d="{{barsPath}}" fill="#2B323C"></path>
+          <polyline points="{{medianLine}}" fill="none" stroke="#A7B0BC" stroke-width="2" stroke-linejoin="round"></polyline>
+          <polyline points="{{bestLine}}" fill="none" stroke="#C5F23A" stroke-width="2.5" stroke-linejoin="round"></polyline>
+          <text x="48" y="266" text-anchor="middle" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">Sep 23</text>
+          <text x="167" y="266" text-anchor="middle" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">Sep 28</text>
+          <text x="287" y="266" text-anchor="middle" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">Oct 3</text>
+          <text x="406" y="266" text-anchor="middle" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">Oct 8</text>
+          <text x="525" y="266" text-anchor="middle" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">Oct 13</text>
+          <text x="645" y="266" text-anchor="middle" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">Oct 18</text>
+          <text x="740" y="266" text-anchor="middle" fill="#848E9B" font-size="11" font-family="Inter, sans-serif">Oct 22</text>
+        </svg>
+      </section>
+
+      <section aria-labelledby="weapons-title" style="flex: 1 1 300px; padding: 18px; border-radius: 14px; background: #111419; border: 1px solid #1C2128; display: flex; flex-direction: column; gap: 12px;">
+        <h2 id="weapons-title" style="margin: 0; font-size: 15px; font-weight: 600;">By weapon</h2>
+        <sc-for list="{{byWeapon}}" as="w" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="{{w.img}}" alt="" style="width: 64px; height: 28px; object-fit: contain;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; justify-content: space-between; font-size: 13px;"><span style="font-weight: 600;">{{w.name}}</span><span style="color: #A7B0BC;">{{w.runs}} runs</span></div>
+              <div style="margin-top: 6px; height: 6px; border-radius: 3px; background: #1F242C;"><div style="{{w.bar}}"></div></div>
+              <div style="margin-top: 4px; font-size: 11px; color: #848E9B;">Best <strong style="color: #ECEFF3;">{{w.best}}</strong> · median {{w.median}}</div>
+            </div>
+          </div>
+        </sc-for>
+      </section>
+    </div>
+
+    <section aria-labelledby="runs-title" style="padding: 18px; border-radius: 14px; background: #111419; border: 1px solid #1C2128;">
+      <h2 id="runs-title" style="margin: 0 0 12px; font-size: 15px; font-weight: 600;">Recent runs</h2>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="text-align: left; color: #848E9B; font-size: 12px;">
+              <th scope="col" style="padding: 8px 10px; font-weight: 500; border-bottom: 1px solid #1F242C;">When</th>
+              <th scope="col" style="padding: 8px 10px; font-weight: 500; border-bottom: 1px solid #1F242C;">Weapon</th>
+              <th scope="col" style="padding: 8px 10px; font-weight: 500; border-bottom: 1px solid #1F242C;">Magazine</th>
+              <th scope="col" style="padding: 8px 10px; font-weight: 500; border-bottom: 1px solid #1F242C;">Mode</th>
+              <th scope="col" style="padding: 8px 10px; font-weight: 500; border-bottom: 1px solid #1F242C; text-align: right;">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{recent}}" as="r" hint-placeholder-count="6">
+              <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #171B21; color: #A7B0BC;">{{r.when}}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #171B21; font-weight: 600;">{{r.weapon}}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #171B21; color: #A7B0BC;">{{r.mag}}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #171B21; color: #A7B0BC;">{{r.mode}}</td>
+                <td style="{{r.scoreStyle}}">{{r.score}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const rnd = (i) => { const v = Math.sin(i * 12.9898) * 43758.5453; return v - Math.floor(v); };
+    const days = [];
+    for (let i = 0; i < 30; i++) {
+      const tries = rnd(i + 1) < 0.2 ? 0 : Math.round(3 + rnd(i + 7) * 15);
+      days.push({ tries: tries, best: Math.min(96, Math.round(76 + i * 0.55 + rnd(i + 3) * 6)), median: Math.round(62 + i * 0.6 + rnd(i + 5) * 5) });
+    }
+    const x = (i) => Math.round(48 + i * (692 / 29));
+    const y = (v) => Math.round(200 - (v - 50) * 3.6);
+    const played = days.map((d, i) => Object.assign({ i: i }, d)).filter((d) => d.tries > 0);
+    const totalRuns = played.reduce((a, d) => a + d.tries, 0);
+    const best = Math.max.apply(null, played.map((d) => d.best));
+    const medians = played.map((d) => d.median).sort((a, b) => a - b);
+    const median = medians[Math.floor(medians.length / 2)];
+    const firstWeek = played.filter((d) => d.i < 7).map((d) => d.median);
+    const lastWeek = played.filter((d) => d.i >= 23).map((d) => d.median);
+    const avg = (a) => Math.round(a.reduce((s, v) => s + v, 0) / a.length);
+    const months = ['Sep', 'Oct'];
+    const dayLabel = (i) => { const n = 23 + i; return n <= 30 ? 'Sep ' + n : 'Oct ' + (n - 30); };
+    const shares = [0.45, 0.25, 0.15, 0.09, 0.06];
+    const weapons = [['R-301', '/_blob/761827c9b04a0938d6e2dc378c6bb190', 0, 3], ['R-99', '/_blob/f409ef6d92da1cbeace84aa33bd8dac7', 3, 1], ['Flatline', '/_blob/521f61e671a8fd2e584691f9f1785ce3', 6, 3], ['Volt', '/_blob/3c38aa15d2c41d0c4ff9c431fae6ed7b', 8, 4], ['Spitfire', '/_blob/3cd1a96435d0da136b01687856363814', 10, 5]];
+    const runsBy = shares.map((s) => Math.round(totalRuns * s));
+    runsBy[0] += totalRuns - runsBy.reduce((a, v) => a + v, 0);
+    const byWeapon = weapons.map((w, k) => ({
+      name: w[0], img: w[1], runs: runsBy[k], best: best - w[2], median: median - w[3],
+      bar: 'height: 6px; border-radius: 3px; background: #C5F23A; width: ' + Math.round(100 * runsBy[k] / runsBy[0]) + '%;'
+    }));
+    const scoreStyle = (v) => "padding: 10px; border-bottom: 1px solid #171B21; text-align: right; font-family: 'Chakra Petch', sans-serif; font-size: 16px; font-weight: 700;" + (v >= 85 ? ' color: #C5F23A;' : '');
+    const recent = [['Today 21:42', 'R-301', 'Lv 2 · 28', 'Follow path', 87], ['Today 21:41', 'R-301', 'Lv 2 · 28', 'Follow path', 80], ['Today 21:40', 'R-301', 'Lv 2 · 28', 'Follow path', 91], ['Today 21:38', 'R-301', 'Lv 2 · 28', 'Follow path', 85], ['Today 21:37', 'R-99', 'Lv 3 · 27', 'Moving target', 78], ['Yesterday 22:10', 'R-99', 'Lv 3 · 27', 'Moving target', 83]]
+      .map((r) => ({ when: r[0], weapon: r[1], mag: r[2], mode: r[3], score: r[4], scoreStyle: scoreStyle(r[4]) }));
+    return {
+      summary: [
+        { label: 'Runs', value: totalRuns, note: 'last 30 days' },
+        { label: 'Best score', value: best, note: 'R-301' },
+        { label: 'Median score', value: median, note: (avg(lastWeek) - avg(firstWeek) >= 0 ? '+' : '') + (avg(lastWeek) - avg(firstWeek)) + ' since the first week' },
+        { label: 'Days practiced', value: played.length, note: 'of 30' }
+      ],
+      barsPath: played.map((d) => 'M' + (x(d.i) - 7) + ' 250v' + (-d.tries * 2) + 'h14v' + (d.tries * 2) + 'z').join(''),
+      bestLine: played.map((d) => x(d.i) + ',' + y(d.best)).join(' '),
+      medianLine: played.map((d) => x(d.i) + ',' + y(d.median)).join(' '),
+      chartLabel: 'Best and median score per day over the last 30 days; best rises to ' + best + ', median ' + median,
+      byWeapon: byWeapon,
+      recent: recent
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trainer, a document page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0C0F}
+*{box-sizing:border-box}
+button,select,input{font:inherit;color:inherit}
+a{color:#C5F23A}a:hover{color:#DDF98A}
+:focus-visible{outline:2px solid #C5F23A;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-direction: column; background: #0A0C0F; color: #ECEFF3; font-family: Inter, system-ui, sans-serif; font-size: 14px;">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid #1C2128; background: #0D1014;">
+    <a href="Main.dc.html" aria-label="Spraydown, home" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #ECEFF3;">
+      <span style="width: 32px; height: 32px; border-radius: 8px; background: #C5F23A; color: #0A0C0F; display: flex; align-items: center; justify-content: center;">
+        <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><circle cx="16" cy="19.95" r="4.6" fill="currentColor"></circle><circle cx="48" cy="19.95" r="4.6" fill="currentColor"></circle><circle cx="24" cy="30.95" r="5.2" fill="currentColor"></circle><circle cx="40" cy="30.95" r="5.2" fill="currentColor"></circle><circle cx="32" cy="42.45" r="6.2" fill="currentColor"></circle></svg>
+      </span>
+      <span style="font-family: 'Chakra Petch', sans-serif; font-weight: 700; font-size: 18px;">Spray<span style="color: #C5F23A;">down</span></span>
+    </a>
+    <nav aria-label="Main" style="display: flex; gap: 4px;">
+      <a href="Main.dc.html" style="padding: 8px 12px; border-radius: 8px; color: #A7B0BC; text-decoration: none;">Train</a>
+      <a href="Patterns.dc.html" style="padding: 8px 12px; border-radius: 8px; color: #A7B0BC; text-decoration: none;">Patterns</a>
+      <a href="Progress.dc.html" style="padding: 8px 12px; border-radius: 8px; color: #A7B0BC; text-decoration: none;">Progress</a>
+    </nav>
+  </header>
+
+  <main style="width: 100%; max-width: 800px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; gap: 40px; padding: 24px 20px 32px;">
+    <article style="font-size: 16px; line-height: 1.75; color: #A7B0BC;">
+      <h1 style="margin: 0 0 32px; font-family: 'Chakra Petch', sans-serif; font-size: 32px; font-weight: 700; line-height: 1.2; color: #ECEFF3;">Frequently asked questions</h1>
+
+      <h2 id="mouse-sensitivity" style="margin: 0 0 16px; font-family: 'Chakra Petch', sans-serif; font-size: 18px; font-weight: 700; color: #ECEFF3;">Mouse sensitivity</h2>
+      <p style="margin: 0 0 20px;">It's assumed that your Windows sensitivity is 6/11 (x1.0) and the "Enhance pointer precision" is off so every mouse count equals 1 pixel on the screen.</p>
+      <p style="margin: 0 0 20px;">If the range says it is too small for the pattern, either the browser window is too small (make it larger) or your in-game sensitivity is so low that the recoil pattern doesn't fit the screen. In that case, lower your mouse sensitivity for the app:</p>
+      <ul style="margin: 0 0 20px; padding-left: 26px;">
+        <li style="margin-bottom: 12px;">Most mouse software supports several CPI settings. Switch to a lower one, for example from 2000 to 1000 CPI.</li>
+        <li>Use an <a href="#" style="color: #C5F23A; font-weight: 500; text-underline-offset: 2px;">AutoHotkey</a> script to switch between normal and half sensitivity ([SCRIPT URL]).</li>
+      </ul>
+      <p style="margin: 0 0 40px;">After you've reduced your mouse speed, multiply the app's sensitivity by the same factor (for example, half the mouse speed means twice the sensitivity).</p>
+
+      <h2 id="how-accurate-are-the-patterns" style="margin: 0 0 16px; font-family: 'Chakra Petch', sans-serif; font-size: 18px; font-weight: 700; color: #ECEFF3;">How accurate are the patterns?</h2>
+      <p style="margin: 0 0 40px;">Patterns were checked by replaying them in-game with several scopes and game options (such as FOV and mouse sensitivity), using a hardware mouse simulator (an Arduino board). Newer patterns can also be measured from recordings with the recoil discovery tools (capture guide). [REVIEW: describe how patterns are verified today.]</p>
+
+      <h2 id="controller-support" style="margin: 0 0 16px; font-family: 'Chakra Petch', sans-serif; font-size: 18px; font-weight: 700; color: #ECEFF3;">Controller support</h2>
+      <p style="margin: 0 0 20px;">You can try to use Steam controller support <code style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: #ECEFF3;">Settings &gt; Controller &gt; Desktop Configuration</code>.</p>
+      <p style="margin: 0 0 20px;">These Steam controller values should come close to the in-game sensitivity:</p>
+      <div role="region" aria-label="Steam controller values" tabindex="0" style="overflow-x: auto; margin: 0 0 20px;">
+        <table style="border-collapse: collapse; font-size: 13px; line-height: 1.5;">
+          <thead>
+            <tr style="border-bottom: 1px solid #262C35;">
+              <th scope="col" style="padding: 0 8px 8px 0; text-align: left; font-weight: 600; color: #ECEFF3;">Apex Legends</th>
+              <sc-for list="{{levels}}" as="l" hint-placeholder-count="8">
+                <th scope="col" style="padding: 0 8px 8px; text-align: left; font-weight: 600; color: #ECEFF3;">{{l.level}}</th>
+              </sc-for>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #1C2128;">
+              <th scope="row" style="padding: 8px 8px 8px 0; text-align: left; font-weight: 400; color: #A7B0BC;">Steam controller</th>
+              <sc-for list="{{levels}}" as="l" hint-placeholder-count="8">
+                <td style="padding: 8px; color: #A7B0BC;">{{l.steam}}</td>
+              </sc-for>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin: 0 0 20px;">Pick the response curve, <a href="#" style="color: #C5F23A; font-weight: 500; text-underline-offset: 2px;">this post might help</a>.</p>
+      <p style="margin: 0 0 20px;">Steam does not disable mouse movement for non-steam games, your controls might be funky.</p>
+      <p style="margin: 0 0 40px;"><em>Disclaimer</em>: these values were not tested with a physical controller. They were computed with an <a href="#" style="color: #C5F23A; font-weight: 500; text-underline-offset: 2px;">Xbox controller emulator</a> and a linear response curve; emulating a gamepad's recoil movement is not trivial.</p>
+
+      <h2 id="how-scoring-works" style="margin: 0 0 16px; font-family: 'Chakra Petch', sans-serif; font-size: 18px; font-weight: 700; color: #ECEFF3;">How scoring works</h2>
+      <p style="margin: 0 0 20px;">Scores are counted separately for different settings (mag, weapon, enabled hints).</p>
+      <p style="margin: 0 0 20px;"><a href="#" style="color: #C5F23A; font-weight: 500; text-underline-offset: 2px;">Scoring formula</a> (x = distance to the "ideal" point normalized to the mouse sensitivity).</p>
+      <p style="margin: 0 0 20px;">The reasoning for the shape and constants selection:</p>
+      <ol style="margin: 0; padding-left: 26px;">
+        <li style="margin-bottom: 12px;">Small errors should not decrease the score a lot.</li>
+        <li>Increasing the error value should gradually decrease the score to almost 0 at a distance of 100px (approximate body size from 20m). In the game a shot either hits or misses, which would not be useful for training.</li>
+      </ol>
+    </article>
+
+    <footer style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 14px; border-top: 1px solid #1C2128; font-size: 11px; line-height: 1.5; color: #848E9B;">
+      <nav aria-label="Legal and help" style="display: flex; flex-wrap: wrap; gap: 4px 12px;">
+        <a href="#" style="color: #A7B0BC;">Privacy</a>
+        <a href="#" style="color: #A7B0BC;">Cookie settings</a>
+        <a href="#" style="color: #A7B0BC;">FAQ</a>
+        <a href="#" style="color: #A7B0BC;">Changelog</a>
+      </nav>
+      <span>© [YEAR] [OWNER NAME]</span>
+      <span>Based on <a href="https://github.com/metaflow/apex-recoil" style="color: #A7B0BC;">apex-recoil</a> by Mikhail Goncharov, Apache License 2.0.</span>
+      <span>This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. Game content and materials are trademarks and copyrights of <a href="#" style="color: #A7B0BC;">Electronic Arts Inc.</a> or <a href="#" style="color: #A7B0BC;">Respawn Entertainment</a>. Some images and reference materials come from <a href="#" style="color: #A7B0BC;">Apex Legends Wiki</a>.</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const steam = ['0.123', '0.198', '0.388', '0.594', '0.939', '1.12', '1.222', '1.24'];
+    return { levels: steam.map((value, i) => ({ level: i + 1, steam: value })) };
+  }
+}
+</script>
+</body>
+</html>

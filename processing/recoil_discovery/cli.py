@@ -7,7 +7,7 @@ import json
 import sys
 import traceback
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any
 from tabulate import tabulate
 
 from .pipeline import RecoilPipeline
@@ -230,6 +230,11 @@ def cmd_session(args):
     strategy = getattr(args, "strategy", "accumulate") or "accumulate"
     existing_samples = getattr(args, "existing_samples", None)
 
+    def on_progress(stage: str, progress: float, details: Dict[str, Any]):
+        msg = json.dumps({"type": "progress", "stage": stage, "progress": round(progress, 1), "details": details})
+        sys.stderr.write(f"PROGRESS:{msg}\n")
+        sys.stderr.flush()
+
     try:
         if video_files:
             result = pipeline.process_clips_session(
@@ -242,7 +247,8 @@ def cmd_session(args):
                 fov=fov,
                 hdr=hdr,
                 merge_strategy=strategy,
-                existing_sample_count=existing_samples
+                existing_sample_count=existing_samples,
+                progress_callback=on_progress
             )
         else:
             result = pipeline.process_images_session(
@@ -256,7 +262,8 @@ def cmd_session(args):
                 fov=fov,
                 hdr=hdr,
                 merge_strategy=strategy,
-                existing_sample_count=existing_samples
+                existing_sample_count=existing_samples,
+                progress_callback=on_progress
             )
         diff_report = pipeline.spec_manager.diff_weapon_spec(result["spec"])
         result["diff_report"] = diff_report

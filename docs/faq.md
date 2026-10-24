@@ -1,20 +1,22 @@
+<!-- description: Answers about mouse sensitivity, pattern accuracy, controller support, scoring and where your data is stored. -->
+
 # Frequently asked questions
 
 ## Mouse sensitivity
 
 It's assumed that your Windows sensitivity is 6/11 (x1.0) and the "Enhance pointer precision" is off so every mouse count equals 1 pixel on the screen.
 
-If you see a warning that "Active area is too small!" then it means that either browser's window is too small (resize it!) or in-game sensitivity is very low and recoil pattern will not fit the screen. In this case you should lower your mouse sensitivity for the app:
+If the range says it is too small for the pattern, either the browser window is too small (make it larger) or your in-game sensitivity is so low that the recoil pattern doesn't fit the screen. In that case, lower your mouse sensitivity for the app:
 
-- most of mouse control software supports multiple CPI settings. Switch to a lower value e.g. from 2000 to 1000 CPI.
+- Most mouse software supports several CPI settings. Switch to a lower one, for example from 2000 to 1000 CPI.
 
-- use this [script](https://gist.github.com/metaflow/dd0b38a66b74dad27d6af04358fbae40) for [autohotkey](https://www.autohotkey.com/) to switch between normal and 1/2 sensitivity.
+- Use an [AutoHotkey](https://www.autohotkey.com/) script to switch between normal and half sensitivity ([SCRIPT URL]).
 
-after you've reduced you mouse speed you can then multiply web app sensitivity by the same value (e.g. x0.5 mouse speed -> x2 sensitivity).
+After you've reduced your mouse speed, multiply the app's sensitivity by the same factor (for example, half the mouse speed means twice the sensitivity).
 
 ## How accurate are the patterns?
 
-I've tested every pattern by replaying it in-game with a few different scopes and game options (like FOV and mouse sensitivity). That was done with a hardware mouse simulator (Arduino board).
+Patterns were checked by replaying them in-game with several scopes and game options (such as FOV and mouse sensitivity), using a hardware mouse simulator (an Arduino board). Newer patterns can also be measured from recordings with the recoil discovery tools ([capture guide](capture.md)). [REVIEW: describe how patterns are verified today.]
 
 
 
@@ -22,7 +24,7 @@ I've tested every pattern by replaying it in-game with a few different scopes an
 
 You can try to use Steam controller support `Settings > Controller > Desktop Configuration`.
 
-According to my experiments, these mouse sensitivity values should be close to in-game:
+These Steam controller values should come close to the in-game sensitivity:
 
 | Apex Legends     | 1     | 2     | 3     | 4     | 5     | 6    | 7     | 8    |
 |------------------|-------|-------|-------|-------|-------|------|-------|------|
@@ -32,7 +34,7 @@ Pick the response curve, [this post might help](https://www.reddit.com/r/apexleg
 
 Steam does not disable mouse movement for non-steam games, your controls might be funky.
 
-*Disclaimer*: I play on the keyboard and mouse and have not tested with a controller. Sensitivity numbers above were computed with [xbox controller emulator](https://github.com/dmadison/ArduinoXInput) and having a linear response pattern. Trying to emulate the recoil movement of a gamepad seems to be non-trivial.
+*Disclaimer*: these values were not tested with a physical controller. They were computed with an [Xbox controller emulator](https://github.com/dmadison/ArduinoXInput) and a linear response curve; emulating a gamepad's recoil movement is not trivial.
 
 ## How scoring works
 
@@ -42,17 +44,13 @@ Scores are counted separately for different settings (mag, weapon, enabled hints
 
 The reasoning for the shape and constants selection:
 1. Small errors should not decrease the score a lot.
-2. Increasing the error value should gradually decrease the score to almost 0 at a distance of 100px (approximate body size from 20m). In-game "score" a binary value that suddenly drops drops "hit" to "no-hit" but that would not be useful for training.
+2. Increasing the error value should gradually decrease the score to almost 0 at a distance of 100px (approximate body size from 20m). In the game a shot either hits or misses, which would not be useful for training.
 
 ## No registration?
 
-As you probably noticed there is no registration and email confirmation.
-Settings and scores are stored locally in your browser. So they might be lost browser or system update.
-
-## FPS
-
-Normally you should see FPS values around 60: that's the default browser cap on animations. From time to time browser can also decide that 30 FPS is all you need - restarting usually helps.
+There is no registration and no email confirmation.
+Settings and scores are stored locally in your browser, so a browser or system update might lose them.
 
 ## I have an issue/idea!
 
-If something is broken or you have an improvement idea, please [create an issue](https://github.com/metaflow/apex-recoil/issues/new).
+If something is broken or you have an improvement idea, please create an issue ([ISSUES URL]).
