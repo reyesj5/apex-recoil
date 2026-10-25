@@ -17,7 +17,8 @@
     "assert": {
       "assertions": {
         "categories:performance": ["warn", { "minScore": 0.9, "aggregationMethod": "median-run" }],
-        "categories:accessibility": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }]
+        "categories:accessibility": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }],
+        "font-size": ["error", { "minScore": 1 }]
       }
     },
     "upload": {

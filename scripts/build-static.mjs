@@ -2,8 +2,8 @@
 // bundles, etc/ (Vite publicDir) and assets/; the pages rendered ahead of time with the prerender
 // bundle, which this builds into dist-ssr/ (not deployed): a folder per page (ru/patterns/index.html),
 // so static hosts serve every address without rewrites, plus index-ru.html and index-zh-CN.html for
-// servers set up for the old file names (docs/playbooks.md) and 404.html; and the Studio (editor.html),
-// which renders in the browser, in its shell.
+// servers set up for the old file names (docs/playbooks.md) and 404.html; the Studio (editor.html),
+// which renders in the browser, in its shell; and robots.txt and sitemap.xml (server/prerender.ts).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -58,7 +58,12 @@ fs.writeFileSync(
   path.join(outDir, '404.html'),
   await prerender.renderPage(prerender.notFound, site, { assetsDir: path.join(outDir, 'assets') }),
 );
+// For search engines, as the server sends them: robots.txt, and the sitemap when site.json has the
+// site's address
+fs.writeFileSync(path.join(outDir, 'robots.txt'), prerender.robotsTxt(site));
+const sitemap = prerender.sitemapXml(site);
+if (sitemap) fs.writeFileSync(path.join(outDir, 'sitemap.xml'), sitemap);
 
 console.log(
-  `Static site written to ${path.relative(process.cwd(), outDir) || '.'} (${prerender.pages.length} pages, index-ru.html, index-zh-CN.html, 404.html, editor.html)`,
+  `Static site written to ${path.relative(process.cwd(), outDir) || '.'} (${prerender.pages.length} pages, index-ru.html, index-zh-CN.html, 404.html, editor.html, robots.txt${sitemap ? ', sitemap.xml' : ''})`,
 );

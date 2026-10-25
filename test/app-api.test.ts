@@ -9,6 +9,8 @@ import { discoveryStatus, sessionList, specHistory, specList } from '../shared/a
 import { createApp } from '../server/app.ts';
 import { DatabaseService, type SpecDoc } from '../server/db.ts';
 import { JobQueue } from '../server/job-queue.ts';
+import { robotsTxt, sitemapXml } from '../server/prerender.ts';
+import { loadSite } from '../server/site.ts';
 import { AssetStorageService } from '../server/storage.ts';
 
 const root = path.join(import.meta.dirname, '..');
@@ -308,6 +310,22 @@ describe('API Endpoints (SQLite Specs & Versioning)', () => {
     const script = await fetch(`${baseUrl}/no-such-script.js`);
     assert.equal(script.status, 404);
     assert.doesNotMatch(await script.text(), /data-page/);
+  });
+
+  test('serves robots.txt and the sitemap for the site values it runs with', async () => {
+    const site = loadSite();
+    const robots = await fetch(`${baseUrl}/robots.txt`);
+    assert.equal(robots.status, 200);
+    assert.match(robots.headers.get('content-type') ?? '', /^text\/plain/);
+    assert.equal(await robots.text(), robotsTxt(site));
+    // Without a site address there is no sitemap: it names full addresses
+    const xml = sitemapXml(site);
+    const sitemap = await fetch(`${baseUrl}/sitemap.xml`);
+    assert.equal(sitemap.status, xml ? 200 : 404);
+    if (xml) {
+      assert.match(sitemap.headers.get('content-type') ?? '', /^application\/xml/);
+      assert.equal(await sitemap.text(), xml);
+    }
   });
 
   test('answers a request it fails with the error page, or plain text', async () => {

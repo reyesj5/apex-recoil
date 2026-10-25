@@ -88,6 +88,9 @@ test('sums up the history by day and by weapon', async ({ page }) => {
   await expect(
     page.getByRole('img', { name: 'Best and median score per day: best 93, median 76, over 3 days of practice' }),
   ).toBeVisible();
+  // The axis labels and the legal footer take the legal style, 11 px on a computer
+  await expect(page.locator('.recharts-cartesian-axis-tick-value').first()).toHaveCSS('font-size', '11px');
+  await expect(page.locator('footer')).toHaveCSS('font-size', '11px');
   const weapons = page.getByRole('region', { name: 'By weapon' }).getByRole('listitem');
   await expect(weapons).toHaveText([/^R-30114 runs/, /^R-993 runs/]);
   const recent = page.getByRole('region', { name: 'Recent runs' }).getByRole('row');
@@ -190,6 +193,9 @@ test.describe('on a phone', () => {
     await withHistory(page);
     await page.goto('/progress');
     await expect(page.getByRole('region', { name: 'Score per day' }).getByRole('img')).toBeVisible();
+    // Text under 12 px counts as illegible on a phone: the axis labels and the legal footer take legal-phone
+    await expect(page.locator('.recharts-cartesian-axis-tick-value').first()).toHaveCSS('font-size', '12px');
+    await expect(page.locator('footer')).toHaveCSS('font-size', '12px');
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
     expect(await violations(page), 'accessibility violations on a phone').toEqual([]);
   });

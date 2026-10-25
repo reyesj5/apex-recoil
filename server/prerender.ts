@@ -111,23 +111,73 @@ function siteAddress(site: SiteValues) {
 
 /**
  * Where a page lives, for search engines: its address on the site, and, for a page in several
- * languages, the address of each version, with English as the default. None without a site address,
- * nor on the 404 and error pages, which answer any address.
+ * languages, the address of each version, with English as the default. Null without a site address,
+ * and for the 404 and error pages, which answer any address.
  */
-export function pageLinks({ path: address, page }: PageSpec, site: SiteValues) {
+function pageAddresses({ path: address, page }: PageSpec, site: SiteValues) {
   const base = siteAddress(site);
-  if (!address || !base) return [];
-  const href = (to: string) => escapeHtml(new URL(to, base).href);
-  const links = [`<link rel="canonical" href="${href(address)}">`];
+  if (!address || !base) return null;
+  const href = (to: string) => new URL(to, base).href;
   const versions = pages.filter((spec) => spec.page === page);
-  if (versions.length > 1) {
-    for (const spec of versions) {
-      links.push(`<link rel="alternate" hreflang="${spec.locale}" href="${href(spec.path!)}">`);
-    }
-    const english = versions.find((spec) => spec.locale === 'en');
-    if (english) links.push(`<link rel="alternate" hreflang="x-default" href="${href(english.path!)}">`);
-  }
-  return links;
+  const english = versions.find((spec) => spec.locale === 'en');
+  const alternates =
+    versions.length > 1
+      ? [
+          ...versions.map((spec) => ({ hreflang: spec.locale, href: href(spec.path!) })),
+          ...(english ? [{ hreflang: 'x-default', href: href(english.path!) }] : []),
+        ]
+      : [];
+  return { canonical: href(address), alternates };
+}
+
+/** A page's addresses as links in its head (pageAddresses) */
+export function pageLinks(spec: PageSpec, site: SiteValues) {
+  const addresses = pageAddresses(spec, site);
+  if (!addresses) return [];
+  return [
+    `<link rel="canonical" href="${escapeHtml(addresses.canonical)}">`,
+    ...addresses.alternates.map(
+      ({ hreflang, href }) => `<link rel="alternate" hreflang="${hreflang}" href="${escapeHtml(href)}">`,
+    ),
+  ];
+}
+
+/**
+ * The sitemap, sitemap.xml: every page with its addresses, as its head names them. Null without a site
+ * address, since a sitemap names full addresses. The server serves it (routes/pages.ts), and
+ * scripts/build-static.mjs writes it into the static site.
+ */
+export function sitemapXml(site: SiteValues) {
+  if (!siteAddress(site)) return null;
+  const entries = pages.map((spec) => {
+    const { canonical, alternates } = pageAddresses(spec, site)!;
+    return [
+      '  <url>',
+      `    <loc>${escapeHtml(canonical)}</loc>`,
+      ...alternates.map(
+        ({ hreflang, href }) => `    <xhtml:link rel="alternate" hreflang="${hreflang}" href="${escapeHtml(href)}"/>`,
+      ),
+      '  </url>',
+    ].join('\n');
+  });
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+    ...entries,
+    '</urlset>',
+    '',
+  ].join('\n');
+}
+
+/**
+ * robots.txt: every page may be crawled (the Studio, the gallery and the error pages keep themselves
+ * out of search results with their noindex), and it names the sitemap when there is one
+ */
+export function robotsTxt(site: SiteValues) {
+  const base = siteAddress(site);
+  return ['User-agent: *', 'Allow: /', ...(base ? [`Sitemap: ${new URL('/sitemap.xml', base).href}`] : []), ''].join(
+    '\n',
+  );
 }
 
 interface ShellOptions {

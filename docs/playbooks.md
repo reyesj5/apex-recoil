@@ -6,8 +6,10 @@
 
 # Update domains
 
-1. edit /etc/nginx/sites-enabled/default
-add section
+1. at the domain's registrar, point both addresses at the server: an A record for `spraydown.click` with the server's IP address, and a CNAME record for `www` that names `spraydown.click`
+
+2. edit /etc/nginx/sites-enabled/default
+add these two sections: the site, and its www address, which sends every request to the same path on the site (owner, 2026-10-25: "Yes, i'll use the www address to redirect")
 
 ```
 server {
@@ -54,10 +56,17 @@ server {
     }
     listen 80;
 }
+
+server {
+    server_name www.spraydown.click;
+    # The site's address is spraydown.click (siteUrl in site.json, which the pages name as canonical)
+    return 301 https://spraydown.click$request_uri;
+    listen 80;
+}
 ```
 
-2. run `nginx -t` to test and `systemctl restart nginx`
+3. run `nginx -t` to test and `systemctl restart nginx`
 
-3. check that http://spraydown.click/ is available
+4. check that http://spraydown.click/ is available, and that `curl -I http://www.spraydown.click/patterns` answers `301` with `Location: https://spraydown.click/patterns`
 
-4. run `certbot --nginx` and select new domain
+5. run `certbot --nginx -d spraydown.click -d www.spraydown.click`: one certificate for both addresses; certbot adds the https listeners to both sections

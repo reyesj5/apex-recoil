@@ -20,7 +20,7 @@ The Studio sends a session's clips and wall screenshots to `/api/discovery/proce
 
 ## Pages: prerendering and routing
 
-[server/routes/pages.ts](../server/routes/pages.ts) serves the pages of `server/prerender.ts` (`/`, `/ru`, `/zh-CN`, each with `/patterns` and `/progress`, and `/privacy`, `/faq`, `/changelog`): each is rendered once with this server's `site.json` values, all of them when the server starts, and served from memory with `Cache-Control: no-cache`. With `pnpm dev`, or a build without `dist-ssr/`, they render in the browser in a bare shell instead. `/next/...` answers with a permanent redirect to the page's own address (the previews), except `/next/components`, the gallery. An unknown address gets the 404 page when a browser asks for HTML, and a bare 404 otherwise (a missing script, an API path); a request that fails gets the error page, with its status. `/editor` is the Studio, in its shell (`/editor/next`, its preview's address, redirects there). Hashed files under `dist/chunks` and `dist/assets` are cached as immutable.
+[server/routes/pages.ts](../server/routes/pages.ts) serves the pages of `server/prerender.ts` (`/`, `/ru`, `/zh-CN`, each with `/patterns` and `/progress`, and `/privacy`, `/faq`, `/changelog`): each is rendered once with this server's `site.json` values, all of them when the server starts, and served from memory with `Cache-Control: no-cache`. With `pnpm dev`, or a build without `dist-ssr/`, they render in the browser in a bare shell instead. `/next/...` answers with a permanent redirect to the page's own address (the previews), except `/next/components`, the gallery. An unknown address gets the 404 page when a browser asks for HTML, and a bare 404 otherwise (a missing script, an API path); a request that fails gets the error page, with its status. `/editor` is the Studio, in its shell (`/editor/next`, its preview's address, redirects there). `/robots.txt` and `/sitemap.xml` come from the same list of pages, with the addresses `siteUrl` gives (`robotsTxt`, `sitemapXml`); without a `siteUrl` there is no sitemap. Hashed files under `dist/chunks` and `dist/assets` are cached as immutable.
 
 ## The code, folder by folder
 
@@ -103,10 +103,12 @@ server/app.ts                    createApp(): static files, /captures, the API's
 server/main.ts                   the HTTP server (pnpm start, pnpm dev with --dev): .env, the port and its fallback
 server/routes/                   specs.ts, discovery.ts (uploads, analyses, the session and screenshot lists, the
                                  status), jobs.ts, captures.ts, pages.ts (the prerendered pages, the shells, the old
-                                 addresses' redirects, the 404 and error pages, Vite with pnpm dev)
+                                 addresses' redirects, robots.txt and the sitemap, the 404 and error pages, Vite
+                                 with pnpm dev)
 server/prerender.ts              the pages (address, page, language, entry, a fallback title), pageAt(), notFound,
                                  serverError, the shells (Studio, gallery), renderShell(), and renderPage(): the HTML
-                                 page around the markup, with the site values and the first paint's font preloads;
+                                 page around the markup, with the site values, the first paint's font preloads and
+                                 the page's canonical and language links (pageLinks); sitemapXml() and robotsTxt();
                                  routes/pages.ts and scripts/build-static.mjs use it
 server/uploads.ts                upload staging: multer, old clients' base64, direct uploads and their signed grants,
                                  file names; analysis-params.ts turns an analysis' settings into the CLI's arguments
@@ -116,7 +118,7 @@ server/db.ts, storage.ts, jobs.ts, job-queue.ts, bull-queue.ts, job-processor.ts
                                  the spec database, capture storage and analysis jobs, as they were in JavaScript;
                                  jobs.ts has the interface both queues implement (AnalysisQueue)
 test/*.test.ts                   the Node tests (node:test): the database, the queues, storage, request parsing, the
-                                 API, the server as it starts (main), the pages' links (prerender) and the built
+                                 API, the server as it starts (main), the pages' links and sitemap (prerender) and the built
                                  bundles; bull-queue, app-scaled and S3 storage need the services
 docs/changelog.md                the players' changelog (/changelog); docs/release-notes.md stays the developers'
 docs/history/                    the release history of apex-recoil, the project this one is based on

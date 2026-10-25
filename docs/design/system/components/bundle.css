@@ -378,6 +378,10 @@ body:has(> .sd-preview) { margin: 0; background: var(--ground); }
 .sd-command__meta { color: var(--text-muted); font-size: 12px; font-weight: 400; }
 .sd-command__empty { margin: 0; padding: var(--space-24) 0; color: var(--text-secondary); font-size: 14px; text-align: center; }
 
+/* Phones (below 48rem): the legal footer and chart axis labels take legal-phone, 12 px */
+@media (width < 48rem) {
+  .sd-footer, .sd-chart__axis { font-size: 12px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .sd-btn, .sd-segmented__item, .sd-tabs__tab, .sd-chip, .sd-weapon-tile, .sd-tier, .sd-switch, .sd-switch::after, .sd-nav__link, .sd-rail__item, .sd-tool, .sd-dialog__close { transition: none; }
 }

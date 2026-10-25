@@ -39,6 +39,7 @@ Spraydown is a recoil trainer for Apex Legends with a Studio for capturing and e
 - Scores: `score-xl` on the run result card, `score-lg` in the session panel, `stat-value` in stat tiles, `summary-value` for Progress totals, `score-cell` in tables.
 - Panels open with a `section-label` (uppercase, text-muted). Cards and page sections take `heading` or `label` titles. Dialogs, alert dialogs and drawers open with a `panel-title`, as the Studio's panels do.
 - Interface text is `body`, controls `label` or `chip`, captions and meta lines `small`, stat tile labels `stat-label` (uppercase), the legal footer and status bar `legal`, tier names and rail labels `micro`.
+- Phones (below 48rem) take their own sizes where the desktop one would be too small or too large: page titles `page-title-phone`, and the legal footer and chart axis labels `legal-phone` (12 px), since text under 12 px counts as illegible on a phone.
 - Chakra Petch has no Cyrillic: in Russian, display text falls back to Inter semibold at the same sizes. Chinese text uses system fonts.
 
 ## Space, shape and depth

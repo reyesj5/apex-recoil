@@ -2,6 +2,10 @@ import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import type { ChartPoint } from './progress-data';
 
+// Axis labels take the legal style, 12 px on phones (legal-phone); Recharts reads their size back to
+// space them
+const axisTick = { fill: 'var(--color-text-muted)', className: 'type-legal max-md:type-legal-phone' };
+
 /**
  * The score per day: the best in volt, the median in text-secondary, the tries as bars along the
  * bottom (chart-bar stands only 1.4:1 off the panel, so the tooltip and the summary give them too).
@@ -37,21 +41,8 @@ export default function ScoreChart({
     <ChartContainer config={config} className="mt-3.5 aspect-auto h-60 w-full" role="img" aria-label={label}>
       <ComposedChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
         <CartesianGrid vertical={false} yAxisId="score" stroke="var(--color-hover)" />
-        <XAxis
-          dataKey="label"
-          tickLine={false}
-          axisLine={false}
-          minTickGap={24}
-          tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
-        />
-        <YAxis
-          yAxisId="score"
-          domain={[low, 100]}
-          ticks={ticks}
-          tickLine={false}
-          axisLine={false}
-          tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
-        />
+        <XAxis dataKey="label" tickLine={false} axisLine={false} minTickGap={24} tick={axisTick} />
+        <YAxis yAxisId="score" domain={[low, 100]} ticks={ticks} tickLine={false} axisLine={false} tick={axisTick} />
         <YAxis yAxisId="tries" hide domain={[0, maxTries * 4]} />
         <ChartTooltip content={<ChartTooltipContent />} />
         <Bar yAxisId="tries" dataKey="tries" fill="var(--color-tries)" barSize={14} isAnimationActive={false} />

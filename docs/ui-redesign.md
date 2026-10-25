@@ -126,7 +126,7 @@ shadcn/ui mapping: `background` ground, `card` panel, `popover` raised, `primary
 | Family | Weights | Use |
 | --- | --- | --- |
 | Chakra Petch | 600, 700 | Scores (72 and 56 px), weapon names (22 px), page titles in display contexts, section labels (12 px, uppercase, 0.14em tracking) |
-| Inter | 400 to 700 | Interface: page titles 32 px, lead 16 px, body 14 px, labels 13 px semibold, small 12 px, legal 11 px |
+| Inter | 400 to 700 | Interface: page titles 32 px, lead 16 px, body 14 px, labels 13 px semibold, small 12 px, legal 11 px (12 px on phones, `legal-phone`, owner, 2026-10-25: "Raising legal text to 12 px on phones would fix it, but that's a Design System change, so it's your call. do it.") |
 | JetBrains Mono | 500, 600 | Numbers in fields and readouts, keyboard keys |
 
 All three are self-hosted as WOFF2 and preloaded. Inter and JetBrains Mono cover Cyrillic; Chakra Petch does not, so in the Russian locale display text falls back to Inter semibold with the same sizes (Exo 2 is a display face with Cyrillic, if the fallback looks too plain). The Chinese locale uses system fonts for Chinese text.

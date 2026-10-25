@@ -10,8 +10,8 @@ Names, links and IDs used by the pages live in [`site.json`](../site.json) at th
 | --- | --- | --- |
 | `name`: `Spraydown`, final (owner, 2026-10-25: "The name wll be Spraydown no?") | `site.json` (page titles, server log), `NOTICE`, README, privacy policy, `package.json` (`spraydown`), the logo in `brand/` | The product name. To rename: change `site.json` and `package.json`, rebuild the logo with `python brand/source/build_logo.py --name <Name>` (see `brand/README.md`) and search the docs for "Spraydown" |
 | `owner`: `[OWNER NAME]` | `site.json` (footer copyright), `NOTICE`, the 24 file headers (`Modified by [OWNER NAME], 2025-2026.`), privacy policy | The legal owner of the project and the controller under the GDPR |
-| `siteUrl`: `https://spraydown.click` (owner, 2026-10-25: "I have a domain now. spraydown.click") | `site.json` (the pages' canonical and `hreflang` links, the phone viewer's Copy link), README, privacy policy | The website address |
-| `[DEPLOY USER]@[DEPLOY HOST]:[WEB ROOT]` | `docs/playbooks.md` | Deployment; the nginx `server_name` is the domain, `spraydown.click` |
+| `siteUrl`: `https://spraydown.click` (owner, 2026-10-25: "I have a domain now. spraydown.click") | `site.json` (the pages' canonical and `hreflang` links, the sitemap and robots.txt, the phone viewer's Copy link), README, privacy policy | The website address |
+| `[DEPLOY USER]@[DEPLOY HOST]:[WEB ROOT]` | `docs/playbooks.md` | Deployment; the nginx `server_name` is the domain, `spraydown.click`, and `www.spraydown.click` redirects to it (owner, 2026-10-25: "Yes, i'll use the www address to redirect") |
 | `contactEmail`: empty, `[CONTACT EMAIL]`, `[POSTAL ADDRESS]` | `site.json`, privacy policy | Privacy contact |
 | `privacyUrl`: empty | `site.json` | Where the privacy policy is published (until the app has its own `/privacy` page, for example the policy's page in your repository) |
 | `gaMeasurementId`: empty | `site.json` | Your Google Analytics 4 measurement ID |

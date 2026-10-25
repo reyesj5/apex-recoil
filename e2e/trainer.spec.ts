@@ -254,6 +254,9 @@ test.describe('on a phone', () => {
     await weapons.getByRole('radio', { name: 'R-301' }).click();
     await expect(page.getByRole('region', { name: 'R-301 pattern' })).toBeVisible();
     await page.getByRole('button', { name: 'Play spray' }).click();
+    // Text under 12 px counts as illegible on a phone: the legal footer takes legal-phone (the hidden
+    // desktop layout has its own)
+    await expect(page.locator('footer').filter({ visible: true })).toHaveCSS('font-size', '12px');
     expect(await violations(page), 'accessibility violations on a phone').toEqual([]);
   });
 

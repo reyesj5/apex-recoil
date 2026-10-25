@@ -54,6 +54,9 @@ test('meets WCAG 2.1 A and AA with every overlay open', async ({ page }) => {
     await button.click();
     const overlay = page.getByRole(role, { name });
     await expect(overlay).toBeVisible();
+    // Colors are checked once the overlay has faded in: CI caught the alert dialog at about 80 % opacity,
+    // its destructive button at 3.7:1. Only the overlay's own animations: the skeletons pulse forever.
+    await overlay.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
     expect(await violations(page), `accessibility violations with "${trigger}" open`).toEqual([]);
     // Escape closes it and gives focus back to the button that opened it
     await page.keyboard.press('Escape');

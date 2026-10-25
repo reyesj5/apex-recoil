@@ -78,7 +78,7 @@ docs/                  the plan (roadmap.md), the corrections, the architecture,
                        the documents the pages show, and the design's snapshot (design/)
 brand/                 the logo and its sources
 assets/                the game's images and sounds (not under Apache-2.0)
-etc/                   the favicons and robots.txt, copied into the static site
+etc/                   the favicons, copied into the static site
 arduino_mouse/         a separate PlatformIO project, which reads the patterns export-arduino writes
 .claude/, .agents/, .codex/, .gemini/
                        each assistant's hooks, rules and graphify's skill; AGENTS.md holds the rules
@@ -114,7 +114,7 @@ pnpm dev
 # Build assets (Vite 8 production build into dist/: the pages' entries such as trainer.js and studio.js, and app.css; and the pages' prerender into dist-ssr/); pnpm start serves them
 pnpm build
 
-# Run Node test suites (59 tests across database, queue, storage, request parsing, API, the server, the pages' prerender and the built bundles; build first)
+# Run Node test suites (63 tests across database, queue, storage, request parsing, API, the server, the pages' prerender and the built bundles; build first)
 pnpm test
 
 # Unit and component tests (Vitest)
@@ -151,7 +151,7 @@ cp .env.example .env          # then uncomment REDIS_URL and/or the STORAGE_PROV
 pnpm dev                      # the server runs one embedded worker
 pnpm worker                   # optional: more workers (other machines need S3 storage)
 
-# Run every Node suite, including the Redis, S3 and end-to-end tests (73 tests)
+# Run every Node suite, including the Redis, S3 and end-to-end tests (77 tests)
 pnpm test:services
 ```
 With S3 storage the Studio uploads recordings straight to the bucket; the bucket must allow `PUT` from the app's origin (CORS). `S3_AUTO_CREATE_BUCKET=true` creates the bucket and that rule for development.

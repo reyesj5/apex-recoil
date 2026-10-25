@@ -31,8 +31,10 @@ import {
   pages,
   renderPage,
   renderShell,
+  robotsTxt,
   serverError,
   shellAt,
+  sitemapXml,
   type PageSpec,
 } from '../prerender.ts';
 import type { SiteValues } from '../site.ts';
@@ -120,6 +122,16 @@ export function createPages({ site, dev }: { site: SiteValues; dev: boolean }): 
   // The Studio was previewed at /editor/next until it replaced the Recoil Editor (2026-10-24)
   router.get('/editor/next', (req, res) => {
     res.redirect(301, '/editor');
+  });
+  // For search engines: robots.txt names the sitemap, which lists every page with its versions in each
+  // language. Both name full addresses, from site.json's siteUrl; without one there is no sitemap.
+  router.get('/robots.txt', (req, res) => {
+    res.type('text/plain').send(robotsTxt(site));
+  });
+  router.get('/sitemap.xml', (req, res, next) => {
+    const xml = sitemapXml(site);
+    if (!xml) return next();
+    res.type('application/xml').send(xml);
   });
   router.get('/{*path}', (req, res, next) => {
     const spec = pageAt(req.path);

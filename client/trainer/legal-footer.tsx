@@ -50,7 +50,7 @@ export function LegalFooter({ className }: { className?: string }) {
   return (
     <footer
       className={cn(
-        'mt-auto flex flex-col gap-2 border-t border-outline pt-3 type-legal leading-normal text-text-muted',
+        'mt-auto flex flex-col gap-2 border-t border-outline pt-3 type-legal leading-normal text-text-muted max-md:type-legal-phone',
         className,
       )}
     >
