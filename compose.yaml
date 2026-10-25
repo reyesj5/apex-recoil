@@ -6,7 +6,7 @@
 # Without these services the app keeps its default mode: in-process queue + local captures folder.
 #
 #   docker compose up -d
-name: apex-recoil
+name: spraydown
 
 services:
   redis:
@@ -28,8 +28,8 @@ services:
     command: ["server", "-s3", "-dir=/data", "-ip.bind=0.0.0.0", "-master.volumeSizeLimitMB=1024"]
     environment:
       # Development credentials; must match S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY in .env
-      AWS_ACCESS_KEY_ID: apex-dev
-      AWS_SECRET_ACCESS_KEY: apex-dev-secret
+      AWS_ACCESS_KEY_ID: spraydown-dev
+      AWS_SECRET_ACCESS_KEY: spraydown-dev-secret
     ports:
       - "8333:8333"
     volumes:

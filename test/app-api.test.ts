@@ -16,7 +16,7 @@ const root = path.join(import.meta.dirname, '..');
 // The app runs on a throwaway database, specs.json, captures and upload folder: these tests must
 // never touch data/recoil.db or client/specs.json.
 const realSpecsPath = path.join(root, 'client', 'specs.json');
-const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apex_api_test_'));
+const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spraydown_api_test_'));
 const specsPath = path.join(tempDir, 'specs.json');
 const capturesDir = path.join(tempDir, 'captures');
 const uploadDir = path.join(tempDir, 'uploads');

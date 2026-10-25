@@ -1,6 +1,6 @@
 # Spraydown: Recoil Trainer & Discovery Toolkit for Apex Legends
 
-Live site: [SITE URL] (no domain yet; set `siteUrl` in [site.json](./site.json))
+Site: [spraydown.click](https://spraydown.click) (`siteUrl` in [site.json](./site.json); to deploy it, [docs/playbooks.md](docs/playbooks.md))
 
 An interactive recoil pattern visualization, muscle memory trainer, and automated discovery toolkit for [Apex Legends](https://www.ea.com/games/apex-legends).
 
@@ -70,7 +70,7 @@ client/                the pages: React 19, Tailwind 4 and shadcn/ui
   specs.json           the weapon specs, exported from data/recoil.db
 server/                the Express server in TypeScript: the app, its routes, the jobs, storage
 shared/                the API's zod schemas, used by the browser and the server
-processing/            the Python discovery pipeline (recoil_discovery/) and its tests
+processing/            the Python discovery pipeline (recoil_discovery/), its tests and its lock (requirements.txt)
 e2e/                   the Playwright scenarios and the server that runs them on throwaway data
 test/                  the server's tests (node:test)
 scripts/               the static build, the conventions and release checks, the design export, agent_kit.py
@@ -98,7 +98,7 @@ scratch/               throwaway work (gitignored)
 ### 1. Prerequisites
 * **Node.js** 22.22+ or 24.15+, 24 LTS recommended (`engines` in `package.json`; the test tools need these versions). Node runs the server's TypeScript as it is, without a build step
 * **pnpm** 12 ([installation](https://pnpm.io/installation)). pnpm 11 and newer switch to the version pinned in `package.json` (`devEngines`) on their own; npm is not supported and stops with `EBADDEVENGINES`.
-* **Python 3.10+** (for the automated discovery engine)
+* **Python 3.12** (for the automated discovery engine; its lock is made for 3.12, which CI runs)
 * **Google Chrome** (for the end-to-end tests)
 
 ### 2. Frontend & Web Server
@@ -114,7 +114,7 @@ pnpm dev
 # Build assets (Vite 8 production build into dist/: the pages' entries such as trainer.js and studio.js, and app.css; and the pages' prerender into dist-ssr/); pnpm start serves them
 pnpm build
 
-# Run Node test suites (54 tests across database, queue, storage, request parsing, API, the server and the built bundles; build first)
+# Run Node test suites (59 tests across database, queue, storage, request parsing, API, the server, the pages' prerender and the built bundles; build first)
 pnpm test
 
 # Unit and component tests (Vitest)
@@ -128,6 +128,9 @@ pnpm test:e2e
 pnpm tsc
 pnpm lint
 pnpm format:check
+
+# Known vulnerabilities in pnpm-lock.yaml (CI audits it and the pipeline's lock on each change and every Monday)
+pnpm audit
 ```
 
 Open your browser to:
@@ -148,7 +151,7 @@ cp .env.example .env          # then uncomment REDIS_URL and/or the STORAGE_PROV
 pnpm dev                      # the server runs one embedded worker
 pnpm worker                   # optional: more workers (other machines need S3 storage)
 
-# Run every Node suite, including the Redis, S3 and end-to-end tests (68 tests)
+# Run every Node suite, including the Redis, S3 and end-to-end tests (73 tests)
 pnpm test:services
 ```
 With S3 storage the Studio uploads recordings straight to the bucket; the bucket must allow `PUT` from the app's origin (CORS). `S3_AUTO_CREATE_BUCKET=true` creates the bucket and that rule for development.
@@ -158,7 +161,8 @@ From the `processing/` directory:
 ```bash
 cd processing
 
-# Install dependencies
+# Install dependencies from their lock: every package pinned with its hashes
+# (processing/README.md, Dependencies, says how to change one)
 pip install -r requirements.txt
 
 # Run automated test suite (43 tests)

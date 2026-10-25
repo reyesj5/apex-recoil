@@ -13,7 +13,7 @@ add section
 server {
     root /var/www/html;
     index index.html index.htm index.nginx-debian.html;
-    server_name [DOMAIN];
+    server_name spraydown.click;
     # Compress text only: images and audio are compressed already. For brotli, as the Express
     # server sends, install the nginx brotli module (Debian and Ubuntu package
     # libnginx-mod-http-brotli-filter) and add: brotli on; brotli_types <the same types>;
@@ -58,6 +58,6 @@ server {
 
 2. run `nginx -t` to test and `systemctl restart nginx`
 
-3. check that http://[DOMAIN]/ is available
+3. check that http://spraydown.click/ is available
 
 4. run `certbot --nginx` and select new domain

@@ -116,7 +116,8 @@ server/db.ts, storage.ts, jobs.ts, job-queue.ts, bull-queue.ts, job-processor.ts
                                  the spec database, capture storage and analysis jobs, as they were in JavaScript;
                                  jobs.ts has the interface both queues implement (AnalysisQueue)
 test/*.test.ts                   the Node tests (node:test): the database, the queues, storage, request parsing, the
-                                 API and the built bundles; bull-queue, app-scaled and S3 storage need the services
+                                 API, the server as it starts (main), the pages' links (prerender) and the built
+                                 bundles; bull-queue, app-scaled and S3 storage need the services
 docs/changelog.md                the players' changelog (/changelog); docs/release-notes.md stays the developers'
 docs/history/                    the release history of apex-recoil, the project this one is based on
 lighthouserc.json, lighthouserc.mobile.json  the Lighthouse CI runs (the `lighthouse` job in ci.yml)

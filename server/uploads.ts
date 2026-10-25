@@ -136,7 +136,7 @@ export interface UploadOptions {
   storage: AssetStorageService;
   /** Jobs run in this process, so their inputs can stay on local disk even with S3 storage */
   runsLocally: boolean;
-  /** Where uploads wait until they are staged (default: RECOIL_UPLOAD_TMP_DIR, or <system temp>/apex_uploads) */
+  /** Where uploads wait until they are staged (default: RECOIL_UPLOAD_TMP_DIR, or <system temp>/spraydown_uploads) */
   dir?: string;
   /** Signs direct-upload grants: set RECOIL_UPLOAD_SECRET when several API instances share a bucket */
   secret?: string;
@@ -153,7 +153,7 @@ export class UploadStaging {
   constructor({ storage, runsLocally, dir, secret }: UploadOptions) {
     this.storage = storage;
     this.runsLocally = runsLocally;
-    this.dir = dir || process.env.RECOIL_UPLOAD_TMP_DIR || path.join(os.tmpdir(), 'apex_uploads');
+    this.dir = dir || process.env.RECOIL_UPLOAD_TMP_DIR || path.join(os.tmpdir(), 'spraydown_uploads');
     this.secret = secret || process.env.RECOIL_UPLOAD_SECRET || crypto.randomBytes(32).toString('hex');
     try {
       fs.mkdirSync(this.dir, { recursive: true });
@@ -231,7 +231,7 @@ export class UploadStaging {
         if (!runLocal) return { input: { kind: 'storage', prefix }, cleanupInput: false, sessionId };
       }
       if (runLocal) {
-        const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'apex_session_'));
+        const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'spraydown_session_'));
         await Promise.all(files.map((f) => moveOrCopyFile(f.path, path.join(dir, f.name))));
         return { input: { kind: 'local', dir }, cleanupInput: true, sessionId };
       }

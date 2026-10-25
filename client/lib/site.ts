@@ -20,7 +20,7 @@ const linkKeys = [
 export type SiteLink = (typeof linkKeys)[number];
 
 export interface Site extends Partial<Record<SiteLink, string>> {
-  /** The product name ("Spraydown" for now) */
+  /** The product name, "Spraydown" */
   name: string;
   /** The legal owner, for the footer copyright; "[OWNER NAME]" until set */
   owner: string;

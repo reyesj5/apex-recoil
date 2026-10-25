@@ -11,7 +11,7 @@ import { site } from '@/lib/site';
 import { useTrainerSettings } from '@/lib/storage/trainer';
 import { weapons } from './catalog';
 import { LegalFooter } from './legal-footer';
-import { patternsHref, trainerHref } from './links';
+import { patternsHref, trainerHref, trainerUrl } from './links';
 import { actions, useLoadout } from './loadout';
 import { useNames } from './names';
 import { usePatternFrame } from './pattern-frame';
@@ -48,7 +48,7 @@ export function PhoneViewer({
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(site.siteUrl || location.href);
+      await navigator.clipboard.writeText(trainerUrl(locale, site.siteUrl, location.href));
       setCopied(true);
     } catch {
       // the browser refused; the address bar still has the link

@@ -193,7 +193,7 @@ Exit: the 41 default and 14 service tests pass, with the API behaving as before.
 
 - 5.1 Delete what is left: the old `tailwind.css` entry and `theme-tokens.css` (replaced by the tokens in `app.css`), the legacy `bundle.js` router (gone with the switch, 2026-10-24), `scripts/style-snapshot.mjs` (replaced by Playwright screenshots), and the dependencies `pug`, `ts-assert-exists`, `hotkeys-js` (if replaced) and unused `@types/*`. (2026-10-24: also `json-diff`, `stats-lite`, `tslib`, `react-hook-form` and `@hookform/resolvers`, and the four shadcn components nothing used.)
 - 5.2 Guards in CI: no CSS files besides `app.css`, no hex colors in components, Tailwind lint rules as errors, and a release build fails while site placeholders remain. (2026-10-24: `scripts/check-conventions.mjs` in `pnpm lint`, which also refuses `@apply` and `dark:` classes; `scripts/check-release.mjs` in `pnpm release`, which CI runs for a version tag, and which checks `NOTICE`, the copyright headers and the pages' documents as well.)
-- 5.3 The remaining ownership register items (9 to 18): README and docs, deploy target, contribution terms, package and project names, release history. (2026-10-24: done but for item 18, which takes the final name's slug, and the owner's values.)
+- 5.3 The remaining ownership register items (9 to 18): README and docs, deploy target, contribution terms, package and project names, release history. (2026-10-24: done but for item 18, which takes the final name's slug, and the owner's values. Item 18 was done on 2026-10-25, with the slug `spraydown`: roadmap, M11 5.6.)
 - 5.4 Docs: README (stack and scripts); AGENTS.md (new gates: lint, unit and end-to-end tests; adding shadcn components; Tailwind rules); contributing (Styles rewritten); capture.md (editor UI); roadmap and release notes.
 
 ## 6. What goes away
@@ -243,4 +243,4 @@ Made by the owner on 2026-10-22:
 4. **The original project**: every mention and link goes, with placeholders until the owner's values exist; the license and copyright notices stay ([ownership-register.md](ownership-register.md)).
 5. **Component catalog**: Storybook is not planned; component tests and screenshots cover the same ground.
 
-Still open, and tracked in [roadmap.md](roadmap.md) (M11 5.5): the final name, logo and domain; the GA4 measurement ID; the privacy policy; a support link, if any. ~~Whether the Patterns page ships with the first release~~: it does, as the owner wanted (2026-10-24).
+Still open, and tracked in [roadmap.md](roadmap.md) (M11 5.5): ~~the final name, logo and domain~~ the logo (the name, Spraydown, and the domain, spraydown.click, were given on 2026-10-25); the GA4 measurement ID; the privacy policy; a support link, if any. ~~Whether the Patterns page ships with the first release~~: it does, as the owner wanted (2026-10-24).

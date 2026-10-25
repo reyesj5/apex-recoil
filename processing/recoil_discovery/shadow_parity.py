@@ -146,7 +146,7 @@ def main(argv: Optional[List[str]] = None):
 
     report = run_shadow_parity_check(tolerance=args.tolerance, sync=not args.no_sync)
     print(f"\n=======================================================")
-    print(f"      APEX RECOIL SUITE: SHADOW PARITY REPORT          ")
+    print(f"            SPRAYDOWN: SHADOW PARITY REPORT            ")
     print(f"=======================================================")
     if report["sync"] is not None:
         s = report["sync"]

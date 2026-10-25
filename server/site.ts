@@ -10,7 +10,7 @@ export const root = path.join(import.meta.dirname, '..');
  * the register's rules (client/lib/site.ts).
  */
 export interface SiteValues {
-  /** The product name ("Spraydown" for now) */
+  /** The product name, "Spraydown" */
   name: string;
   [key: string]: unknown;
 }

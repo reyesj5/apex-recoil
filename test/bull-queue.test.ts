@@ -71,7 +71,7 @@ async function waitForStatus(queue: Queue, id: string, status: JobStatus, timeou
 }
 
 describe('BullJobQueue (Redis/BullMQ)', { skip }, () => {
-  const prefix = `apex-test-${crypto.randomBytes(3).toString('hex')}`;
+  const prefix = `spraydown-test-${crypto.randomBytes(3).toString('hex')}`;
   let bull: typeof import('../server/bull-queue.ts');
   let queue: Queue;
 
@@ -219,8 +219,8 @@ describe('BullJobQueue (Redis/BullMQ)', { skip }, () => {
         cliArgs: py('import time, json; time.sleep(1.5); print(json.dumps({"success": True}))'),
       });
 
-      // Worker A runs in its own process and dies mid-job. Both workers use short lock and
-      // stalled-check intervals (BullMQ throttles stalled checks queue-wide to the interval of
+      // Worker A runs in its own process and dies mid-job. Both workers use short stalled-check
+      // intervals, and A a short lock (BullMQ throttles stalled checks queue-wide to the interval of
       // the worker that ran the last check; with the 30 s defaults recovery takes up to a minute).
       const moduleUrl = JSON.stringify(
         pathToFileURL(path.resolve(import.meta.dirname, '..', 'server', 'bull-queue.ts')).href,
@@ -244,12 +244,14 @@ describe('BullJobQueue (Redis/BullMQ)', { skip }, () => {
       await waitForStatus(producer, id, 'running');
       crashed.kill('SIGKILL');
 
-      // Worker B notices the expired lock and runs the job again
+      // Worker B notices the expired lock and runs the job again. Its own lock is long: on Windows,
+      // starting Python can block the event loop for one to two seconds (measured 2026-10-25), and a
+      // lock that lapsed meanwhile would stall the job a second time, which fails it.
       workerB = bull.startAnalysisWorker({
         redisUrl,
         prefix: isolatedPrefix,
         concurrency: 1,
-        lockDuration: 1000,
+        lockDuration: 10000,
         stalledInterval: 500,
       });
       const result = await producer.waitForJob(id, 30000);

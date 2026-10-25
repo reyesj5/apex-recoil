@@ -19,9 +19,10 @@ minimumReleaseAgeExclude:
 overrides:
   'undici@>=6.5.0 <6.29.1': 6.29.1
   # Dev tools only (eslint-plugin-jsx-a11y's minimatch, nodemon's file watcher): their ReDoS fixes, within the
-  # major versions those tools ask for. postcss-selector-parser 6, under @tailwindcss/typography, has the
-  # same kind of advisory, fixed only in 7, which the plugin doesn't take; it parses the plugin's own
-  # selectors at build time.
+  # major versions those tools ask for.
   'minimatch@>=3 <3.1.5': 3.1.5
   'brace-expansion@>=1 <1.1.21': 1.1.21
   'picomatch@>=2 <2.3.2': 2.3.2
+  # @tailwindcss/typography pins postcss-selector-parser 6.0.10, whose advisory (GHSA-rj75-hqrm-r3gf) is fixed
+  # only in 7. Its 7 builds the same pages byte for byte, the plugin's prose rules included (2026-10-25).
+  '@tailwindcss/typography>postcss-selector-parser': 7.1.6

@@ -4,7 +4,7 @@
 
 *Spraydown · Effective [EFFECTIVE DATE]*
 
-This policy explains what data Spraydown ("we") processes when you use the website at [SITE URL], why, and what choices you have. Spraydown is a recoil trainer for Apex Legends that you can use without an account.
+This policy explains what data Spraydown ("we") processes when you use the website at spraydown.click, why, and what choices you have. Spraydown is a recoil trainer for Apex Legends that you can use without an account.
 
 ## Who is responsible
 

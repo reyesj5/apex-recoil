@@ -87,7 +87,7 @@ export interface WorkerOptions {
  */
 export function startAnalysisWorker({
   redisUrl = process.env.REDIS_URL,
-  prefix = process.env.RECOIL_QUEUE_PREFIX || 'apex',
+  prefix = process.env.RECOIL_QUEUE_PREFIX || 'spraydown',
   storage = null,
   concurrency = defaultConcurrency(),
   pythonCommand,
@@ -195,7 +195,7 @@ export class BullJobQueue extends EventEmitter<QueueEvents> implements AnalysisQ
     const redisUrl = options.redisUrl || process.env.REDIS_URL;
     if (!redisUrl) throw new Error('BullJobQueue requires REDIS_URL');
     this.redisUrl = redisUrl;
-    this.prefix = options.prefix || process.env.RECOIL_QUEUE_PREFIX || 'apex';
+    this.prefix = options.prefix || process.env.RECOIL_QUEUE_PREFIX || 'spraydown';
     this.defaultTimeoutMs = options.defaultTimeoutMs || 120000;
     this.retentionMs = options.retentionMs || 3600000;
     this.retentionSec = Math.ceil(this.retentionMs / 1000);

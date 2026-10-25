@@ -11,7 +11,7 @@ const root = path.join(import.meta.dirname, '..');
 
 // The server as `pnpm start` runs it, on throwaway data: each setting it reads from the environment
 // is a throwaway or unset, and the last test fails when the server reads one these lists lack.
-const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apex_main_test_'));
+const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spraydown_main_test_'));
 const throwaway: Record<string, string> = {
   PORT: '0',
   RECOIL_DB_PATH: path.join(tempDir, 'recoil.db'),

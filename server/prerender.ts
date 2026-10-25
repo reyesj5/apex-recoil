@@ -98,6 +98,38 @@ export const escapeHtml = (text: string) =>
 // JSON inside a script element: "<" escaped, so no value can end the element
 const scriptJson = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
 
+/** The site's address (site.json's siteUrl) when it is a web address, or null (empty, or a placeholder) */
+function siteAddress(site: SiteValues) {
+  if (typeof site.siteUrl !== 'string') return null;
+  try {
+    const url = new URL(site.siteUrl);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Where a page lives, for search engines: its address on the site, and, for a page in several
+ * languages, the address of each version, with English as the default. None without a site address,
+ * nor on the 404 and error pages, which answer any address.
+ */
+export function pageLinks({ path: address, page }: PageSpec, site: SiteValues) {
+  const base = siteAddress(site);
+  if (!address || !base) return [];
+  const href = (to: string) => escapeHtml(new URL(to, base).href);
+  const links = [`<link rel="canonical" href="${href(address)}">`];
+  const versions = pages.filter((spec) => spec.page === page);
+  if (versions.length > 1) {
+    for (const spec of versions) {
+      links.push(`<link rel="alternate" hreflang="${spec.locale}" href="${href(spec.path!)}">`);
+    }
+    const english = versions.find((spec) => spec.locale === 'en');
+    if (english) links.push(`<link rel="alternate" hreflang="x-default" href="${href(english.path!)}">`);
+  }
+  return links;
+}
+
 interface ShellOptions {
   title: string;
   entry: string;
@@ -146,17 +178,18 @@ interface PrerenderBundle {
 /**
  * A page's HTML: the prerendered markup in the page's shell, with the site values the page was
  * rendered with, which the browser reads back (client/lib/site.ts) so both agree. `noindex` keeps
- * search engines off a page (the 404 and error pages have it); `assetsDir` is where the build's
- * assets are (dist/assets, or the static site's).
+ * search engines off a page (the 404 and error pages have it); any other page names its address
+ * (pageLinks); `assetsDir` is where the build's assets are (dist/assets, or the static site's).
  */
 export async function renderPage(
-  { page, locale, entry }: PageSpec,
+  spec: PageSpec,
   site: SiteValues,
   {
-    noindex = page === 'not-found' || page === 'error',
+    noindex = spec.page === 'not-found' || spec.page === 'error',
     assetsDir = path.join(root, 'dist', 'assets'),
   }: { noindex?: boolean; assetsDir?: string } = {},
 ) {
+  const { page, locale, entry } = spec;
   const { render } = (await import(pathToFileURL(bundle).href)) as PrerenderBundle;
   const out = await render(page, locale, site);
   return [
@@ -168,6 +201,7 @@ export async function renderPage(
     ...(noindex ? ['<meta name="robots" content="noindex">'] : []),
     `<meta name="description" content="${escapeHtml(out.description)}">`,
     `<title>${escapeHtml(out.title)}</title>`,
+    ...(noindex ? [] : pageLinks(spec, site)),
     '<link rel="icon" type="image/svg+xml" href="/favicon.svg">',
     ...fontPreloads(assetsDir, locale),
     '<link rel="stylesheet" href="/app.css">',

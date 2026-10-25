@@ -10,7 +10,8 @@ on:
 # Every check runs on Ubuntu and on Windows, where the project is developed, except the Redis and
 # S3 suites: they need the Linux containers of compose.yaml, which Windows runners cannot run.
 # Actions are pinned to their release's commit. On Windows, git keeps the files' LF endings, as
-# the repository has them, so Prettier and the byte-for-byte checks see what Linux sees.
+# the repository has them, so Prettier and the byte-for-byte checks see what Linux sees. The two
+# locks are audited for known vulnerabilities in audit.yml, on each change and every week.
 
 jobs:
   web:
@@ -93,10 +94,11 @@ jobs:
     - name: System libraries
       run: sudo apt-get update && sudo apt-get install -y libgl1
 
+    # Both from their locks: pnpm-lock.yaml, and processing/requirements.txt with every package's hashes
     - name: Install
       run: |
         pnpm install --frozen-lockfile
-        pip install -r processing/requirements.txt
+        pip install --require-hashes -r processing/requirements.txt
 
     - name: Start Redis and S3 (compose.yaml)
       run: |
@@ -160,7 +162,7 @@ jobs:
       run: pnpm install --frozen-lockfile
 
     - name: Install the pipeline's packages
-      run: pip install -r processing/requirements.txt
+      run: pip install --require-hashes -r processing/requirements.txt
 
     - name: Build
       run: pnpm build
@@ -274,8 +276,9 @@ jobs:
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y libgl1
 
+    # From the lock, with every package's hashes (requirements.in says how it is made)
     - name: Install
-      run: pip install -r requirements.txt
+      run: pip install --require-hashes -r requirements.txt
 
     - name: Unit tests
       run: python -m pytest tests

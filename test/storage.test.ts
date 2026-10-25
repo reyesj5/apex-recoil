@@ -18,7 +18,7 @@ describe('AssetStorageService (Local & S3 Abstraction)', () => {
   let storage: AssetStorageService;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apex_storage_test_'));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spraydown_storage_test_'));
     storage = new AssetStorageService({
       provider: 'local',
       localBaseDir: tempDir,
@@ -40,7 +40,7 @@ describe('AssetStorageService (Local & S3 Abstraction)', () => {
   test('serves S3 objects through the app URL unless a public URL is configured', () => {
     const s3Storage = new AssetStorageService({
       provider: 's3',
-      s3: { bucket: 'apex-recoil-bucket', endpoint: 'https://minio.internal:9000' },
+      s3: { bucket: 'spraydown-bucket', endpoint: 'https://minio.internal:9000' },
     });
     assert.equal(s3Storage.getPublicUrl('session_flatline/spray_01.webm'), '/captures/session_flatline/spray_01.webm');
 
@@ -118,7 +118,7 @@ describe('AssetStorageService (Local & S3 Abstraction)', () => {
   test('downloads a prefix into a folder', async () => {
     await storage.saveAsset('tmp/job1/spray_01.webm', Buffer.from('a'));
     await storage.saveAsset('tmp/job1/spray_01_wall.jpg', Buffer.from('b'));
-    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'apex_dl_'));
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'spraydown_dl_'));
     try {
       const files = await storage.downloadPrefix('tmp/job1/', dest);
       assert.deepEqual(files.map((f) => path.basename(f)).sort(), ['spray_01.webm', 'spray_01_wall.jpg']);
@@ -141,19 +141,19 @@ describe(
   'AssetStorageService on S3 (SeaweedFS/MinIO/AWS)',
   { skip: !s3Endpoint && 'set TEST_S3_ENDPOINT (pnpm test:services) to run the S3 tests' },
   () => {
-    const bucket = `apex-test-${Date.now().toString(36)}`;
+    const bucket = `spraydown-test-${Date.now().toString(36)}`;
     let s3Storage: AssetStorageService;
     let tempDir: string;
 
     beforeEach(async () => {
-      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apex_s3_test_'));
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spraydown_s3_test_'));
       s3Storage = new AssetStorageService({
         provider: 's3',
         s3: {
           bucket,
           endpoint: s3Endpoint,
-          accessKeyId: process.env.TEST_S3_ACCESS_KEY_ID || 'apex-dev',
-          secretAccessKey: process.env.TEST_S3_SECRET_ACCESS_KEY || 'apex-dev-secret',
+          accessKeyId: process.env.TEST_S3_ACCESS_KEY_ID || 'spraydown-dev',
+          secretAccessKey: process.env.TEST_S3_SECRET_ACCESS_KEY || 'spraydown-dev-secret',
         },
       });
       await s3Storage.ensureBucket({ corsOrigins: ['http://localhost:3000'] });

@@ -57,7 +57,7 @@ export async function processAnalysisJob(data: JobData, ctx: JobContext = {}): P
     let workDir;
     if (input && input.kind === 'storage') {
       if (!ctx.storage) throw new Error('Job input is in object storage but no storage is configured');
-      downloadDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'apex_job_'));
+      downloadDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'spraydown_job_'));
       const files = await ctx.storage.downloadPrefix(input.prefix, downloadDir);
       if (!files.length) throw new Error(`No input files found under ${input.prefix}`);
       workDir = downloadDir;

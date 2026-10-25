@@ -22,7 +22,7 @@ const skip =
 
 const root = path.join(import.meta.dirname, '..');
 const run = crypto.randomBytes(3).toString('hex');
-const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apex_scaled_test_'));
+const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spraydown_scaled_test_'));
 const clipPath = path.join(tempDir, 'spray_01.webm');
 const wallPath = path.join(tempDir, 'spray_01_wall.png');
 
@@ -87,12 +87,12 @@ describe('Scaled mode: BullMQ queue + S3 storage', { skip }, () => {
       provider: 's3',
       s3: {
         endpoint: s3Endpoint,
-        bucket: `apex-it-${run}`,
-        accessKeyId: process.env.TEST_S3_ACCESS_KEY_ID || 'apex-dev',
-        secretAccessKey: process.env.TEST_S3_SECRET_ACCESS_KEY || 'apex-dev-secret',
+        bucket: `spraydown-it-${run}`,
+        accessKeyId: process.env.TEST_S3_ACCESS_KEY_ID || 'spraydown-dev',
+        secretAccessKey: process.env.TEST_S3_SECRET_ACCESS_KEY || 'spraydown-dev-secret',
       },
     });
-    queue = new BullJobQueue({ redisUrl, prefix: `apex-it-${run}`, storage });
+    queue = new BullJobQueue({ redisUrl, prefix: `spraydown-it-${run}`, storage });
     const app = await createApp({ db, storage, jobQueue: queue, uploadDir: path.join(tempDir, 'uploads') });
     await storage.ensureBucket();
     await queue.waitUntilReady();
@@ -108,7 +108,7 @@ describe('Scaled mode: BullMQ queue + S3 storage', { skip }, () => {
     }
     if (queue) {
       await queue.queue.obliterate({ force: true }).catch(() => {});
-      const keys = await queue.redis.keys(`apex-it-${run}:*`);
+      const keys = await queue.redis.keys(`spraydown-it-${run}:*`);
       if (keys.length) await queue.redis.del(...keys);
       await queue.close();
       for (const obj of await storage.listObjects('')) await storage.deletePrefix(obj.key);

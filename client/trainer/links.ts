@@ -16,3 +16,11 @@ export function patternsHref(locale: Locale) {
 export function progressHref(locale: Locale) {
   return trainerHref(locale).replace(/\/$/, '') + '/progress';
 }
+
+/**
+ * The trainer's full address in a language, to open on another device: at the site's address
+ * (site.json's siteUrl) when it is set, otherwise where `here` is
+ */
+export function trainerUrl(locale: Locale, siteUrl: string | undefined, here: string) {
+  return new URL(trainerHref(locale), siteUrl ?? here).href;
+}

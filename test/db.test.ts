@@ -17,7 +17,7 @@ describe('DatabaseService (SQLite Schema & Versioning)', () => {
   const readSpecs = () => JSON.parse(fs.readFileSync(mockSpecsPath, 'utf8')) as SpecDoc[];
 
   beforeEach(async () => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apex_db_test_'));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spraydown_db_test_'));
     mockSpecsPath = path.join(tempDir, 'mock_specs.json');
     fs.copyFileSync(realSpecsPath, mockSpecsPath);
     dbPath = path.join(tempDir, 'test_recoil.db');
