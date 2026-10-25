@@ -2,7 +2,10 @@ import { cn } from 'cn';
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-/** The last score in the session panel; before the first run it shows an en dash and a hint. */
+/**
+ * The last score in the session panel. Before the first run there is no score to show, so the hint
+ * takes its place ("Your first run today shows up here."): a dash at 56 px reads as a bar.
+ */
 function ScoreCard({
   className,
   label,
@@ -17,11 +20,17 @@ function ScoreCard({
       {...props}
     >
       <div className="text-xs text-text-secondary">{label}</div>
-      <div className="mt-1 flex items-baseline gap-1.5">
-        <span className="type-score-lg">{score ?? '–'}</span>
-        <span className="text-sm text-text-muted">/ 100</span>
-      </div>
-      {hint && <p className="m-0 mt-2 text-xs text-text-muted">{hint}</p>}
+      {score == null ? (
+        hint && <p className="m-0 mt-2 type-body text-text-secondary">{hint}</p>
+      ) : (
+        <>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="type-score-lg">{score}</span>
+            <span className="text-sm text-text-muted">/ 100</span>
+          </div>
+          {hint && <p className="m-0 mt-2 text-xs text-text-muted">{hint}</p>}
+        </>
+      )}
     </div>
   );
 }

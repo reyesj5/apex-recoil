@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Badge } from './badge';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from './dialog';
 import { Slider } from './slider';
 import { Table, TableBody, TableCell, TableRow } from './table';
+import { Tabs, TabsList, TabsTrigger } from './tabs';
 import { ToggleGroup, ToggleGroupCount, ToggleGroupItem } from './toggle-group';
 
 // What our versions of the shadcn/ui components add to the generated code.
@@ -44,6 +46,48 @@ describe('ToggleGroup', () => {
     );
     expect(screen.getByRole('radiogroup')).toHaveClass('flex-wrap');
     expect(screen.getByRole('radiogroup')).not.toHaveClass('overflow-x-auto');
+  });
+
+  it("outlines a neutral group's selected item in field, since its fill stands only 1.4:1 off the track", () => {
+    render(
+      <ToggleGroup type="single" variant="neutral" aria-label="Fire mode" defaultValue="auto">
+        <ToggleGroupItem value="auto">Auto</ToggleGroupItem>
+        <ToggleGroupItem value="single">Single</ToggleGroupItem>
+      </ToggleGroup>,
+    );
+    for (const item of screen.getAllByRole('radio')) {
+      expect(item).toHaveClass('data-[state=on]:inset-ring', 'data-[state=on]:inset-ring-field');
+    }
+  });
+});
+
+describe('Tabs', () => {
+  it('outlines the selected tab in field, like a neutral segmented control', () => {
+    render(
+      <Tabs defaultValue="live">
+        <TabsList aria-label="Capture method">
+          <TabsTrigger value="live">Live</TabsTrigger>
+          <TabsTrigger value="manual">Manual</TabsTrigger>
+        </TabsList>
+      </Tabs>,
+    );
+    for (const tab of screen.getAllByRole('tab')) {
+      expect(tab).toHaveClass('data-[state=active]:inset-ring', 'data-[state=active]:inset-ring-field');
+    }
+  });
+});
+
+describe('Dialog', () => {
+  it("rounds the close button as the Design System's dialog does (radius-sm)", () => {
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>Changes apply at once and stay in this browser.</DialogDescription>
+        </DialogContent>
+      </Dialog>,
+    );
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveClass('rounded-sm');
   });
 });
 

@@ -13,28 +13,28 @@ This document establishes the master architectural blueprint, execution roadmap,
 2. **Modernize Client & Developer Experience:**
    - Migrate from Gulp/Browserify/Pug/Monolithic SCSS to Vite + React/TypeScript + Tailwind CSS.
    - Code-split the public Aim Trainer (<150KB gzip) from the heavy Auto-Capture Studio & CV Inspector.
-   - Decompose the 5,388-line [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) into modular, testable components.
+   - Decompose the 5,388-line [`client/editor.ts`](../client/editor.ts) into modular, testable components.
 3. **Establish Resilient, ACID-Compliant Persistence:**
-   - Migrate weapon specifications from flat-file [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json) to an atomic, versioned database model with file-locking guards.
+   - Migrate weapon specifications from flat-file [`client/specs.json`](../client/specs.json) to an atomic, versioned database model with file-locking guards.
    - Transition video and screenshot storage to S3/MinIO-compatible object storage.
 4. **Preserve Sub-Millisecond Simulation Accuracy:**
    - Guarantee 100% mathematical parity with Source Engine mouse coordinates ($K_{px\_to\_mouse} = 3.36$), ground loot specs, and Arduino HID export alignment.
 
 ---
 
-## 📊 Master Progress Dashboard
+## 📊 Phases
 
-*Status as of the 2026-10-19 audit (see [Audit Log](#-audit-log-2026-10-19) below). Gates marked "not measured" have no automated check yet.*
+*M10's progress is tracked only in [roadmap.md](roadmap.md) (M10). This table first had a status column that said every phase was complete; the audit of 2026-10-19 found it overstated them ([corrections.md](corrections.md), C1; [Audit Log](#-audit-log-2026-10-19) below). Gates marked "not measured" have no automated check.*
 
-| Phase | Focus Area | Status | Deliverables | Verification Gate |
-| :--- | :--- | :---: | :--- | :--- |
-| **Phase 1** | **Stabilization & Memory Hardening** | 🟢 Complete | Streaming multipart uploads, async fs calls, atomic JSON writes, streaming video decoder | Decoder buffer no longer grows with clip length (328 MB peak on a 5 s 1080p clip vs 632 MB+ before); event-loop stalls not measured |
-| **Phase 2** | **Compute Worker Service & Async Queue** | 🟢 Complete | In-process `JobQueue` (default) or Redis/BullMQ (`REDIS_URL`): persistent jobs, embedded or standalone workers (`pnpm worker`), crash recovery, cross-process cancellation, SSE progress. Each job still starts a fresh Python process (no warm OpenCV daemon) | Integration tests on Redis, including a worker killed mid-job; dispatch latency not measured |
-| **Phase 3** | **Modern Frontend Architecture** | 🟢 Complete | Vite bundler, route bundles (`trainer.js` vs `editor.js`), Recoil Editor split into modules (`client/modules/editor/`); all styling in Tailwind 4 without Sass: page layout as utilities, stateful widgets as CSS in a cascade layer below the utilities, colors from theme.json. React is not used; superseded by the UI rebuild (2026-10-22, [ui-migration-plan.md](ui-migration-plan.md)) | Trainer route 89 kB gzip (< 150 kB); style migration verified with zero computed-style change (snapshot tool plus scripted editor and trainer sessions); editor refactor verified with an identical scripted session; Lighthouse not measured |
-| **Phase 4** | **Database & Asset Storage Layer** | 🟢 Complete | SQLite versioned, lossless spec store kept in sync with `specs.json`; session metadata index; local or S3-compatible capture storage (AWS SDK v3) with direct browser uploads via presigned PUT | Byte-identical `specs.json` round trip, no lost updates between writers; S3 tested against SeaweedFS |
-| **Phase 5** | **Shadow Parity, Benchmarks & Cutover** | 🟢 Complete | Full-document shadow parity, legacy Gulp removed, static site build restored, CI with Redis + S3 integration job | 100% field-level parity across all 31 weapons |
+| Phase | Focus Area | Deliverables | Verification Gate |
+| :--- | :--- | :--- | :--- |
+| **Phase 1** | **Stabilization & Memory Hardening** | Streaming multipart uploads, async fs calls, atomic JSON writes, streaming video decoder | Decoder buffer no longer grows with clip length (328 MB peak on a 5 s 1080p clip vs 632 MB+ before); event-loop stalls not measured |
+| **Phase 2** | **Compute Worker Service & Async Queue** | In-process `JobQueue` (default) or Redis/BullMQ (`REDIS_URL`): persistent jobs, embedded or standalone workers (`pnpm worker`), crash recovery, cross-process cancellation, SSE progress. Each job still starts a fresh Python process (no warm OpenCV daemon) | Integration tests on Redis, including a worker killed mid-job; dispatch latency not measured |
+| **Phase 3** | **Modern Frontend Architecture** | Vite bundler, route bundles (`trainer.js` vs `editor.js`), Recoil Editor split into modules (`client/modules/editor/`); all styling in Tailwind 4 without Sass: page layout as utilities, stateful widgets as CSS in a cascade layer below the utilities, colors from theme.json. React is not used; superseded by the UI rebuild (2026-10-22, [ui-migration-plan.md](ui-migration-plan.md)) | Trainer route 89 kB gzip (< 150 kB); style migration verified with zero computed-style change (snapshot tool plus scripted editor and trainer sessions); editor refactor verified with an identical scripted session; Lighthouse not measured |
+| **Phase 4** | **Database & Asset Storage Layer** | SQLite versioned, lossless spec store kept in sync with `specs.json`; session metadata index; local or S3-compatible capture storage (AWS SDK v3) with direct browser uploads via presigned PUT | Byte-identical `specs.json` round trip, no lost updates between writers; S3 tested against SeaweedFS |
+| **Phase 5** | **Shadow Parity, Benchmarks & Cutover** | Full-document shadow parity, legacy Gulp removed, static site build restored, CI with Redis + S3 integration job | 100% field-level parity across all 31 weapons |
 
-**Runtime modes** (see [`.env.example`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/.env.example)): by default the app needs no services, running jobs in-process and keeping captures in `processing/captures`. Setting `REDIS_URL` switches to the BullMQ queue, and `STORAGE_PROVIDER=s3` to object storage. They can be combined freely; workers on other machines need both. [`compose.yaml`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/compose.yaml) runs Redis and an S3-compatible server (SeaweedFS) for development and CI.
+**Runtime modes** (see [`.env.example`](../.env.example)): by default the app needs no services, running jobs in-process and keeping captures in `processing/captures`. Setting `REDIS_URL` switches to the BullMQ queue, and `STORAGE_PROVIDER=s3` to object storage. They can be combined freely; workers on other machines need both. [`compose.yaml`](../compose.yaml) runs Redis and an S3-compatible server (SeaweedFS) for development and CI.
 
 ---
 
@@ -86,20 +86,20 @@ This document establishes the master architectural blueprint, execution roadmap,
 ### Phase 1: Stabilization, Memory Hardening & Non-Blocking I/O
 *Goal: Eliminate server crashes and event-loop blocking while preserving existing frontend and CLI contracts.*
 
-- [x] **1.1 Multipart/Form-Data Streaming Ingestion**:
+- **1.1 Multipart/Form-Data Streaming Ingestion**:
   - Replace `express.json({ limit: '150mb' })` with `multer` streaming file uploads (global JSON limit lowered to 20MB, multer streaming configured with 60MB file caps).
-  - Update [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) to send binary `FormData` with raw video `Blob`s and `dataUrlToBlob` screenshots instead of base64 strings.
+  - Update [`client/editor.ts`](../client/editor.ts) to send binary `FormData` with raw video `Blob`s and `dataUrlToBlob` screenshots instead of base64 strings.
   - Enforce max file size limit (60MB binary per clip) and EXDEV-safe cross-filesystem streaming file moves.
-- [x] **1.2 Non-Blocking Asynchronous Directory Traversal in [`app.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js)**:
+- **1.2 Non-Blocking Asynchronous Directory Traversal in [`app.js`](../app.js)**:
   - Replace synchronous `fs.readdirSync` and `fs.statSync` in `/api/discovery/sessions` and `/api/discovery/screenshots` with `fs.promises.readdir` and `fs.promises.stat`.
   - Add in-memory TTL caching (60s) with automatic cache invalidation on new session and screenshot saves.
-- [x] **1.3 Atomic File Write Safeguards for [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json)**:
-  - Implement write-to-temp-file followed by atomic swap (`Path.replace()` / `fs.rename`) in [`app.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) and [`processing/recoil_discovery/spec_manager.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/spec_manager.py).
+- **1.3 Atomic File Write Safeguards for [`client/specs.json`](../client/specs.json)**:
+  - Implement write-to-temp-file followed by atomic swap (`Path.replace()` / `fs.rename`) in [`app.js`](../app.js) and [`processing/recoil_discovery/spec_manager.py`](../processing/recoil_discovery/spec_manager.py).
   - Add unit test coverage in `processing/tests/test_spec_manager.py` verifying atomic replacement without data corruption.
-- [x] **1.4 Streaming Video Decoder in Python Engine ([`pipeline.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py))**:
+- **1.4 Streaming Video Decoder in Python Engine ([`pipeline.py`](../processing/recoil_discovery/pipeline.py))**:
   - Refactored `process_video_clip` to use rolling buffers (`deque(maxlen=21)`, the tracker looks back at most 20 frames) for settled frames instead of accumulating all uncompressed arrays into `frames_gray = []`.
   - Implemented sparse on-demand seeking fallback for temporal differencing.
-  - Measured with `tracemalloc` on a synthetic 5 s, 60 fps, 1080p clip: 328 MB peak, constant with clip length (the pre-streaming decoder held 632 MB of gray frames alone and grew linearly). Parity tests in [`processing/tests/test_pipeline.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/tests/test_pipeline.py) compare it against the full-decode algorithm on both extraction paths.
+  - Measured with `tracemalloc` on a synthetic 5 s, 60 fps, 1080p clip: 328 MB peak, constant with clip length (the pre-streaming decoder held 632 MB of gray frames alone and grew linearly). Parity tests in [`processing/tests/test_pipeline.py`](../processing/tests/test_pipeline.py) compare it against the full-decode algorithm on both extraction paths.
   - Considered and dropped (2026-10-21): re-decoding the chosen settled BGR frame instead of buffering 21 of them would save ~130 MB at 1080p but costs a second decode pass, measured at 1.1 s of a 4.9 s clip analysis (+22% CPU). Analysis is CPU-bound and concurrency is capped at 4, so the memory is the cheaper resource.
 
 ---
@@ -107,57 +107,57 @@ This document establishes the master architectural blueprint, execution roadmap,
 ### Phase 2: Compute Worker Service & Asynchronous Job Architecture
 *Goal: Decouple long-running computer vision tasks into a dedicated worker pool with real-time feedback.*
 
-- [x] **2.1 Worker Pool & Queue Broker ([server/job_queue.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/job_queue.js))**:
+- **2.1 Worker Pool & Queue Broker ([server/job_queue.js](../server/job_queue.js))**:
   - Established dedicated in-memory asynchronous `JobQueue` service with configurable concurrency (`os.cpus() - 1`, capped at 4) and job lifecycle tracking (`queued`, `running`, `completed`, `failed`, `cancelled`).
-  - Added unit test suite [`test/job_queue.test.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/test/job_queue.test.js) and integrated `npm test` script into `package.json`.
+  - Added unit test suite [`test/job_queue.test.js`](../test/job_queue.test.js) and integrated `npm test` script into `package.json`.
   - Implemented structured `PROGRESS:` streaming protocol between Python discovery engine and Node.js worker pool.
-- [x] **2.2 Asynchronous Job API & Real-Time Progress Channel**:
+- **2.2 Asynchronous Job API & Real-Time Progress Channel**:
   - Refactored `POST /api/discovery/process-session` and `POST /api/discovery/process-static-image` to return `202 Accepted` with a unique `job_id` and events/status URLs (with `?sync=true` backward compatibility).
   - Implemented Server-Sent Events (SSE) endpoint `GET /api/discovery/jobs/:id/events` with keepalive heartbeats and status polling fallback `GET /api/discovery/jobs/:id`.
   - Added cancellation endpoint `POST /api/discovery/jobs/:id/cancel` terminating worker child processes.
-  - Integrated `pollOrStreamJobResult` in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) showing live `[0%..100%]` progress bars and stage messages in the UI.
-- [x] **2.3 Worker Concurrency Control & Fault Isolation**:
+  - Integrated `pollOrStreamJobResult` in [`client/editor.ts`](../client/editor.ts) showing live `[0%..100%]` progress bars and stage messages in the UI.
+- **2.3 Worker Concurrency Control & Fault Isolation**:
   - Enforced CPU-aware concurrency ceilings preventing process saturation.
   - Added hard timeout guard (120 seconds default) with automatic child process termination (`SIGTERM` -> `SIGKILL` after a 3 s grace period).
   - Implemented automated temporary directory cleanup on job completion, timeout, cancellation, or failure (deferred until a killed process has exited).
   - With the in-process queue, jobs live in server memory: a restart loses queued and running jobs (the client reports this instead of polling forever). See 2.4 for the persistent queue.
-- [x] **2.4 Persistent Queue & Remote Workers (Redis/BullMQ, [`server/bull_queue.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/bull_queue.js))**:
-  - With `REDIS_URL` set, [`server/jobs.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/jobs.js) selects `BullJobQueue` (BullMQ 6 + ioredis 6), which has the same interface as the in-process queue; both run jobs through [`server/job_processor.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/job_processor.js) and [`server/analysis_runner.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/analysis_runner.js).
-  - The API runs an embedded worker unless `RECOIL_EMBEDDED_WORKER=false`; `pnpm worker` ([`server/worker.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/worker.js)) starts more, on any machine with Python. Job inputs are a local folder or, with S3 storage, an object prefix that remote workers download.
+- **2.4 Persistent Queue & Remote Workers (Redis/BullMQ, [`server/bull_queue.js`](../server/bull_queue.js))**:
+  - With `REDIS_URL` set, [`server/jobs.js`](../server/jobs.js) selects `BullJobQueue` (BullMQ 6 + ioredis 6), which has the same interface as the in-process queue; both run jobs through [`server/job_processor.js`](../server/job_processor.js) and [`server/analysis_runner.js`](../server/analysis_runner.js).
+  - The API runs an embedded worker unless `RECOIL_EMBEDDED_WORKER=false`; `pnpm worker` ([`server/worker.js`](../server/worker.js)) starts more, on any machine with Python. Job inputs are a local folder or, with S3 storage, an object prefix that remote workers download.
   - Queued jobs survive restarts; a job whose worker dies is retried by another worker once its lock expires (about a minute with BullMQ's default 30 s lock and stalled-check intervals). Completions missed while the API was down are replayed at startup so saved sessions still get indexed.
   - Cancellation of a running job is relayed to whichever worker holds it (Redis pub/sub + `Worker.cancelJob`); queued jobs are removed. Results (~1 MB with preview frames) are stored under their own key with a 1 h TTL instead of in BullMQ's event stream.
-  - Tests: [`test/bull_queue.test.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/test/bull_queue.test.js) against Redis, including a worker process killed mid-job.
+  - Tests: [`test/bull_queue.test.js`](../test/bull_queue.test.js) against Redis, including a worker process killed mid-job.
 
 ---
 
 ### Phase 3: Modern Frontend Architecture & Component Decomposition
 *Goal: Replace legacy Gulp/Browserify/Pug with Vite + React/TypeScript + Tailwind CSS and route-level code splitting.*
 
-- [x] **3.1 Modern Bundler Setup (Vite + TypeScript)**:
+- **3.1 Modern Bundler Setup (Vite + TypeScript)**:
   - `vite.config.mjs` builds the route entries `trainer` and `editor`, a legacy `bundle` router and `tailwind` (all styles), and regenerates `client/styles/theme-tokens.css` from `theme.json`: the palette plus the background shades and alpha variants that Sass used to compute.
   - `pnpm build` (production) and `pnpm watch` (rebuild on change). Since M11 Phase 0, `pnpm dev` serves the sources through Vite inside Express with hot reload instead of rebuilding.
-- [x] **3.2 Core Aim Trainer Bundle Separation**:
-  - The shared Konva stage lives in [`client/stage.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/stage.ts) (previously `game.ts`/`editor.ts` imported it from `main.ts`, which pulled the whole editor into every entry).
+- **3.2 Core Aim Trainer Bundle Separation**:
+  - The shared Konva stage lives in [`client/stage.ts`](../client/stage.ts) (previously `game.ts`/`editor.ts` imported it from `main.ts`, which pulled the whole editor into every entry).
   - `views/layout.pug` loads `/trainer.js`; `views/editor.pug` loads `/editor.js`. `/bundle.js` remains as a small router for cached pages.
   - Trainer route: `trainer.js` + shared `chunks/game-*.js` = 89 kB gzip (< 150 kB target), with no editor/CV code. Editor route: 120 kB gzip.
-- [x] **3.3 Modularization of the Recoil Editor ([`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts))**:
+- **3.3 Modularization of the Recoil Editor ([`client/editor.ts`](../client/editor.ts))**:
   - Extracted modular files:
-    - [`client/modules/types.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/types.ts): Shared TypeScript interfaces (`Edge`, `SessionTrialData`, `ActiveSessionData`, `DiscrepancyReport`, etc.).
-    - [`client/modules/utils.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/utils.ts): Binary conversions (`blobToBase64`, `dataUrlToBlob`), tone mapping, and async SSE streaming.
-    - [`client/modules/analysis/DiscrepancyInspector.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/analysis/DiscrepancyInspector.ts): Scaling calculations and vector discrepancy reporting.
+    - [`client/modules/types.ts`](../client/modules/types.ts): Shared TypeScript interfaces (`Edge`, `SessionTrialData`, `ActiveSessionData`, `DiscrepancyReport`, etc.).
+    - [`client/modules/utils.ts`](../client/modules/utils.ts): Binary conversions (`blobToBase64`, `dataUrlToBlob`), tone mapping, and async SSE streaming.
+    - [`client/modules/analysis/DiscrepancyInspector.ts`](../client/modules/analysis/DiscrepancyInspector.ts): Scaling calculations and vector discrepancy reporting.
   - `client/editor.ts` delegates capture scaling and discrepancy reports to `DiscrepancyInspector.ts` through thin wrappers that pass the editor's zoom, FOV, canvas scale and merge strategy.
-  - The editor itself is split into [`client/modules/editor/`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/editor/): `state.ts` (shared state and settings; the seven variables that several modules reassign go through setters), `layout.ts`, `toolbar.ts`, `canvas.ts`, `calibration.ts` (the `DiscrepancyInspector.ts` wrappers), `overlays.ts`, `weapon_manager.ts`, `capture_studio.ts`, `screenshots.ts`, `sessions.ts` and `analysis_confirm.ts`. [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) is a ~100-line entry that wires them together.
+  - The editor itself is split into [`client/modules/editor/`](../client/modules/editor/): `state.ts` (shared state and settings; the seven variables that several modules reassign go through setters), `layout.ts`, `toolbar.ts`, `canvas.ts`, `calibration.ts` (the `DiscrepancyInspector.ts` wrappers), `overlays.ts`, `weapon_manager.ts`, `capture_studio.ts`, `screenshots.ts`, `sessions.ts` and `analysis_confirm.ts`. [`client/editor.ts`](../client/editor.ts) is a ~100-line entry that wires them together.
   - All 191 top-level statements moved unchanged. A scripted 33-step editor session (point editing, undo/redo, weapon manager, tabs, dialogs, screenshot import, a real clip analysis and its result views) gives identical DOM, canvas shapes and storage before and after. `capture_studio.ts` (~1,300 lines) is the largest module.
-- [x] **3.4 Responsive UI & Modern Design Tokens**:
+- **3.4 Responsive UI & Modern Design Tokens**:
   - Goal: migrate styling from the 3,600-line `style.scss` to Tailwind CSS, preserving all WCAG AA/AAA high-contrast tokens, tactile button affordances, and vector icons. Pages are server-rendered pug without a component framework, so "scoped CSS modules" become utilities in the markup plus Tailwind-built CSS for repeated patterns.
-  - [x] Tailwind 4 foundation: [`client/styles/tailwind.css`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/tailwind.css) is built to `dist/tailwind.css`. While the SCSS remained, utilities were prefixed `tw:` (unprefixed, 58 utilities were generated from existing class names, two of them, `.grid` and `.hidden`, overriding legacy rules).
-  - [x] Design tokens: the palette comes only from `theme.json`, via generated [`client/styles/theme-tokens.css`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/theme-tokens.css) (e.g. `text-foreground`, `bg-score-7`, `bg-menu`), including the background shades and alpha variants Sass used to compute. `--spacing` is 4px because `html` is 14px. `hover:` behaves like CSS `:hover`.
-  - [x] Verification: [`scripts/style-snapshot.mjs`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/style-snapshot.mjs) records every element's computed style and box on `/`, `/ru`, `/zh-CN`, `/editor` at desktop and phone widths, with forced `:hover`. A migration must compare with no differences; two captures of the same build agree exactly. Each step below was also checked with scripted editor and trainer sessions (not in the repo) that record computed styles in every state they reach: dialogs, analysis results, selected tiles, all three languages, phone width, and forced `:hover`, `:focus`, `:focus-visible` and `:active`. 142 states, no differences.
-  - [x] First component: the trainer footer (`#copyright`, `#version`) in `index.pug`, `index-ru.pug` and `index-zh-CN.pug`.
-  - [x] Sass removed: `style.scss` and `reset.scss` were ported to plain CSS in [`client/styles/`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/styles/) (`base.css`, `components.css`, `trainer.css`, `editor.css`) with the same selectors and order, using CSS nesting and theme tokens instead of Sass variables and color functions. `theme.scss` and the `sass` dependency are gone, and pages load one stylesheet.
-  - [x] Cascade layers: the app CSS shares one layer, `app`, below Tailwind's `utilities` layer, so a utility class always overrides it while the app CSS keeps its original cascade. Splitting the reset into Tailwind's usual `base` layer would have let its `!important` focus ring override the analyze buttons' `!important` glow.
-  - [x] Page layout as utilities: the trainer (`#game`, the control panel, settings rows, workspace panels and the phone notice, in all three templates) and the editor skeleton (`#editor`, `#stage-container`). Custom `mobile:`/`desktop:` variants reproduce the original 768/769 px breakpoints exactly (Tailwind's own `max-[768px]` excludes 768 px).
-  - [x] No prefix: utilities are plain (`flex`, `mt-2`). The legacy `.grid` class would have become Tailwind's `display: grid`, so it was replaced by flex utilities; `.hidden` stays, because the app's `display: none !important` wins.
+  - Tailwind 4 foundation: [`client/styles/tailwind.css`](../client/styles/tailwind.css) is built to `dist/tailwind.css`. While the SCSS remained, utilities were prefixed `tw:` (unprefixed, 58 utilities were generated from existing class names, two of them, `.grid` and `.hidden`, overriding legacy rules).
+  - Design tokens: the palette comes only from `theme.json`, via generated [`client/styles/theme-tokens.css`](../client/styles/theme-tokens.css) (e.g. `text-foreground`, `bg-score-7`, `bg-menu`), including the background shades and alpha variants Sass used to compute. `--spacing` is 4px because `html` is 14px. `hover:` behaves like CSS `:hover`.
+  - Verification: [`scripts/style-snapshot.mjs`](../scripts/style-snapshot.mjs) records every element's computed style and box on `/`, `/ru`, `/zh-CN`, `/editor` at desktop and phone widths, with forced `:hover`. A migration must compare with no differences; two captures of the same build agree exactly. Each step below was also checked with scripted editor and trainer sessions (not in the repo) that record computed styles in every state they reach: dialogs, analysis results, selected tiles, all three languages, phone width, and forced `:hover`, `:focus`, `:focus-visible` and `:active`. 142 states, no differences.
+  - First component: the trainer footer (`#copyright`, `#version`) in `index.pug`, `index-ru.pug` and `index-zh-CN.pug`.
+  - Sass removed: `style.scss` and `reset.scss` were ported to plain CSS in [`client/styles/`](../client/styles/) (`base.css`, `components.css`, `trainer.css`, `editor.css`) with the same selectors and order, using CSS nesting and theme tokens instead of Sass variables and color functions. `theme.scss` and the `sass` dependency are gone, and pages load one stylesheet.
+  - Cascade layers: the app CSS shares one layer, `app`, below Tailwind's `utilities` layer, so a utility class always overrides it while the app CSS keeps its original cascade. Splitting the reset into Tailwind's usual `base` layer would have let its `!important` focus ring override the analyze buttons' `!important` glow.
+  - Page layout as utilities: the trainer (`#game`, the control panel, settings rows, workspace panels and the phone notice, in all three templates) and the editor skeleton (`#editor`, `#stage-container`). Custom `mobile:`/`desktop:` variants reproduce the original 768/769 px breakpoints exactly (Tailwind's own `max-[768px]` excludes 768 px).
+  - No prefix: utilities are plain (`flex`, `mt-2`). The legacy `.grid` class would have become Tailwind's `display: grid`, so it was replaced by flex utilities; `.hidden` stays, because the app's `display: none !important` wins.
   - Decided: no Tailwind preflight. It would restyle images (block, `max-width: 100%`), links (no underline), borders (`border-style: solid` everywhere) and form controls. `base.css` keeps the original reset, which Tailwind does not require.
   - Decided: the stateful widgets (weapon tiles, category pills, fire-mode and magazine selectors, buttons, tooltips, dialogs, the capture studio, the HUD) stay component CSS in the `app` layer. As utilities they would become long lists of arbitrary values, repeated in three templates and in the markup built by `client/modules/editor/`, and some computed values would change (for example, a two-property transition becomes a single one). Moving more of them into utilities is optional.
 
@@ -166,8 +166,8 @@ This document establishes the master architectural blueprint, execution roadmap,
 ### Phase 4: Database Layer & Persistent Asset Storage
 *Goal: Replace flat files and local folders with a structured database and object storage.*
 
-- [x] **4.1 Relational Schema for Weapon Specifications & History**:
-  - Implemented ACID-compliant SQLite schema in [`server/db.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/db.js) and [`processing/recoil_discovery/db.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/db.py) (identical schema and migrations) with WAL journal mode and foreign key constraints:
+- **4.1 Relational Schema for Weapon Specifications & History**:
+  - Implemented ACID-compliant SQLite schema in [`server/db.js`](../server/db.js) and [`processing/recoil_discovery/db.py`](../processing/recoil_discovery/db.py) (identical schema and migrations) with WAL journal mode and foreign key constraints:
     - `weapons`: Metadata (name, category, default rpm, multiplier, `sort_order` = position in `specs.json`).
     - `weapon_specs`: Versioned specs. `spec_json` holds the full document (every field, e.g. `raw_1x_x`, absent multipliers); typed columns mirror it for queries.
     - `spec_revisions`: Audit history tracking deviations, change notes, and version diffs.
@@ -175,72 +175,44 @@ This document establishes the master architectural blueprint, execution roadmap,
   - Data flow: `client/specs.json` stays the artifact read by the trainer bundle, the Python CLI and the Arduino exporter. Edits made to the file outside the API (Python CLI, git pull, hand edits) are imported as new versions (`specs_json_sync`) before every API read/write, so a save never reverts them. Saves merge into the current spec (same semantics as the original flat-file API) and re-export only the changed weapon's block, byte-identical elsewhere.
   - Writes run in `BEGIN IMMEDIATE` transactions through a per-process queue; versions are `MAX(version) + 1`.
   - Added `GET /api/specs/history/:weapon` endpoint returning complete revision audits.
-  - Implemented unit and integration test suites: [`test/db.test.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/test/db.test.js), [`test/app_api.test.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/test/app_api.test.js) (isolated temp DB/specs via `RECOIL_*` env vars), and [`processing/tests/test_db.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/tests/test_db.py).
-- [x] **4.2 Session Runs & Sample Metadata**:
+  - Implemented unit and integration test suites: [`test/db.test.js`](../test/db.test.js), [`test/app_api.test.js`](../test/app_api.test.js) (isolated temp DB/specs via `RECOIL_*` env vars), and [`processing/tests/test_db.py`](../processing/tests/test_db.py).
+- **4.2 Session Runs & Sample Metadata**:
   - Persisted session recordings, detected shot counts, measured RPM, and convergence scores in `discovery_sessions` table with timestamp index (recorded when the job's `job:completed` event arrives; with Redis also for jobs that finished while the API was down).
   - `GET /api/discovery/sessions` lists the session folders in capture storage (the files the editor loads, local or S3) and merges the indexed metadata by session id; results are cached for 60 s.
-- [x] **4.3 Object Storage Integration (S3-compatible)**:
-  - [`server/storage.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/server/storage.js) `AssetStorageService` with a local provider (default) and an S3 provider (`STORAGE_PROVIDER=s3`, AWS SDK v3: put/get with HTTP ranges/list/copy/delete, presigned PUT and GET, bucket + CORS setup for development).
-  - All capture I/O in [`app.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) goes through it: saved sessions, the screenshot library, analysis inputs, and the session/screenshot listings. Key layout: `session_<weapon>_<mode>_<ts>/`, `screenshots/`, `tmp/<id>/`.
+- **4.3 Object Storage Integration (S3-compatible)**:
+  - [`server/storage.js`](../server/storage.js) `AssetStorageService` with a local provider (default) and an S3 provider (`STORAGE_PROVIDER=s3`, AWS SDK v3: put/get with HTTP ranges/list/copy/delete, presigned PUT and GET, bucket + CORS setup for development).
+  - All capture I/O in [`app.js`](../app.js) goes through it: saved sessions, the screenshot library, analysis inputs, and the session/screenshot listings. Key layout: `session_<weapon>_<mode>_<ts>/`, `screenshots/`, `tmp/<id>/`.
   - Browsers load media from `/captures/<key>` in both modes; with S3 the API streams objects (with `Range` support), so reads need no bucket CORS.
-  - Direct uploads: `POST /api/discovery/uploads` returns presigned PUT URLs and a signed grant. The editor ([`submitDiscoveryJob`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/modules/utils.ts)) uploads straight to the bucket and submits only the grant, falling back to multipart through the API if that fails. Uploads land in `tmp/` and are filed as a session or library entry only when submitted. Stale `tmp/` uploads are pruned after a day.
+  - Direct uploads: `POST /api/discovery/uploads` returns presigned PUT URLs and a signed grant. The editor ([`submitDiscoveryJob`](../client/modules/utils.ts)) uploads straight to the bucket and submits only the grant, falling back to multipart through the API if that fails. Uploads land in `tmp/` and are filed as a session or library entry only when submitted. Stale `tmp/` uploads are pruned after a day.
   - The SDK's default CRC32 checksums are disabled (`requestChecksumCalculation: 'WHEN_REQUIRED'`); they put the checksum of an empty body into presigned PUT URLs, so every direct upload failed with `BadDigest`.
-  - MinIO no longer publishes community container images, so development and CI use SeaweedFS ([`compose.yaml`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/compose.yaml)). The provider is plain S3 API and also works with AWS S3 or R2.
-  - Tests: [`test/storage.test.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/test/storage.test.js) (local + S3) and [`test/app_scaled.test.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/test/app_scaled.test.js). The latter covers end-to-end analysis with BullMQ + S3, direct uploads, forged grants, the library and cancellation. A headless-Chrome run of the real editor confirmed the direct-upload path, including CORS.
+  - MinIO no longer publishes community container images, so development and CI use SeaweedFS ([`compose.yaml`](../compose.yaml)). The provider is plain S3 API and also works with AWS S3 or R2.
+  - Tests: [`test/storage.test.js`](../test/storage.test.js) (local + S3) and [`test/app_scaled.test.js`](../test/app_scaled.test.js). The latter covers end-to-end analysis with BullMQ + S3, direct uploads, forged grants, the library and cancellation. A headless-Chrome run of the real editor confirmed the direct-upload path, including CORS.
 
 ---
 
 ### Phase 5: Shadow Parity, Benchmarking & Decommissioning
 *Goal: Validate 100% mathematical accuracy and decommission legacy build infrastructure.*
 
-- [x] **5.1 Dual-Run Shadow Validation Suite**:
-  - Built automated parity validation engine in [`processing/recoil_discovery/shadow_parity.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/shadow_parity.py).
+- **5.1 Dual-Run Shadow Validation Suite**:
+  - Built automated parity validation engine in [`processing/recoil_discovery/shadow_parity.py`](../processing/recoil_discovery/shadow_parity.py).
   - Compares every field of every spec (not only x/y), the weapon order, and weapons active only in the database. Imports `specs.json` edits first by default; `--no-sync` only reports drift.
-  - Verified 100% parity ($0.000000$ drift) across all 31 weapons comparing SQLite active specs against verified [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json).
-  - Integrated continuous shadow parity test into automated test suite via [`processing/tests/test_shadow_parity.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/tests/test_shadow_parity.py) (runs on a temp database seeded from a copy of `specs.json`).
-- [x] **5.2 Microcontroller Firmware Alignment**:
+  - Verified 100% parity ($0.000000$ drift) across all 31 weapons comparing SQLite active specs against verified [`client/specs.json`](../client/specs.json).
+  - Integrated continuous shadow parity test into automated test suite via [`processing/tests/test_shadow_parity.py`](../processing/tests/test_shadow_parity.py) (runs on a temp database seeded from a copy of `specs.json`).
+- **5.2 Microcontroller Firmware Alignment**:
   - Executed `python -m recoil_discovery.cli export-arduino`.
-  - Validated that [`arduino_mouse/src/recoil.inc`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/arduino_mouse/src/recoil.inc) produces identical 55-element arrays with zero memory offset drift for the ATmega32U4 target.
-- [x] **5.3 Decommissioning Legacy Tooling**:
+  - Validated that [`arduino_mouse/src/recoil.inc`](../arduino_mouse/src/recoil.inc) produces identical 55-element arrays with zero memory offset drift for the ATmega32U4 target.
+- **5.3 Decommissioning Legacy Tooling**:
   - Removed `gulpfile.js`, Browserify, Tsify, Watchify, Gulp plugins, and legacy build dependencies (and their stale entries in `package-lock.json`).
   - Replaced build infrastructure with standalone Vite 8 (`npm run build`, `npm run dev`).
-  - Configured Express in [`app.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) to serve Vite production bundles (`dist/trainer.js`, `dist/editor.js`, `dist/chunks/`, `dist/tailwind.css`) and static directories directly.
-  - `npm run static` ([`scripts/build-static.mjs`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/scripts/build-static.mjs)) again produces the deployable `static/` site: Vite bundles, `etc/`, `assets/` and the four pug pages rendered to HTML.
-  - CI ([`.github/workflows/ci.yml`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/.github/workflows/ci.yml)) replaces the Gulp workflow: typecheck, build, Node tests and static build on Node 20/22; an integration job running all Node suites against the `compose.yaml` Redis and S3 services; pytest, `verify` and shadow parity on Python 3.12. All three jobs were dry-run locally from a clean copy of the tree.
+  - Configured Express in [`app.js`](../app.js) to serve Vite production bundles (`dist/trainer.js`, `dist/editor.js`, `dist/chunks/`, `dist/tailwind.css`) and static directories directly.
+  - `npm run static` ([`scripts/build-static.mjs`](../scripts/build-static.mjs)) again produces the deployable `static/` site: Vite bundles, `etc/`, `assets/` and the four pug pages rendered to HTML.
+  - CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) replaces the Gulp workflow: typecheck, build, Node tests and static build on Node 20/22; an integration job running all Node suites against the `compose.yaml` Redis and S3 services; pytest, `verify` and shadow parity on Python 3.12. All three jobs were dry-run locally from a clean copy of the tree.
 
 ---
 
-## 🔒 Verification & Quality Gates
+## 🔒 Checks
 
-Every implementation step across all phases must satisfy the following automated gates:
-
-```bash
-# 1. Python Unit Tests & Shadow Parity (43/43 passing, 31/31 full-document parity)
-cd processing && python -m pytest tests
-python -m recoil_discovery.shadow_parity
-
-# 2. Recoil Spec Schema Verification (All 31 weapons Status: OK)
-cd processing && python -m recoil_discovery.cli verify
-
-# 3. Node.js Tests (41/41; run the build first so the bundle-split test is not skipped)
-pnpm build && pnpm test
-# Plus the Redis, S3 and end-to-end suites (55/55 in total), against compose.yaml services:
-docker compose up -d && pnpm test:services
-
-# 4. TypeScript Typecheck (0 compilation errors)
-pnpm tsc
-
-# 5. Production Asset Build & Static Site (Vite 8)
-pnpm build
-pnpm static
-
-# 6. Memory Footprint (manual)
-# Peak decoder allocations stay constant with clip length: 328 MB on a 5 s 1080p clip
-# (tracemalloc). The former "< 60 MB per clip" target is not achievable with full-resolution
-# frames; see the 1.4 follow-up.
-```
-
-The same gates run in CI ([`.github/workflows/ci.yml`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/.github/workflows/ci.yml)).
+Every check is in [AGENTS.md](../AGENTS.md) (*Checks*). M10's memory gate was measured by hand: the decoder's peak is 328 MB on a 5 s 1080p clip, constant with the clip's length (tracemalloc), and the former "< 60 MB per clip" target is not achievable with full-resolution frames (1.4; [corrections.md](corrections.md), C2).
 
 ---
 
@@ -278,7 +250,7 @@ An audit of Phases 1–5 found the dashboard overstated several items and that a
 **Follow-up (2026-10-21)**
 - Done: Redis/BullMQ queue (2.4), S3 storage with direct uploads (4.3), Tailwind foundation and first migrated component (3.4), CI integration job.
 - Decided: the decoder BGR re-decode (1.4) is not worth its CPU cost.
-- Correction: an earlier version of this log said `client/storage.ts` registers every attribute twice. That was a misreading of overlapping output; there is a single `allAttributes.push`, and a browser check confirms one keydown handler per numeric input.
+- Correction ([corrections.md](corrections.md), C3): an earlier version of this log said `client/storage.ts` registers every attribute twice. That was a misreading of overlapping output; there is a single `allAttributes.push`, and a browser check confirms one keydown handler per numeric input.
 
 **Follow-up (2026-10-22)**
 - Done: the first CI run on GitHub passed all four jobs (PR #2); the Recoil Editor is split into modules (3.3); all styling is in Tailwind without Sass, with the page layout as utilities and no prefix (3.4).
@@ -286,7 +258,7 @@ An audit of Phases 1–5 found the dashboard overstated several items and that a
 - Decided later the same day, superseding the line above: the UI is rebuilt in React with Tailwind (preflight on) and shadcn/ui, so that no widget CSS remains ([ui-migration-plan.md](ui-migration-plan.md)).
 - Done: pnpm 12 only (pinned under `devEngines`, npm refuses to run, settings in `pnpm-workspace.yaml`), `package-lock.json` removed, dependencies deduplicated; the stale `public/` folder (old Gulp and tsc output still served by Express) removed, and `tsc` only typechecks.
 
-**Still open**
+**Still open then** (tracked in [roadmap.md](roadmap.md) since: the warm worker under M10, the rebuild as M11)
 - A warm Python worker (keeping OpenCV loaded between jobs) if the per-job start-up time (~1–3 s) matters.
 - The UI rebuild in React with Tailwind and shadcn/ui (decided 2026-10-22), which replaces the remaining widget CSS, the pug templates and `capture_studio.ts`: [ui-migration-plan.md](ui-migration-plan.md).
 - Measured (2026-10-22): with Tailwind's preflight enabled below the app CSS, about 210 elements per desktop page change size or position (form controls switch from the browser's Arial to Inter with a different line height, labels shrink from 20 to 14 px), links lose their underline and images get `max-width: 100%`. Preflight therefore fits the end of a full utility migration, with those changes made or accepted on purpose.
@@ -296,12 +268,9 @@ An audit of Phases 1–5 found the dashboard overstated several items and that a
 ## 🤖 Protocol for AI Assistants & LLMs
 
 Whenever working on any phase or task of this migration:
-1. **Check this document first:** Identify the active milestone and task in the dashboard.
+1. **Check [roadmap.md](roadmap.md) first:** its Progress Dashboard names the active milestone and task.
 2. **Execute tests before & after edits:** Run `pytest`, `verify`, and `tsc` on every change.
 3. **Update documentation:**
-   - Mark completed tasks with `[x]` in this plan and in [`docs/roadmap.md`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/roadmap.md).
-   - Log behavioral and architectural changes in [`docs/release-notes.md`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/release-notes.md).
-4. **Preserve mathematical invariants:**
-   - Source Engine scale factor: $K_{px\_to\_mouse} = 3.36$ (or $0.2976$ px/mickey).
-   - Havoc TC multiplier: `0.73` ($y$ end $-393.11$).
-   - Arduino PROGMEM bound: exactly 55 elements per weapon array.
+   - Mark completed tasks with `[x]` in [`docs/roadmap.md`](roadmap.md), the only tracker.
+   - Log behavioral and architectural changes in [`docs/release-notes.md`](release-notes.md).
+4. **Preserve mathematical invariants:** they are in [AGENTS.md](../AGENTS.md) now (*Rules for this project*), for every change.

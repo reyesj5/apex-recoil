@@ -50,6 +50,12 @@ export interface AppOptions {
   dev?: boolean;
 }
 
+/** Whether a Host header names this computer: localhost, 127.0.0.1 or [::1], on any port */
+function addressedToThisComputer(host: string | undefined) {
+  const name = (host ?? '').replace(/:\d+$/, '').toLowerCase();
+  return name === 'localhost' || name === '127.0.0.1' || name === '[::1]';
+}
+
 export async function createApp(options: AppOptions = {}) {
   const site = options.site ?? loadSite();
   const dev = options.dev ?? process.env.RECOIL_VITE_DEV === '1';
@@ -80,6 +86,13 @@ export async function createApp(options: AppOptions = {}) {
   const app = express();
 
   app.use(morgan('dev'));
+  // Until the app has a sign-in it answers this computer only (main.ts listens on 127.0.0.1), and
+  // refuses a request addressed to any other host: a page elsewhere could point its own name at
+  // this computer and have the browser call the API, which saves specs (DNS rebinding)
+  app.use((req, res, next) => {
+    if (addressedToThisComputer(req.headers.host)) return next();
+    res.status(403).type('text/plain').send('This server answers only requests addressed to localhost.');
+  });
   // Brotli or gzip for text responses, except the analysis event streams: compressing those would
   // hold each progress event in the compressor's buffer instead of sending it right away
   app.use(

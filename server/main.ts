@@ -10,8 +10,8 @@ import http from 'node:http';
 if (fs.existsSync('.env')) process.loadEnvFile('.env');
 
 /**
- * --dev (pnpm dev): Vite serves the client sources with hot reload (see routes/pages.ts). It also
- * serves project files, so the development server only listens on this computer.
+ * --dev (pnpm dev): Vite serves the client sources with hot reload (see routes/pages.ts), and
+ * project files with them.
  */
 
 const devMode = process.argv.includes('--dev') || process.env.RECOIL_VITE_DEV === '1';
@@ -37,10 +37,11 @@ app.set('port', port);
 const server = http.createServer(app);
 
 /**
- * Listen on provided port, on all network interfaces (only this computer with --dev).
+ * Listen on provided port, on this computer only: there is no sign-in yet, and the Studio saves
+ * specs. The app refuses a request addressed to any other host as well (app.ts).
  */
 
-const host = devMode ? '127.0.0.1' : undefined;
+const host = '127.0.0.1';
 const listen = () => (typeof port === 'number' ? server.listen(port, host) : server.listen(port));
 listen();
 server.on('error', onError);

@@ -25,6 +25,11 @@ describe('StatTile', () => {
       </StatGrid>,
     );
     expect(screen.getAllByRole('definition').map((value) => value.textContent)).toEqual(['0', '–', '–']);
+    // Thin and quiet: the display face's bold dash reads as a bar
+    for (const dash of screen.getAllByText('–')) {
+      expect(dash).toHaveClass('font-sans', 'font-normal', 'text-text-muted');
+    }
+    expect(screen.getByText('0')).not.toHaveClass('text-text-muted');
   });
 
   it('puts a best score in volt', () => {
@@ -48,5 +53,14 @@ describe('SummaryTile', () => {
     );
     expect(screen.getByRole('term')).toHaveTextContent('Runs');
     expect(screen.getByRole('definition')).toHaveTextContent('253last 30 days');
+  });
+
+  it('shows a missing total as a thin, quiet dash, as a stat tile does', () => {
+    render(
+      <dl>
+        <SummaryTile label="Median score" value={undefined} />
+      </dl>,
+    );
+    expect(screen.getByText('–')).toHaveClass('font-sans', 'font-normal', 'text-text-muted');
   });
 });

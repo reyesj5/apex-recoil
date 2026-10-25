@@ -2,7 +2,7 @@
 
 Source: [The Apex Legends Wiki (wiki.gg)](https://apexlegends.wiki.gg/wiki/Weapon)
 
-This document compiles live patch stats, magazine tier progressions (Base through **Tier 4 / Corrupted**), fire rates (RPM), tactical & full reload times, damage profiles, and weapon classes across all 29 weapon subpages currently in Apex Legends. It also compares live ground loot values against [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json).
+This document compiles live patch stats, magazine tier progressions (Base through **Tier 4 / Corrupted**), fire rates (RPM), tactical & full reload times, damage profiles, and weapon classes across all 29 weapon subpages currently in Apex Legends. It also compares live ground loot values against [`client/specs.json`](../client/specs.json).
 
 ---
 

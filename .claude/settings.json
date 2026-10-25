@@ -1,0 +1,145 @@
+{
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(gh run list*)",
+      "Bash(gh run view*)",
+      "Bash(gh run watch*)",
+      "Bash(gh pr checks*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr status*)",
+      "Bash(gh workflow list*)",
+      "Bash(gh workflow view*)",
+      "Bash(gh auth status*)",
+      "PowerShell(gh run list*)",
+      "PowerShell(gh run view*)",
+      "PowerShell(gh run watch*)",
+      "PowerShell(gh pr checks*)",
+      "PowerShell(gh pr view*)",
+      "PowerShell(gh pr list*)",
+      "PowerShell(gh pr status*)",
+      "PowerShell(gh workflow list*)",
+      "PowerShell(gh workflow view*)",
+      "PowerShell(gh auth status*)"
+    ],
+    "deny": [
+      "Bash(gh pr create*)",
+      "Bash(gh pr new*)",
+      "PowerShell(gh pr create*)",
+      "PowerShell(gh pr new*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/agent-kit/block-dangerous.mjs",
+            "timeout": 5,
+            "statusMessage": "Checking command safety..."
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task|Write|Edit|MultiEdit|NotebookEdit|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/agent-kit/graphify-guard.mjs",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "graphify hook-guard search",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "graphify hook-guard read",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/agent-kit/graphify-check.mjs",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/agent-kit/update-check.mjs",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/agent-kit/log-bash.mjs",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/agent-kit/notify.mjs",
+            "timeout": 10,
+            "statusMessage": "Sending notification..."
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/agent-kit/sound-stop.mjs",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/agent-kit/sound-permission.mjs",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/agent-kit/notify-permission.mjs",
+            "timeout": 10,
+            "statusMessage": "Sending notification..."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -30,6 +30,14 @@ client/studio/**/*.fixture.json
 client/raw_recoils.json
 **/.venv/
 
+# The assistants' setup, written by tools: the agent kit's hooks word for word, and the settings that it
+# (python scripts/agent_kit.py install) and graphify's installers write
+.claude/hooks/agent-kit/
+.claude/settings.json
+.codex/hooks.json
+.gemini/settings.json
+scripts/agent_kit.json
+
 # Other projects, editor settings and hand-written YAML
 arduino_mouse/
 .vscode/

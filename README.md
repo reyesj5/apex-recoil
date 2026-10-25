@@ -44,7 +44,7 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
    - Multi-spray median-delta integration and convergence scoring ($rc\_score$).
    - SQLite persistence layer with versioned, lossless specs (kept in sync with `client/specs.json`), audit history, and full-document shadow parity verification.
    - Optional scaled mode: Redis/BullMQ job queue with standalone workers, and S3-compatible capture storage with direct browser uploads.
-   - Comprehensive test suite with 43 Python unit tests, 64 Node.js tests (14 of them need Redis/S3, see below), Vitest unit and component tests and 59 Playwright end-to-end scenarios in Chrome, including axe accessibility checks, and Lighthouse in CI.
+   - Comprehensive test suite with 43 Python unit tests, 68 Node.js tests (14 of them need Redis/S3, see below), Vitest unit and component tests and 59 Playwright end-to-end scenarios in Chrome, including axe accessibility checks, and Lighthouse in CI.
 
 ---
 
@@ -54,6 +54,42 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
 - **Server**: Express 5 in TypeScript, which Node runs without a build step ([server/](./server/)), with the API's zod schemas shared with the browser ([shared/](./shared/)). Weapon specs live in SQLite, kept in sync with `client/specs.json`; analyses run in the server's process or on Redis/BullMQ workers; captures are kept on disk or in S3-compatible storage.
 - **Discovery**: Python with OpenCV ([processing/](./processing/)), started by the server for each analysis.
 - **Checks**: Vitest and Testing Library for the client, `node:test` for the server, Playwright with axe for the pages and pytest for the pipeline; TypeScript, ESLint and Prettier, and Lighthouse on the trainer's pages in CI.
+
+---
+
+## Directory Structure
+
+```
+client/                the pages: React 19, Tailwind 4 and shadcn/ui
+  components/          shadcn/ui components (ui/) and the app's own
+  engine/              the trainer's engine, without a DOM
+  trainer/             the trainer, its Patterns and Progress pages, and the documents as pages
+  studio/              the Studio at /editor; its logic, without a DOM, in model/
+  lib/                 storage, the API's hooks, translations, analytics, the site's values
+  styles/              tokens.json (the design tokens) and app.css, the one stylesheet
+  specs.json           the weapon specs, exported from data/recoil.db
+server/                the Express server in TypeScript: the app, its routes, the jobs, storage
+shared/                the API's zod schemas, used by the browser and the server
+processing/            the Python discovery pipeline (recoil_discovery/) and its tests
+e2e/                   the Playwright scenarios and the server that runs them on throwaway data
+test/                  the server's tests (node:test)
+scripts/               the static build, the conventions and release checks, the design export, agent_kit.py
+docs/                  the plan (roadmap.md), the corrections, the architecture, the notes, the guides,
+                       the documents the pages show, and the design's snapshot (design/)
+brand/                 the logo and its sources
+assets/                the game's images and sounds (not under Apache-2.0)
+etc/                   the favicons and robots.txt, copied into the static site
+arduino_mouse/         a separate PlatformIO project, which reads the patterns export-arduino writes
+.claude/, .agents/, .codex/, .gemini/
+                       each assistant's hooks, rules and graphify's skill; AGENTS.md holds the rules
+                       for every assistant (CLAUDE.md and GEMINI.md say the same)
+site.json              the owner's values: the name, links and IDs (placeholders until given)
+data/                  the SQLite spec store (gitignored)
+dist/, dist-ssr/       the build (gitignored), and static/ the static site (gitignored)
+scratch/               throwaway work (gitignored)
+```
+
+[docs/architecture.md](./docs/architecture.md) says how the parts fit together, folder by folder.
 
 ---
 
@@ -78,7 +114,7 @@ pnpm dev
 # Build assets (Vite 8 production build into dist/: the pages' entries such as trainer.js and studio.js, and app.css; and the pages' prerender into dist-ssr/); pnpm start serves them
 pnpm build
 
-# Run Node test suites (50 tests across database, queue, storage, request parsing, API and the built bundles; build first)
+# Run Node test suites (54 tests across database, queue, storage, request parsing, API, the server and the built bundles; build first)
 pnpm test
 
 # Unit and component tests (Vitest)
@@ -100,6 +136,8 @@ Open your browser to:
 
 > **Note on Port Collisions:** If port 3000 is already in use by another local process, the server automatically retries and binds to **`http://localhost:3001`**.
 
+> **This computer only:** the server listens on 127.0.0.1 and refuses requests addressed to any other host, since it has no sign-in yet; the static site (below) is what goes on the web.
+
 > **Data & configuration:** weapon specs are versioned in `data/recoil.db` (SQLite) and exported to `client/specs.json`, which the trainer bundle imports. Editing `specs.json` directly (or through the Python CLI) is fine: the server imports those edits as new versions before its next read or write. Settings come from environment variables or a `.env` file; see [.env.example](./.env.example).
 
 #### Optional: scaled mode (Redis job queue + S3 storage)
@@ -110,7 +148,7 @@ cp .env.example .env          # then uncomment REDIS_URL and/or the STORAGE_PROV
 pnpm dev                      # the server runs one embedded worker
 pnpm worker                   # optional: more workers (other machines need S3 storage)
 
-# Run every Node suite, including the Redis, S3 and end-to-end tests (64 tests)
+# Run every Node suite, including the Redis, S3 and end-to-end tests (68 tests)
 pnpm test:services
 ```
 With S3 storage the Studio uploads recordings straight to the bucket; the bucket must allow `PUT` from the app's origin (CORS). `S3_AUTO_CREATE_BUCKET=true` creates the bucket and that rule for development.
@@ -123,7 +161,7 @@ cd processing
 # Install dependencies
 pip install -r requirements.txt
 
-# Run automated test suite (44 tests)
+# Run automated test suite (43 tests)
 python -m pytest tests
 
 # Run shadow parity suite (SQLite vs specs.json, every field; --no-sync to only report drift)
@@ -155,7 +193,7 @@ Deployment is fully static:
 ```bash
 pnpm static
 ```
-This builds the Vite bundles, copies `etc/` and `assets/`, and writes the pages into `./static`: the prerendered trainer, Patterns and Progress pages in each language and the privacy policy, FAQ and changelog, a folder per page (`ru/patterns/index.html`), plus `index.html`, `index-ru.html` and `index-zh-CN.html` for the trainer, `404.html` and `editor.html` (the Studio). Copy its contents to your web server directory (e.g. Nginx / Apache / S3). The Studio's capture and spec-saving features need the Node server and are not available on a static host. Compression and caching headers for Nginx are in [docs/playbooks.md](./docs/playbooks.md).
+This builds the Vite bundles, copies `etc/` and `assets/`, and writes the pages into `./static`: the prerendered trainer, Patterns and Progress pages in each language and the privacy policy, FAQ and changelog, a folder per page (`static/ru/patterns/index.html`), plus `index.html`, `index-ru.html` and `index-zh-CN.html` for the trainer, `404.html` and `editor.html` (the Studio). Copy its contents to your web server directory (e.g. Nginx / Apache / S3). The Studio's capture and spec-saving features need the Node server and are not available on a static host. Compression and caching headers for Nginx are in [docs/playbooks.md](./docs/playbooks.md).
 
 For a release, `pnpm release` first checks that the owner's values have replaced every placeholder (in `site.json`, `NOTICE`, the copyright headers and the pages' documents; see the [ownership register](./docs/ownership-register.md)), then runs `pnpm build` and `pnpm static`. CI runs it for a version tag (`v*`).
 
@@ -172,7 +210,9 @@ Contributions, balance patch updates, and recoil submissions are welcome!
 * [Release Notes](./docs/release-notes.md)
 * [Recoil Discovery Guide](./docs/capture.md)
 * [Privacy Policy](./docs/privacy-policy.md)
-* [UI Migration Plan](./docs/ui-migration-plan.md), its [progress report](./docs/ui-migration-progress.md) (the conventions to keep) and the [UI Redesign](./docs/ui-redesign.md)
+* [UI Migration Plan](./docs/ui-migration-plan.md), its [notes](./docs/ui-notes.md) (the conventions to keep and the pitfalls already paid for) and the [UI Redesign](./docs/ui-redesign.md)
+* [Architecture](./docs/architecture.md): how the parts fit together, and the code folder by folder
+* [Corrections](./docs/corrections.md): what turned out to be true where the plan said otherwise
 * [Ownership Register](./docs/ownership-register.md): placeholders for the owner's names, links and IDs
 * [Brand](./brand/README.md): the logo, its variants and how to regenerate them
 

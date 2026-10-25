@@ -181,14 +181,14 @@ function ProgressPage({ locale }: { locale: Locale }) {
               />
               <SummaryTile
                 label={t('progress.best')}
-                value={summary.best?.score ?? '–'}
+                value={summary.best?.score}
                 note={
                   summary.best && (weapon === 'all' ? names.weapon(summary.best.weapon) : formatDay(summary.best.day))
                 }
               />
               <SummaryTile
                 label={t('progress.median')}
-                value={summary.median ?? '–'}
+                value={summary.median}
                 note={summary.trend === undefined ? undefined : t('progress.trend', { delta: signed(summary.trend) })}
               />
               <SummaryTile

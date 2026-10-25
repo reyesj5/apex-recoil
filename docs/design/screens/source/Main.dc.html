@@ -124,7 +124,7 @@ a{color:#C5F23A}a:hover{color:#DDF98A}
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
           <span id="fire-mode-label" style="font-size: 13px; font-weight: 600;">Fire mode</span>
           <div role="group" aria-labelledby="fire-mode-label" style="display: flex; padding: 3px; gap: 2px; background: #0D1014; border: 1px solid #262C35; border-radius: 9px;">
-            <button type="button" aria-pressed="true" style="height: 28px; padding: 0 12px; border-radius: 6px; border: 0; background: #262C35; color: #ECEFF3; font-size: 12px; font-weight: 600; cursor: pointer;">Auto</button>
+            <button type="button" aria-pressed="true" style="height: 28px; padding: 0 12px; border-radius: 6px; border: 0; background: #262C35; box-shadow: inset 0 0 0 1px #646D79; color: #ECEFF3; font-size: 12px; font-weight: 600; cursor: pointer;">Auto</button>
             <button type="button" aria-pressed="false" style="height: 28px; padding: 0 12px; border-radius: 6px; border: 0; background: transparent; color: #A7B0BC; font-size: 12px; font-weight: 600; cursor: pointer;">Single</button>
           </div>
         </div>
@@ -201,11 +201,7 @@ a{color:#C5F23A}a:hover{color:#DDF98A}
       </div>
       <div style="padding: 16px; border-radius: 12px; background: #151920; border: 1px solid #232830;">
         <div style="font-size: 12px; color: #A7B0BC;">Last score</div>
-        <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 4px;">
-          <span style="font-family: 'Chakra Petch', sans-serif; font-size: 56px; font-weight: 700; line-height: 1;">–</span>
-          <span style="font-size: 14px; color: #848E9B;">/ 100</span>
-        </div>
-        <p style="margin: 8px 0 0; font-size: 12px; color: #848E9B;">Your first run today shows up here.</p>
+        <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: #A7B0BC;">Your first run today shows up here.</p>
       </div>
       <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
         <div style="padding: 12px; border-radius: 10px; background: #151920; border: 1px solid #232830;">
@@ -214,11 +210,11 @@ a{color:#C5F23A}a:hover{color:#DDF98A}
         </div>
         <div style="padding: 12px; border-radius: 10px; background: #151920; border: 1px solid #232830;">
           <dt style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #848E9B;">Median</dt>
-          <dd style="margin: 4px 0 0; font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-weight: 700;">–</dd>
+          <dd style="margin: 4px 0 0; font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-weight: 700;"><span style="font-family: Inter, sans-serif; font-weight: 400; color: #848E9B;">–</span></dd>
         </div>
         <div style="padding: 12px; border-radius: 10px; background: #151920; border: 1px solid #232830;">
           <dt style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #848E9B;">Best today</dt>
-          <dd style="margin: 4px 0 0; font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-weight: 700;">–</dd>
+          <dd style="margin: 4px 0 0; font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-weight: 700;"><span style="font-family: Inter, sans-serif; font-weight: 400; color: #848E9B;">–</span></dd>
         </div>
         <div style="padding: 12px; border-radius: 10px; background: #151920; border: 1px solid #232830;">
           <dt style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #848E9B;">All-time best</dt>

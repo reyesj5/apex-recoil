@@ -66,13 +66,14 @@ body:has(> .sd-preview) { margin: 0; background: var(--ground); }
 .sd-segmented__item[aria-pressed="true"], .sd-segmented__item[aria-checked="true"] { background: var(--volt); color: var(--volt-ink); }
 .sd-segmented--neutral { border-radius: var(--radius-control-lg); }
 .sd-segmented--neutral .sd-segmented__item { height: var(--size-segment-sm); border-radius: var(--radius-sm); }
-.sd-segmented--neutral .sd-segmented__item[aria-pressed="true"], .sd-segmented--neutral .sd-segmented__item[aria-checked="true"] { background: var(--divider); color: var(--text); }
+/* The divider fill stands only 1.4:1 off the track: a 1 px field outline (3.6:1) marks the selected item */
+.sd-segmented--neutral .sd-segmented__item[aria-pressed="true"], .sd-segmented--neutral .sd-segmented__item[aria-checked="true"] { background: var(--divider); color: var(--text); box-shadow: inset 0 0 0 1px var(--field); }
 
 /* Tabs */
 .sd-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: var(--space-3); gap: var(--space-2); background: var(--inset); border: 1px solid var(--divider); border-radius: var(--radius-card); }
 .sd-tabs__tab { height: var(--size-tab); border: 0; border-radius: var(--radius-segment); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color 150ms ease-out, color 150ms ease-out; }
 .sd-tabs__tab:hover { color: var(--text); }
-.sd-tabs__tab[aria-selected="true"] { background: var(--divider); color: var(--text); }
+.sd-tabs__tab[aria-selected="true"] { background: var(--divider); color: var(--text); box-shadow: inset 0 0 0 1px var(--field); }
 
 /* Filter chip */
 .sd-chips { display: flex; flex-wrap: wrap; gap: var(--space-6); }
@@ -200,6 +201,8 @@ body:has(> .sd-preview) { margin: 0; background: var(--ground); }
 
 /* Stat tile and summary tile */
 .sd-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-8); margin: 0; }
+/* A missing number: a thin en dash in text-muted; the display face's bold dash reads as a bar */
+.sd-no-value { font-family: var(--font-sans); font-weight: 400; color: var(--text-muted); }
 .sd-stat { padding: var(--space-12); border: 1px solid var(--outline-card); border-radius: var(--radius-card); background: var(--card); }
 .sd-stat__label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
 .sd-stat__value { margin: var(--space-4) 0 0; font-family: var(--font-display); font-size: 24px; font-weight: 700; }
@@ -217,6 +220,8 @@ body:has(> .sd-preview) { margin: 0; background: var(--ground); }
 .sd-score__line { display: flex; align-items: baseline; gap: var(--space-6); margin-top: var(--space-4); }
 .sd-score__value { font-family: var(--font-display); font-size: 56px; font-weight: 700; line-height: 1; }
 .sd-score__max { font-size: 14px; color: var(--text-muted); }
+/* No score yet: the hint takes the score's place, since a dash at 56 px reads as a bar */
+.sd-score__empty { margin: var(--space-8) 0 0; font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
 .sd-score__hint { margin: var(--space-8) 0 0; font-size: 12px; color: var(--text-muted); }
 .sd-result { width: 280px; display: flex; flex-direction: column; gap: var(--space-12); padding: var(--space-18); border: 1px solid var(--divider); border-radius: var(--radius-panel); background: var(--panel-glass); box-shadow: var(--shadow-float); }
 .sd-result__line { display: flex; align-items: baseline; gap: var(--space-8); }

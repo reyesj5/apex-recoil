@@ -1,6 +1,6 @@
 # UI Redesign: Audit and New Design
 
-*2026-10-22. The design that Phase 1 of the [UI migration plan](ui-migration-plan.md) implements. The mockups live on a private design canvas: https://claude.ai/artifact/3Uv9xgQocE1qqS2ohS2MQG (share it from the page's Share menu before sending the link to anyone). The design system built from this spec and the mockups (tokens, 26 components with live previews, the brand book and the logos) is a private Design System artifact: https://claude.ai/artifact/XK1KCFGz6tF9WzmKUykaFe. Claude reads both with the Artifact tool; agents that can't open them use the snapshot in [design/](design/README.md), with PNGs of every artboard and component preview, the brand book, the tokens and the component rules. Names, logo, links and IDs owned by the original project are placeholders; see the [ownership register](ownership-register.md).*
+*2026-10-22. The design that Phase 1 of the [UI migration plan](ui-migration-plan.md) implements. The mockups live on a private design canvas: https://claude.ai/artifact/3Uv9xgQocE1qqS2ohS2MQG (share it from the page's Share menu before sending the link to anyone). The design system built from this spec and the mockups (tokens, 30 components with live previews, the brand book and the logos) is a private Design System artifact: https://claude.ai/artifact/XK1KCFGz6tF9WzmKUykaFe. Claude reads both with the Artifact tool; agents that can't open them use the snapshot in [design/](design/README.md), with PNGs of every artboard and component preview, the brand book, the tokens and the component rules. Names, logo, links and IDs owned by the original project are placeholders; see the [ownership register](ownership-register.md).*
 
 ## 1. Audit of the current UI
 
@@ -92,11 +92,11 @@ These replace the palette in `theme.json`; Phase 1 generates Tailwind `@theme` t
 | `hover` | `#1F242C` | Hover and pressed states | |
 | `canvas` | `#0B0D11` | The Studio canvas around the wall screenshot | |
 | `wall` | `#14181E` | The wall screenshot's frame while no image is loaded | |
-| `divider` | `#262C35` | Separators; the selected item of neutral segmented controls and Studio tabs | 1.4:1 off the inset track (see below) |
+| `divider` | `#262C35` | Separators; the fill of the selected item of neutral segmented controls and Studio tabs | 1.4:1 off the inset track, so a `field` outline marks that item (see below) |
 | `outline` | `#1C2128` | 1 px outline of panels and the range, the rules under the top bar and over the status bar | Decorative, 1.1:1 on panel |
 | `outline-card` | `#232830` | 1 px outline of cards and tiles inside panels | Decorative, 1.2:1 on card |
 | `outline-strong` | `#343B46` | 1 px outline of raised controls and overlays (secondary buttons, keys, toasts, the consent card); dashed for empty states and the median line | |
-| `field` | `#646D79` | Borders of inputs and selects | 3.5:1 on panel, 3.6:1 on inset |
+| `field` | `#646D79` | Borders of inputs and selects; the outline of the selected item of neutral segmented controls and Studio tabs | 3.5:1 on panel, 3.6:1 on inset |
 | `text` | `#ECEFF3` | Primary text | 16:1 on panel |
 | `text-soft` | `#C9D0D8` | Running text in compact overlays (the consent card) | 11.1:1 on raised |
 | `text-secondary` | `#A7B0BC` | Secondary text | 8.4:1 on panel |
@@ -112,12 +112,12 @@ These replace the palette in `theme.json`; Phase 1 generates Tailwind `@theme` t
 | `warning` | `#FFB547` | Unsaved changes, attention | 10.5:1 on panel, 8.4:1 on warning-wash |
 | `warning-wash` | warning at 12 % | Warning badges | |
 | `danger` | `#FF5A5F` | Errors, destructive actions | 6.0:1 on panel, 5.4:1 on danger-wash |
-| `danger-wash` / `danger-line` | danger at 10 % / 45 % | Destructive buttons' fill and outline | The outline is 2.1:1 on panel (see below) |
+| `danger-wash` / `danger-line` | danger at 10 % / 65 % | Destructive buttons' fill and outline; the outline of danger notices | The outline is 3.2:1 on panel, 3.1:1 on raised and card |
 | `tier-base` / `tier-1` / `tier-2` / `tier-3` / `tier-corrupted` | `#8C96A3` / `#E7EBF0` / `#4C8DFF` / `#B26BFF` / `#FF4D5E` | Magazine tiers | 5.4:1 or more on card |
-| `chart-bar` | `#2B323C` | Bars counting tries in the score chart | 1.4:1 on panel (see below) |
+| `chart-bar` | `#2B323C` | Bars counting tries in the score chart | 1.4:1 on panel, kept (see below) |
 | `panel-glass` | panel at 94 % | The run result card over the range | |
 
-Three marks stand under the 3:1 that WCAG 1.4.11 asks of the parts of a control or chart that carry meaning: the destructive button's outline, whose label says what it does in danger's color; the selected item of a neutral segmented control or Studio tab, which also turns its text from text-secondary to text; and the tries bars, whose counts the chart's tooltip shows as text (and the CSV export lists). The roadmap keeps the decision open (accept them, or raise them to 3:1).
+Three marks stood under the 3:1 that WCAG 1.4.11 asks of the parts of a control or chart that carry meaning: the destructive button's outline, the selected item of a neutral segmented control or Studio tab, and the tries bars. ~~The roadmap keeps the decision open (accept them, or raise them to 3:1).~~ Decided (owner, 2026-10-25: "Go with recommendations"): the selected neutral item and Studio tab take a 1 px `field` outline (3.6:1 on the track); the destructive outline rises from 45 % to 65 %; the tries bars stay at 1.4:1, since lighter bars would compete with the score lines, and the chart's tooltip and the totals give their counts as text (the CSV export lists them too).
 
 shadcn/ui mapping: `background` ground, `card` panel, `popover` raised, `primary` volt with `primary-foreground` volt-ink, `secondary` raised, `muted` hover with text-muted, `accent` hover, `destructive` danger, `border` divider, `input` field, `ring` volt, `chart-1` volt, `chart-2` text-secondary, `chart-3` target, `chart-4` warning, `chart-5` tier-3.
 
@@ -134,7 +134,7 @@ All three are self-hosted as WOFF2 and preloaded. Inter and JetBrains Mono cover
 ### 4.3 Space, shape, motion
 
 - Spacing scale 4, 8, 12, 16, 24, 32 px; panels use 16 px padding, cards 12 to 16 px.
-- Radius 6 (small), 8 (controls), 10 (cards), 14 (panels), pill (chips).
+- ~~Radius 6 (small), 8 (controls), 10 (cards), 14 (panels), pill (chips).~~ Radius as the Design System sets it (owner, 2026-10-25: "fix it to match the design system artifact, that's the ground truth for design choices"): 4 (a key hint in a button), 5 (keys), 6 (neutral segment items, dialog close), 7 (segment items, tabs), 8 (34 to 36 px controls), 9 (38 px controls), 10 (tiles, toolbar groups, tracks), 12 (cards inside panels, toasts), 14 (panels, the range, dialogs), 16 (phone sheets), pill (chips, badges).
 - Motion 150 ms ease-out for hover and press, 200 ms for panels and dialogs, none with `prefers-reduced-motion`. Nothing in the interface animates during a run.
 
 ## 5. Components
@@ -182,7 +182,7 @@ Rules: the game engine owns the canvas and talks to React through events; stores
 - Dialogs trap focus and restore it; every action has a keyboard path, and the shortcuts dialog lists them.
 - Touch targets of 44 px or more on phones.
 - `prefers-reduced-motion` turns off interface animation.
-- Automated axe checks (WCAG 2.1 A and AA) in the Playwright scenarios. Since Phase 0 they fail on anything beyond the current pages' baseline (`e2e/accessibility.spec.ts`); the rebuilt pages must have no violations.
+- Automated axe checks (WCAG 2.1 A and AA) in the Playwright scenarios: no page allows any violation. ~~Since Phase 0 they fail on anything beyond the current pages' baseline (`e2e/accessibility.spec.ts`); the rebuilt pages must have no violations.~~ The old editor's baseline went with it in Phase 3 (3.6).
 
 ## 8. Open items for the owner
 

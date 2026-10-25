@@ -22,6 +22,8 @@ export default tseslint.config(
       'graphify-out/',
       // Throwaway agent workspace, gitignored (the agent kit's clone goes there)
       'scratch/',
+      // The agent kit's hooks, copied in word for word by python scripts/agent_kit.py install, which replaces them
+      '.claude/hooks/agent-kit/',
       'processing/',
       'etc/',
       'assets/',

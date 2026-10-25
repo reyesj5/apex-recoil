@@ -1,6 +1,6 @@
 # Design References
 
-*A snapshot of the design, exported 2026-10-24; [snapshot.json](snapshot.json) names the artifact versions it was taken from.*
+*A snapshot of the design, exported 2026-10-25; [snapshot.json](snapshot.json) names the artifact versions it was taken from.*
 
 The design lives in two private claude.ai artifacts, which are the source of truth:
 
@@ -10,9 +10,9 @@ The design lives in two private claude.ai artifacts, which are the source of tru
 ## Which one to use
 
 - **Claude with the Artifact tool** (Claude Code signed in to the owner's claude.ai account): work from the artifacts, since they can be newer than this folder. Read them with the Artifact tool (`action: "list"` with `scope: "files"`, then `action: "read"`); WebFetch only reaches the login page. When you change an artifact, refresh this folder (below) in the same piece of work.
-- **Any other agent** (Codex, Gemini, Copilot, Cursor, or Claude without the Artifact tool): use this folder. Look at the PNGs, and read the Markdown and source files for exact values. Don't edit them by hand; the next export overwrites them. If you change a design decision while building, record it in [ui-migration-progress.md](../ui-migration-progress.md) so a Claude session or the owner can update the artifacts.
+- **Any other agent** (Codex, Gemini, Copilot, Cursor, or Claude without the Artifact tool): use this folder. Look at the PNGs, and read the Markdown and source files for exact values. Don't edit them by hand; the next export overwrites them. If you change a design decision while building, record it in [ui-notes.md](../ui-notes.md) so a Claude session or the owner can update the artifacts.
 
-Where the code moves past the design, the code and the progress report win until the artifacts catch up. As of this export the two agree: on 2026-10-24 the canvas gained the boards for every remaining screen and the Design System its overlays (Dialog, AlertDialog, Drawer, CommandPalette), the error toast and the run below the median, and the app follows them; `system/tokens.json` equals the app's `client/styles/tokens.json`.
+Where the code moves past the design, the code and the notes ([ui-notes.md](../ui-notes.md)) win until the artifacts catch up. As of this export the two agree: on 2026-10-24 the canvas gained the boards for every remaining screen and the Design System its overlays (Dialog, AlertDialog, Drawer, CommandPalette), the error toast and the run below the median; on 2026-10-25 both took the owner's decisions (an outline on the selected neutral item and Studio tab, a stronger destructive outline, no dash for a score that doesn't exist yet). The app follows them; `system/tokens.json` equals the app's `client/styles/tokens.json`.
 
 ## What's here
 
@@ -47,6 +47,7 @@ The Foundations board is 1440 × 1280 px and cuts off its last row on the canvas
 ## Refreshing this folder (Claude only)
 
 1. Read the Design System's files into a folder with the Artifact tool: `action: "read"` with `paths` set to every `project/...` file the file listing shows (`design-system.json` included). They land in `<folder>/project/`.
-2. Read the canvas's `project/*.dc.html`, `project/canvas.json` and `artifact-type/dc-runtime.js` into a second folder (`out_dir`). Then download each image asset into `<that folder>/_blob`: list them with `action: "list"` and `scope: "assets"`, then read each one with `path` set to its id, since `paths` doesn't take asset ids.
+2. Read the canvas's `project/*.dc.html`, `project/canvas.json` and `artifact-type/dc-runtime.js` into a second folder (`out_dir`). Then download each image asset into `<that folder>/_blob`: list them with `action: "list"` and `scope: "assets"`, then read each one with `path` set to its id, since `paths` doesn't take asset ids. <!-- agent-kit: elsewhere -->
+
 3. Run `node scripts/export-design.mjs --canvas <second folder> --system <first folder> --canvas-version <v> --system-version <v>`, with the versions from the read results. It replaces `screens/` and `system/` and rewrites `snapshot.json`; this README stays. It renders with Chrome and needs the network for the fonts.
 4. Look over the PNGs that changed, and update the date at the top of this README. The owner reviews and commits.

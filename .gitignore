@@ -137,3 +137,8 @@ graphify-out/
 .DS_Store
 Thumbs.db
 
+# Set by the agent kit (python scripts/agent_kit.py install)
+*.graphify-bak
+.claude/logs/
+.claude/settings.local.json
+.claude/worktrees/

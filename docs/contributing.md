@@ -32,7 +32,7 @@ Before submitting a pull request, ensure all quality gates pass:
 
 ## Tests
 
-- End-to-end scenarios live in [e2e/](../e2e/) (Playwright in Chrome). [e2e/server.mjs](../e2e/server.mjs) runs the built app on a throwaway database, specs and captures. A scenario fails on any page error, console error or failed request to the app, and the accessibility checks fail on any axe violation (no page has a baseline). For the new interface, follow [ui-migration-progress.md](ui-migration-progress.md).
+- End-to-end scenarios live in [e2e/](../e2e/) (Playwright in Chrome). [e2e/server.mjs](../e2e/server.mjs) runs the built app on a throwaway database, specs and captures. A scenario fails on any page error, console error or failed request to the app, and the accessibility checks fail on any axe violation (no page has a baseline). For the new interface, follow [ui-notes.md](ui-notes.md).
 - Write scenarios the way a player or editor would work: click, type, then check what the page shows and what it stored (`localStorage`, the API).
 - Unit and component tests sit next to the code as `client/**/*.test.ts(x)` (Vitest, Testing Library, MSW). A request without an MSW handler fails the test.
 - The server's tests are `test/*.test.ts` (`node:test`, run by `pnpm test`). They build the app with `createApp()` around a throwaway database, specs file, captures folder and job queue, never the real ones.
@@ -48,7 +48,7 @@ Before submitting a pull request, ensure all quality gates pass:
 - Colors, radii, sizes and type styles are the design system's tokens, generated from [client/styles/tokens.json](../client/styles/tokens.json) (`bg-panel`, `text-text-muted`, `rounded-card`, `h-control`, `type-label`). Tailwind's default palette is switched off, and the lint rejects unknown classes.
 - Components come from shadcn/ui, kept and edited in [client/components/ui/](../client/components/ui/); the app's own are in `client/components/`. The gallery at `/next/components` shows each in every state.
 - The trainer's pages exist in three languages from one component tree: add a string to all three catalogs in `client/locales/`. The Studio is in English.
-- The conventions in detail (tokens, icons, accessibility, storage, pages, the Studio) are in [ui-migration-progress.md](ui-migration-progress.md), section 3.
+- The conventions in detail (tokens, icons, accessibility, storage, pages, the Studio) are in [ui-notes.md](ui-notes.md), *Conventions to keep*.
 
 ## Project Roadmap & AI Guidelines
 

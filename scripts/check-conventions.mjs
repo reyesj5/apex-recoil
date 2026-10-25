@@ -45,7 +45,7 @@ const appCss = fs.readFileSync(path.join(root, 'client', 'styles', 'app.css'), '
 if (/@apply\b/.test(appCss)) problems.push('client/styles/app.css: @apply; repeated styling becomes a component');
 
 if (problems.length) {
-  console.error(`The UI's conventions (docs/ui-migration-progress.md, section 3):\n${problems.join('\n')}`);
+  console.error(`The UI's conventions (docs/ui-notes.md, Conventions to keep):\n${problems.join('\n')}`);
   process.exit(1);
 }
 console.log(

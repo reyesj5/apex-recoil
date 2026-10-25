@@ -15,7 +15,7 @@ Spraydown is a recoil trainer for Apex Legends with a Studio for capturing and e
 - Use sentence case for labels, buttons and headings: `Save spec`, `Open progress`, `Next run`, `Copy link`, `Score per day`. Start buttons with a verb.
 - Put the instruction where the action happens: "Click and hold anywhere in the range to spray." "Follow the path with your aim as the gun climbs, and your shots stay on the start point."
 - Speak to the player as "you": "Your first run today shows up here." Use "we" only for the product's own practices, as in the consent text: "We use Google Analytics cookies to see how the trainer is used. Nothing is tracked unless you accept."
-- Empty states say what will appear and how: "Recorded sprays appear here. Analyze them together to build a median pattern."
+- Empty states say what will appear and how: "Recorded sprays appear here. Analyze them together to build a median pattern." A number that doesn't exist yet is a thin en dash in `text-muted`, never a zero; where the number would be large (the session card's last score), the hint takes its place: "Your first run today shows up here."
 - Give numbers their units, set in `mono`: `1080 RPM`, `20 m`, `104°`, `56 ms`, `1.0×`, `28 rounds`. Scores are out of 100: `87 / 100`.
 - Name magazine tiers `Base`, `Lv 1`, `Lv 2`, `Lv 3` and `Corrupted`; a weapon with one magazine says `Standard`.
 - Status words are short and stateful: `Unsaved changes`, `Connected`, `Not connected`, `Trigger idle`, `Job queue: idle`.
@@ -31,7 +31,7 @@ Spraydown is a recoil trainer for Apex Legends with a Studio for capturing and e
 - Use `target` for paths and targets on canvases, `pattern-ink` (faint) for the weapon's pattern, and `range-dot` or `canvas-dot` for the dot grids. These colors stay on canvases.
 - Use `warning` with `warning-wash` for unsaved changes and attention, `danger` with `danger-wash` and `danger-line` for errors and destructive actions. Each status also carries a word.
 - Reserve `tier-base`, `tier-1`, `tier-2`, `tier-3` and `tier-corrupted` for magazine tiers, drawn as a 3 px bar. They are never interface accents.
-- `chart-bar` stands only 1.4:1 off `panel`; whenever it carries data, give the same numbers in text as well.
+- `chart-bar` stands only 1.4:1 off `panel`, kept that way so the bars stay behind the score lines; whenever it carries data, give the same numbers in text as well.
 
 ## Type
 
@@ -52,7 +52,7 @@ Spraydown is a recoil trainer for Apex Legends with a Studio for capturing and e
 ## States and motion
 
 - Hover fills with `hover` and brings text up to `text`. Pressed uses the same fill.
-- Selected chips, tiles and tier options get a `volt` outline over `volt-wash`. Selected segments and the active tool fill with `volt` and `volt-ink` text. In the neutral segmented control (fire mode) and Studio tabs the selected item fills with `divider` and its text turns `text`.
+- Selected chips, tiles and tier options get a `volt` outline over `volt-wash`. Selected segments and the active tool fill with `volt` and `volt-ink` text. In the neutral segmented control (fire mode) and Studio tabs the selected item fills with `divider`, takes a 1 px `field` outline and its text turns `text`.
 - The current page in the top navigation fills with `raised`; in the Studio rail with `hover`.
 - Focus is a 2 px `volt` outline with a 2 px offset, on every focusable element.
 - Disabled icons take `icon-disabled`.

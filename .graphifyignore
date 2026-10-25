@@ -1,0 +1,22 @@
+node_modules/
+.venv/
+venv/
+.next/
+dist/
+build/
+coverage/
+__pycache__/
+.pytest_cache/
+scratch/
+graphify-out/
+.claude/logs/
+
+# This project's generated files that are committed (graphify reads .gitignore too, so what is gitignored stays out)
+client/lib/cn-tables.ts
+client/styles/design-tokens.css
+arduino_mouse/src/recoil.inc
+# The design snapshot, exported from the claude.ai artifacts by scripts/export-design.mjs
+docs/design/
+# Copies of AGENTS.md that python scripts/agent_kit.py sync makes
+/CLAUDE.md
+/GEMINI.md

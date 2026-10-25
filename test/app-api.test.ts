@@ -108,6 +108,25 @@ describe('API Endpoints (SQLite Specs & Versioning)', () => {
     assert.ok(specList.safeParse(specs).success);
   });
 
+  test('a request addressed to any host but this computer is refused, while there is no sign-in', async () => {
+    const port = (server.address() as { port: number }).port;
+    const status = (host: string) =>
+      new Promise<number>((resolve, reject) => {
+        http
+          .get({ host: '127.0.0.1', port, path: '/api/specs', headers: { Host: host } }, (res) => {
+            res.resume();
+            resolve(res.statusCode ?? 0);
+          })
+          .on('error', reject);
+      });
+    // A page elsewhere can point its own name at this computer and have the browser call the API
+    assert.equal(await status('example.com'), 403);
+    assert.equal(await status(`example.com:${port}`), 403);
+    for (const host of [`127.0.0.1:${port}`, `localhost:${port}`, 'localhost', `[::1]:${port}`]) {
+      assert.equal(await status(host), 200, host);
+    }
+  });
+
   test('GET /api/specs/history/:weapon returns revision history', async () => {
     const res = await fetch(`${baseUrl}/api/specs/history/r301`);
     assert.equal(res.status, 200);

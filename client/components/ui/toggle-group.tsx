@@ -9,7 +9,7 @@ import { ToggleGroup as ToggleGroupPrimitive } from 'radix-ui';
 // - segmented: a segmented control; the selected option fills with volt (mode, result style, period)
 // - floating: the same on the range or in a page header, on the panel surface
 // - neutral: a segmented control beside other volt accents (fire mode); the selected option fills
-//   with divider, so its text turning bright and aria-checked carry the state
+//   with divider, which stands only 1.4:1 off the track, so a 1 px field outline (3.6:1) marks it too
 // - chips: filter chips that wrap (weapon class, with counts); volt outline when selected. At the
 //   touch size (phones) they scroll sideways in one row, inset so the focus outline isn't clipped
 // Radix lets a single-choice group be emptied by clicking the selected item: segmented controls
@@ -47,7 +47,8 @@ const toggleGroupItemVariants = cva(
       variant: {
         segmented: 'h-segment rounded-segment px-3 data-[state=on]:bg-volt data-[state=on]:text-volt-ink',
         floating: 'h-segment rounded-segment px-3 data-[state=on]:bg-volt data-[state=on]:text-volt-ink',
-        neutral: 'h-segment-sm rounded-sm px-3 data-[state=on]:bg-divider data-[state=on]:text-text',
+        neutral:
+          'h-segment-sm rounded-sm px-3 data-[state=on]:bg-divider data-[state=on]:text-text data-[state=on]:inset-ring data-[state=on]:inset-ring-field',
         chips:
           'h-segment rounded-pill border border-divider bg-raised px-2.5 data-[state=on]:border-volt data-[state=on]:bg-volt-wash data-[state=on]:text-text',
       },

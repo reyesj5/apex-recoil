@@ -10,10 +10,12 @@ describe('ScoreCard', () => {
     expect(screen.getByText('/ 100')).toBeInTheDocument();
   });
 
-  it('shows an en dash and the hint before the first run', () => {
+  it('shows the hint in place of the score before the first run: no dash, which at 56 px reads as a bar', () => {
     render(<ScoreCard label="Last score" hint="Your first run today shows up here." />);
-    expect(screen.getByText('–')).toBeInTheDocument();
-    expect(screen.getByText('Your first run today shows up here.')).toBeInTheDocument();
+    expect(screen.queryByText('–')).not.toBeInTheDocument();
+    expect(screen.queryByText('/ 100')).not.toBeInTheDocument();
+    expect(screen.getByText('Last score')).toBeInTheDocument();
+    expect(screen.getByText('Your first run today shows up here.')).toHaveClass('type-body', 'text-text-secondary');
   });
 });
 
