@@ -20,6 +20,8 @@ export default tseslint.config(
       'test-results/',
       'playwright-report/',
       'graphify-out/',
+      // Throwaway agent workspace, gitignored (the agent kit's clone goes there)
+      'scratch/',
       'processing/',
       'etc/',
       'assets/',

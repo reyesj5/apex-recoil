@@ -114,3 +114,11 @@ Always check the repository working tree before reporting task completion:
 
 - **Maintain Comments**: Never delete or rewrite existing code comments, docstrings, or license headers that are unrelated to your current changes.
 - **Clickable File Links**: Always cite files with clickable markdown links (`[filename](file:///path/to/file)`) using forward slashes for Windows compatibility.
+
+---
+
+## Where this project differs from the general rules
+
+The general rules are the ones every project follows (the agent kit's `RULES.md`, not merged into this project yet). Each exception names the rule it overrides.
+
+- **The Studio's live capture is checked by hand** (owner, 2026-10-24: "Keep the general rule unchanged and add an exception"). It overrides *No guessing, no manual steps* and *A session at the owner's keyboard checks as it goes*, which want every check automated, or a tool that checks each step live rather than a checklist; both still hold for everything else here. Headless browsers can't share the game window, hear its sound or record it, so after a change to the live capture a person runs [docs/studio-capture-check.md](docs/studio-capture-check.md) with the game (Step 1, item 4).
