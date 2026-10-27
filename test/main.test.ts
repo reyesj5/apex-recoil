@@ -6,11 +6,13 @@ import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import { SETTINGS } from '../server/settings.ts';
 
 const root = path.join(import.meta.dirname, '..');
 
 // The server as `pnpm start` runs it, on throwaway data: each setting it reads from the environment
-// is a throwaway or unset, and the last test fails when the server reads one these lists lack.
+// (the list in server/settings.ts) is a throwaway or unset, and a test below fails when the server
+// reads one that list lacks.
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spraydown_main_test_'));
 const throwaway: Record<string, string> = {
   PORT: '0',
@@ -19,26 +21,15 @@ const throwaway: Record<string, string> = {
   RECOIL_CAPTURES_DIR: path.join(tempDir, 'captures'),
   RECOIL_UPLOAD_TMP_DIR: path.join(tempDir, 'uploads'),
 };
-const unset = [
-  'REDIS_URL',
-  'RECOIL_VITE_DEV',
-  'RECOIL_QUEUE_PREFIX',
-  'RECOIL_EMBEDDED_WORKER',
-  'RECOIL_WORKER_CONCURRENCY',
-  'RECOIL_UPLOAD_SECRET',
-  'PYTHON',
-  'STORAGE_PROVIDER',
-  'STORAGE_PUBLIC_URL',
-  'S3_ENDPOINT',
-  'S3_REGION',
-  'S3_BUCKET',
-  'S3_ACCESS_KEY_ID',
-  'S3_SECRET_ACCESS_KEY',
-  'S3_FORCE_PATH_STYLE',
-  'S3_AUTO_CREATE_BUCKET',
-  'S3_CORS_ORIGINS',
-];
+const unset = Object.keys(SETTINGS).filter((name) => !(name in throwaway));
 fs.copyFileSync(path.join(root, 'client', 'specs.json'), throwaway.RECOIL_SPECS_PATH);
+
+/** The environment of a process started on the throwaway data, with `settings` over it */
+function sandboxed(settings: Record<string, string> = {}) {
+  const env: NodeJS.ProcessEnv = { ...process.env, ...throwaway };
+  for (const name of unset) delete env[name];
+  return { ...env, ...settings };
+}
 
 /** The status of a GET to the server at 127.0.0.1, addressed to `host` */
 function status(port: number, host: string) {
@@ -72,12 +63,10 @@ describe('The server as pnpm start runs it', () => {
   let port: number;
 
   before(async () => {
-    const env: NodeJS.ProcessEnv = { ...process.env, ...throwaway };
-    for (const name of unset) delete env[name];
     // From a folder of its own, so no .env of this computer's is read
     child = spawn(process.execPath, [path.join(root, 'server', 'main.ts')], {
       cwd: tempDir,
-      env,
+      env: sandboxed(),
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     port = await new Promise<number>((resolve, reject) => {
@@ -123,7 +112,7 @@ describe('The server as pnpm start runs it', () => {
     assert.equal(await accepts(outside.address, port), false, `it answers at ${outside.address}`);
   });
 
-  test('every setting it reads from the environment is a throwaway here, or unset', () => {
+  test('server/settings.ts lists every setting it reads from the environment, and no other', () => {
     const read = new Set<string>();
     for (const dir of ['server', 'shared']) {
       for (const file of fs.readdirSync(path.join(root, dir), { recursive: true }) as string[]) {
@@ -134,10 +123,58 @@ describe('The server as pnpm start runs it', () => {
         }
       }
     }
-    const listed = new Set([...Object.keys(throwaway), ...unset]);
+    const listed = Object.keys(SETTINGS);
     assert.deepEqual(
-      [...read].filter((name) => !listed.has(name)),
+      [...read].filter((name) => !listed.includes(name)),
       [],
+      'read, but not in the list: they are neither checked at start nor sandboxed here',
     );
+    assert.deepEqual(
+      listed.filter((name) => !read.has(name)),
+      [],
+      'in the list, but read nowhere',
+    );
+  });
+});
+
+describe('A wrong setting stops the start', () => {
+  const startDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spraydown_start_test_'));
+  after(() => fs.rmSync(startDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }));
+
+  /** How `server/<file>` ends when started with `settings` over the throwaway ones: its exit code and output */
+  function start(file: string, settings: Record<string, string>) {
+    return new Promise<{ code: number | null; output: string }>((resolve) => {
+      // From a folder of its own, so no .env of this computer's is read
+      const child = spawn(process.execPath, [path.join(root, 'server', file)], {
+        cwd: startDir,
+        env: sandboxed(settings),
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      let output = '';
+      child.stdout!.on('data', (chunk: Buffer) => (output += chunk));
+      child.stderr!.on('data', (chunk: Buffer) => (output += chunk));
+      // A start that the check let through would run until killed
+      const timer = setTimeout(() => child.kill(), 30_000);
+      child.on('exit', (code) => {
+        clearTimeout(timer);
+        resolve({ code, output });
+      });
+    });
+  }
+
+  test('the server names each setting it does not take, and does not start', async () => {
+    const { code, output } = await start('main.ts', { PORT: '30oo', RECOIL_EMBEDDED_WORKER: 'no' });
+    assert.equal(code, 1, output);
+    assert.match(output, /The server cannot start/);
+    assert.match(output, /PORT is set to a value it doesn't take/);
+    assert.match(output, /RECOIL_EMBEDDED_WORKER is set to a value it doesn't take/);
+    assert.doesNotMatch(output, /running at/);
+  });
+
+  test('a worker without REDIS_URL names it, and does not start', async () => {
+    const { code, output } = await start('worker.ts', {});
+    assert.equal(code, 1, output);
+    assert.match(output, /The worker cannot start/);
+    assert.match(output, /REDIS_URL is not set/);
   });
 });

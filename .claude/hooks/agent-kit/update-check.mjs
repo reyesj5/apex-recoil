@@ -13,7 +13,9 @@ const PYTHON = process.platform === 'win32' ? ['python', 'py'] : ['python3', 'py
 let state = {};
 try {
   state = JSON.parse(readFileSync(FOUND, 'utf8'));
-} catch {}
+} catch {
+  // No answer kept yet: start from nothing.
+}
 const today = new Date().toISOString().slice(0, 10);
 const message = state.status === 'behind' && state.message && state.shown !== today ? state.message : null;
 if (message) state.shown = today;

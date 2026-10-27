@@ -12,10 +12,83 @@ on:
 # Actions are pinned to their release's commit. On Windows, git keeps the files' LF endings, as
 # the repository has them, so Prettier and the byte-for-byte checks see what Linux sees. The two
 # locks are audited for known vulnerabilities in audit.yml, on each change and every week.
+#
+# A pull request runs only the jobs its files can affect (the `changes` job): the web checks and
+# Lighthouse unless it changes processing/ alone, and the pipeline's tests when it changes the
+# pipeline, the specs it reads or the Arduino export it writes. The end-to-end jobs run both parts,
+# and the agent files' check reads every doc, so those always run, as everything does on a push to
+# main or a tag. main requires no checks (2026-10-25): if it ever does, require a job that always
+# runs, since a matrix job skipped this way never reports its matrix's names.
 
 jobs:
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    outputs:
+      pages: ${{ steps.files.outputs.pages }}
+      pipeline: ${{ steps.files.outputs.pipeline }}
+
+    steps:
+    # A pull request's checkout is its merge into main, whose first parent is main
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 2
+
+    - name: The files the pull request changes
+      id: files
+      env:
+        EVENT: ${{ github.event_name }}
+      run: |
+        if [ "$EVENT" != "pull_request" ]; then
+          echo "pages=true" >> "$GITHUB_OUTPUT"
+          echo "pipeline=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        changed=$(git diff --name-only HEAD^1 HEAD)
+        echo "$changed"
+        if echo "$changed" | grep -qvE '^processing/'; then pages=true; else pages=false; fi
+        if echo "$changed" | grep -qE '^(processing/|arduino_mouse/|client/specs\.json$|\.github/workflows/ci\.yml$)'; then
+          pipeline=true
+        else
+          pipeline=false
+        fi
+        echo "pages: $pages, pipeline: $pipeline"
+        echo "pages=$pages" >> "$GITHUB_OUTPUT"
+        echo "pipeline=$pipeline" >> "$GITHUB_OUTPUT"
+
+  # The agent kit's check, run as AGENTS.md's Checks write it, so its list of docs is kept in one
+  # place: the three agent files agree, the general rules are as installed, the hooks are in place,
+  # the linters leave the kit's files alone, and the docs name only what exists. It fails, rather
+  # than checking less, if AGENTS.md stops naming the command.
+  agent-files:
+    name: Agent files and docs (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+    - name: Keep LF endings on Windows
+      if: runner.os == 'Windows'
+      run: git config --global core.autocrlf false
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.12'
+
+    - name: The agent kit's check
+      run: >-
+        python -c "import re, subprocess, sys;
+        command = re.search(r'python scripts/agent_kit.py check(?: --(?:doc|history) [\w./-]+)+', open('AGENTS.md', encoding='utf-8').read()).group(0);
+        print(command, flush=True); sys.exit(subprocess.call([sys.executable] + command.split()[1:]))"
+
   web:
     name: Web (${{ matrix.os }}, Node ${{ matrix.node-version }})
+    needs: changes
+    if: needs.changes.outputs.pages == 'true'
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -187,6 +260,8 @@ jobs:
   # artifact. lighthouserc.json and lighthouserc.mobile.json hold the pages and thresholds.
   lighthouse:
     name: Lighthouse
+    needs: changes
+    if: needs.changes.outputs.pages == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -248,6 +323,8 @@ jobs:
 
   processing:
     name: Processing (${{ matrix.os }}, Python 3.12)
+    needs: changes
+    if: needs.changes.outputs.pipeline == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

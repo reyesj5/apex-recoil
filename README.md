@@ -114,7 +114,7 @@ pnpm dev
 # Build assets (Vite 8 production build into dist/: the pages' entries such as trainer.js and studio.js, and app.css; and the pages' prerender into dist-ssr/); pnpm start serves them
 pnpm build
 
-# Run Node test suites (63 tests across database, queue, storage, request parsing, API, the server, the pages' prerender and the built bundles; build first)
+# Run Node test suites (72 tests across database, queue, storage, request parsing, API, the server and its settings, the pages' prerender and the built bundles; build first)
 pnpm test
 
 # Unit and component tests (Vitest)
@@ -151,7 +151,7 @@ cp .env.example .env          # then uncomment REDIS_URL and/or the STORAGE_PROV
 pnpm dev                      # the server runs one embedded worker
 pnpm worker                   # optional: more workers (other machines need S3 storage)
 
-# Run every Node suite, including the Redis, S3 and end-to-end tests (77 tests)
+# Run every Node suite, including the Redis, S3 and end-to-end tests (86 tests)
 pnpm test:services
 ```
 With S3 storage the Studio uploads recordings straight to the bucket; the bucket must allow `PUT` from the app's origin (CORS). `S3_AUTO_CREATE_BUCKET=true` creates the bucket and that rule for development.
@@ -209,7 +209,7 @@ Contributions, balance patch updates, and recoil submissions are welcome!
 * [Contributing Guidelines](./docs/contributing.md)
 * [Implementation Plan & Roadmap](./docs/roadmap.md)
 * [Architectural Migration Plan](./docs/migration-plan.md)
-* [Live Weapons Wiki & Patch Reference](./docs/weapons-wiki-stats.md)
+* [Weapons Wiki Reference (the wiki's stats on 2026-09-26)](./docs/weapons-wiki-stats.md)
 * [AI Agent Guidelines](./AGENTS.md)
 * [Release Notes](./docs/release-notes.md)
 * [Recoil Discovery Guide](./docs/capture.md)

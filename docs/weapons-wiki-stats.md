@@ -1,8 +1,11 @@
-# Apex Legends Weapons Reference & Live Wiki Ground Loot Stats
+# Apex Legends Weapons Reference & Wiki Ground Loot Stats (2026-09-26)
 
 Source: [The Apex Legends Wiki (wiki.gg)](https://apexlegends.wiki.gg/wiki/Weapon)
 
-This document compiles live patch stats, magazine tier progressions (Base through **Tier 4 / Corrupted**), fire rates (RPM), tactical & full reload times, damage profiles, and weapon classes across all 29 weapon subpages currently in Apex Legends. It also compares live ground loot values against [`client/specs.json`](../client/specs.json).
+> [!NOTE]
+> A snapshot: the wiki's stats as they were read on 2026-09-26, compared with `client/specs.json` as it was then. Nothing updates it, and a later patch or spec change may differ from it.
+
+This document compiles the patch stats of 2026-09-26, magazine tier progressions (Base through **Tier 4 / Corrupted**), fire rates (RPM), tactical & full reload times, damage profiles, and weapon classes across the 29 weapon subpages the wiki had then. It also compares those ground loot values against [`client/specs.json`](../client/specs.json).
 
 ---
 
@@ -70,9 +73,9 @@ Corrupted / Tier 4 extended magazines (`L4`) represent the highest tier magazine
 
 ---
 
-## 🔍 Live Ground Loot Discrepancies vs `client/specs.json`
+## 🔍 Ground Loot Discrepancies vs `client/specs.json` (2026-09-26)
 
-Comparing our active recoil specifications in `client/specs.json` against live wiki ground loot data reveals key discrepancies where previous versions configured weapons with crate-locked capacities or outdated magazine sizes:
+Comparing the recoil specifications in `client/specs.json` against the wiki's ground loot data, both as of 2026-09-26, revealed key discrepancies where previous versions configured weapons with crate-locked capacities or outdated magazine sizes:
 
 ---
 

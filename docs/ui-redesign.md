@@ -186,7 +186,7 @@ Rules: the game engine owns the canvas and talks to React through events; stores
 
 ## 8. Open items for the owner
 
-- ~~Final name and domain (no domain yet, 2026-10-24). "Spraydown" is a placeholder name~~ Decided (owner, 2026-10-25: "The name wll be Spraydown no? I have a domain now. spraydown.click"): the name is "Spraydown", with its own logo: five shots in a downward chevron and a Chakra Petch wordmark, with "down" in volt (files and usage rules in `brand/README.md`). The domain is spraydown.click (`siteUrl` in `site.json`).
+- ~~Final name and domain (no domain yet, 2026-10-24). "Spraydown" is a placeholder name~~ Decided (owner, 2026-10-25: "The name wll be Spraydown no? I have a domain now. spraydown.click"): the name is "Spraydown", with its own logo, final as the Design System has it (owner, 2026-10-25: "logo use the spray down one from the design system."): five shots in a downward chevron and a Chakra Petch wordmark, with "down" in volt (files and usage rules in `brand/README.md`). The domain is spraydown.click (`siteUrl` in `site.json`).
 - Your Google Analytics 4 measurement ID and your privacy policy, both required before the new trainer goes live with analytics.
 - Support or donation link, if any (`supportUrl` in `site.json`; the original author's link is gone).
 - ~~Whether the Patterns page and the phone pattern viewer ship with the first release or later.~~ Decided 2026-10-24: both ship with the first release (built at `/next/patterns`).

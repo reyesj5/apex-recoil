@@ -41,7 +41,7 @@ const pullRequest = [
   /\bcreatePullRequest\b/i // GraphQL's mutation
 ];
 // REST: POST /repos/{owner}/{repo}/pulls, the one endpoint that opens a pull request.
-const PULLS = /\/pulls(?![\/\w])/;
+const PULLS = /\/pulls(?![/\w])/;
 const WRITE =
   /-X\s*POST|--request[=\s]+POST|--method[=\s]+POST|-Method\s+Post|\s-[dfF]\b|--data|--json|--field|--raw-field|--input|-Body\b|['"]post['"]/i;
 const PULL_REQUEST = 'opening a pull request (the owner opens every one)';

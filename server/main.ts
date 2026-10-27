@@ -2,12 +2,15 @@
 
 import fs from 'node:fs';
 import http from 'node:http';
+import { checkSettings } from './settings.ts';
 
 /**
- * Optional settings from .env in the working directory (see .env.example).
+ * Optional settings from .env in the working directory (see .env.example), each checked before
+ * anything starts (settings.ts).
  */
 
 if (fs.existsSync('.env')) process.loadEnvFile('.env');
+checkSettings('server');
 
 /**
  * --dev (pnpm dev): Vite serves the client sources with hot reload (see routes/pages.ts), and

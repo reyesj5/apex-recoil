@@ -1,11 +1,15 @@
 // What tells search engines where each page lives: the links in a page's head (roadmap 2.11), the page's
 // own address on the site (site.json's siteUrl) and the same page in each of its languages, English as
-// the default; and the sitemap that lists them all, which robots.txt names (2.15)
+// the default; and the sitemap that lists them all, which robots.txt names (2.15). Also what a page's
+// head preloads so its scripts arrive together: its entry's chunks and its language's catalog (2.13)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {
   bundle,
+  modulePreloads,
   notFound,
   pageAt,
   pageLinks,
@@ -16,6 +20,7 @@ import {
   sitemapXml,
   type PageSpec,
 } from '../server/prerender.ts';
+import { root } from '../server/site.ts';
 
 const site = { name: 'Spraydown', siteUrl: 'https://example.test' };
 const at = (address: string) => pageAt(address) as PageSpec;
@@ -100,5 +105,58 @@ test(
     for (const link of links) assert.ok(head.includes(link), link);
     // A page kept out of search engines names no address
     assert.doesNotMatch(await renderPage(notFound, site), /rel="(canonical|alternate)"/);
+  },
+);
+
+test("preload the chunks an entry imports, all the way down, and the page language's catalog", () => {
+  const buildDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spraydown_preload_test_'));
+  try {
+    fs.mkdirSync(path.join(buildDir, '.vite'));
+    fs.writeFileSync(
+      path.join(buildDir, '.vite', 'manifest.json'),
+      JSON.stringify({
+        'client/entries/trainer.tsx': {
+          file: 'trainer.js',
+          isEntry: true,
+          imports: ['_a.js', '_b.js'],
+          dynamicImports: ['_dialogs.js'],
+        },
+        '_a.js': { file: 'chunks/a-1.js', imports: ['_c.js'] },
+        '_b.js': { file: 'chunks/b-2.js', imports: ['_c.js'] },
+        '_c.js': { file: 'chunks/c-3.js' },
+        '_dialogs.js': { file: 'chunks/dialogs-4.js', imports: ['_a.js'] },
+        'client/locales/ru.json': { file: 'chunks/ru-5.js', isDynamicEntry: true },
+      }),
+    );
+    const links = (files: string[]) => files.map((file) => `<link rel="modulepreload" href="/${file}">`);
+    // Each chunk once, as the imports reach it, and nothing that only a later import() asks for
+    const chunks = ['chunks/a-1.js', 'chunks/c-3.js', 'chunks/b-2.js'];
+    assert.deepEqual(modulePreloads(buildDir, 'trainer', 'en'), links(chunks));
+    assert.deepEqual(modulePreloads(buildDir, 'trainer', 'ru'), links([...chunks, 'chunks/ru-5.js']));
+  } finally {
+    fs.rmSync(buildDir, { recursive: true, force: true });
+  }
+  // No build, no preloads
+  assert.deepEqual(modulePreloads(path.join(os.tmpdir(), 'spraydown_no_build'), 'trainer', 'en'), []);
+});
+
+test(
+  'preload, in each prerendered page, files the build has, with its own language only',
+  {
+    skip:
+      !(fs.existsSync(bundle) && fs.existsSync(path.join(root, 'dist', '.vite', 'manifest.json'))) &&
+      'run `pnpm build` first',
+  },
+  async () => {
+    const languages: Record<string, string[]> = { '/': [], '/ru': ['ru'], '/zh-CN/patterns': ['zh-CN'], '/faq': [] };
+    for (const [address, expected] of Object.entries(languages)) {
+      const html = await renderPage(at(address), site);
+      const head = html.slice(0, html.indexOf('</head>'));
+      const preloaded = [...head.matchAll(/<link rel="modulepreload" href="\/([^"]+)">/g)].map((m) => m[1]);
+      assert.ok(preloaded.length > 0, `${address} preloads nothing`);
+      for (const file of preloaded) assert.ok(fs.existsSync(path.join(root, 'dist', file)), `${address}: ${file}`);
+      const catalogs = preloaded.flatMap((file) => file.match(/^chunks\/(ru|zh-CN)-[^/]+\.js$/)?.[1] ?? []);
+      assert.deepEqual(catalogs, expected, address);
+    }
   },
 );

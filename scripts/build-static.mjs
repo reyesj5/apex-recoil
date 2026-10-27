@@ -45,7 +45,7 @@ fs.writeFileSync(
   prerender.renderShell({ title: studio.title(site.name), entry: studio.entry }, site),
 );
 for (const page of prerender.pages) {
-  const html = await prerender.renderPage(page, site, { assetsDir: path.join(outDir, 'assets') });
+  const html = await prerender.renderPage(page, site, { buildDir: outDir });
   const dir = path.join(outDir, ...page.path.split('/').filter(Boolean));
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'index.html'), html);
@@ -56,7 +56,7 @@ for (const page of prerender.pages) {
 }
 fs.writeFileSync(
   path.join(outDir, '404.html'),
-  await prerender.renderPage(prerender.notFound, site, { assetsDir: path.join(outDir, 'assets') }),
+  await prerender.renderPage(prerender.notFound, site, { buildDir: outDir }),
 );
 // For search engines, as the server sends them: robots.txt, and the sitemap when site.json has the
 // site's address

@@ -198,5 +198,5 @@ When Apex Legends releases a balance patch:
 For manual coordinate extraction using Avidemux and static screenshot cropping:
 1. Crop the bullet hole pattern from a video frame.
 2. Scope in with a 4–8x sniper scope on two distant points, noting `pitch` and `yaw` from `+cl_showpos 1`.
-3. In `processing/recoils.ipynb`, calculate angular pixel distance: `points(pitch1, yaw1, pitch2, yaw2)`.
+3. From `processing/`, calculate the angular pixel distance between the two points: `python -c "from recoil_discovery.math_utils import angular_pixel_distance as d; print(round(d(pitch1, yaw1, pitch2, yaw2), 2))"`, with the four readings in place of the names.
 4. In the Studio (`/editor`), the Capture section's **Manual** tab loads the screenshot, finds the decals with a threshold and a size range (**Add the targets as shots**), marks two anchors (middle-click a shot) at the distance you enter, and shows the pattern in the original editor's version 2 format to copy.

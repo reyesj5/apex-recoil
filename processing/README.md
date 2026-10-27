@@ -21,8 +21,7 @@ processing/
 │   └── cli.py              # Unified CLI interface
 ├── tests/                  # 43 automated unit tests (pytest)
 ├── requirements.in         # The pipeline's requirements
-├── requirements.txt        # Their lock: every package pinned with its hashes, made by uv (Dependencies)
-└── Pipfile                 # The original project's Pipenv environment for its notebooks (with Pipfile.lock)
+└── requirements.txt        # Their lock: every package pinned with its hashes, made by uv (Dependencies)
 ```
 
 ---

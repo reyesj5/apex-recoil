@@ -100,16 +100,22 @@ shared/requests.ts               what the server accepts, read as leniently as t
                                  only a name and a pattern
 server/app.ts                    createApp(): static files, /captures, the API's routers, the pages and the error
                                  handler, around the database, storage, job queue and site values it is given
-server/main.ts                   the HTTP server (pnpm start, pnpm dev with --dev): .env, the port and its fallback
+server/main.ts                   the HTTP server (pnpm start, pnpm dev with --dev): .env, the settings' check, the port
+                                 and its fallback
+server/settings.ts               every setting the server and the worker read from the environment, with what each
+                                 takes and when it is required; checkSettings() stops the start of either, naming each
+                                 one missing or malformed (each is still read where it is used)
 server/routes/                   specs.ts, discovery.ts (uploads, analyses, the session and screenshot lists, the
                                  status), jobs.ts, captures.ts, pages.ts (the prerendered pages, the shells, the old
                                  addresses' redirects, robots.txt and the sitemap, the 404 and error pages, Vite
                                  with pnpm dev)
 server/prerender.ts              the pages (address, page, language, entry, a fallback title), pageAt(), notFound,
                                  serverError, the shells (Studio, gallery), renderShell(), and renderPage(): the HTML
-                                 page around the markup, with the site values, the first paint's font preloads and
-                                 the page's canonical and language links (pageLinks); sitemapXml() and robotsTxt();
-                                 routes/pages.ts and scripts/build-static.mjs use it
+                                 page around the markup, with the site values, the first paint's font preloads, the
+                                 entry's chunks and the language's catalog as module preloads (modulePreloads, from
+                                 the build's .vite/manifest.json) and the page's canonical and language links
+                                 (pageLinks); sitemapXml() and robotsTxt(); routes/pages.ts and
+                                 scripts/build-static.mjs use it
 server/uploads.ts                upload staging: multer, old clients' base64, direct uploads and their signed grants,
                                  file names; analysis-params.ts turns an analysis' settings into the CLI's arguments
 server/errors.ts, site.ts        the error handler (JSON for the API, the error page, plain text); site.json and the
@@ -118,8 +124,9 @@ server/db.ts, storage.ts, jobs.ts, job-queue.ts, bull-queue.ts, job-processor.ts
                                  the spec database, capture storage and analysis jobs, as they were in JavaScript;
                                  jobs.ts has the interface both queues implement (AnalysisQueue)
 test/*.test.ts                   the Node tests (node:test): the database, the queues, storage, request parsing, the
-                                 API, the server as it starts (main), the pages' links and sitemap (prerender) and the built
-                                 bundles; bull-queue, app-scaled and S3 storage need the services
+                                 API, the server as it starts (main) and its settings' check (settings), the pages'
+                                 links, sitemap and preloads (prerender) and the built bundles; bull-queue,
+                                 app-scaled and S3 storage need the services
 docs/changelog.md                the players' changelog (/changelog); docs/release-notes.md stays the developers'
 docs/history/                    the release history of apex-recoil, the project this one is based on
 lighthouserc.json, lighthouserc.mobile.json  the Lighthouse CI runs (the `lighthouse` job in ci.yml)

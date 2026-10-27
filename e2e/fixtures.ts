@@ -16,10 +16,12 @@ export const ANALYTICS_URL = 'http://127.0.0.1:3211';
 const isApp = (url: string) => /^http:\/\/127\.0\.0\.1:321\d\//.test(url);
 
 // Every test fails on an uncaught page error, a console error or a failed request to the app, so a
-// broken page cannot pass by accident. Other origins (web fonts while offline) do not count.
+// broken page cannot pass by accident. Other origins (web fonts while offline) do not count, nor do
+// the scripts a page preloads when a test turns JavaScript off: the browser refuses those (as `csp`),
+// as it would refuse the scripts themselves.
 export const test = base.extend<{ problems: string[] }>({
   problems: [
-    async ({ page }, use) => {
+    async ({ page, javaScriptEnabled }, use) => {
       const problems: string[] = [];
       page.on('pageerror', (err) => problems.push(`page error: ${err.message}`));
       page.on('console', (msg) => {
@@ -31,7 +33,10 @@ export const test = base.extend<{ problems: string[] }>({
       });
       page.on('requestfailed', (req) => {
         const error = req.failure()?.errorText;
-        if (isApp(req.url()) && error !== 'net::ERR_ABORTED') problems.push(`request failed: ${req.url()} ${error}`);
+        const scriptRefused = !javaScriptEnabled && error === 'csp' && req.resourceType() === 'script';
+        if (isApp(req.url()) && error !== 'net::ERR_ABORTED' && !scriptRefused) {
+          problems.push(`request failed: ${req.url()} ${error}`);
+        }
       });
       await use(problems);
       expect(problems, 'page errors, console errors and failed requests').toEqual([]);

@@ -92,6 +92,39 @@ function fontPreloads(assetsDir: string, locale: string) {
   });
 }
 
+/** A module in the client build's manifest (.vite/manifest.json): its file, and what it imports before it runs */
+interface ManifestChunk {
+  file: string;
+  imports?: string[];
+}
+
+/**
+ * The chunks a page's entry imports before it runs, all the way down, and its language's catalog,
+ * preloaded together: the browser would otherwise find each level only once the one above it had
+ * arrived. Their names carry the build's hashes, so they come from the build's manifest; there are
+ * none without one (no build yet).
+ */
+export function modulePreloads(buildDir: string, entry: string, locale: string) {
+  const manifestFile = path.join(buildDir, '.vite', 'manifest.json');
+  if (!fs.existsSync(manifestFile)) return [];
+  const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8')) as Record<string, ManifestChunk>;
+  const files = new Set<string>();
+  const visit = (key: string) => {
+    for (const imported of manifest[key]?.imports ?? []) {
+      const file = manifest[imported]?.file;
+      if (file && !files.has(file)) {
+        files.add(file);
+        visit(imported);
+      }
+    }
+  };
+  visit(`client/entries/${entry}.tsx`);
+  // English is in the entry itself; the other languages' catalogs are chunks of their own
+  const catalog = manifest[`client/locales/${locale}.json`]?.file;
+  if (catalog) files.add(catalog);
+  return [...files].map((file) => `<link rel="modulepreload" href="/${file}">`);
+}
+
 export const escapeHtml = (text: string) =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -229,15 +262,16 @@ interface PrerenderBundle {
  * A page's HTML: the prerendered markup in the page's shell, with the site values the page was
  * rendered with, which the browser reads back (client/lib/site.ts) so both agree. `noindex` keeps
  * search engines off a page (the 404 and error pages have it); any other page names its address
- * (pageLinks); `assetsDir` is where the build's assets are (dist/assets, or the static site's).
+ * (pageLinks); `buildDir` is the client build the page links, whose fonts and chunks it preloads
+ * (dist, or the static site, which is a build of its own).
  */
 export async function renderPage(
   spec: PageSpec,
   site: SiteValues,
   {
     noindex = spec.page === 'not-found' || spec.page === 'error',
-    assetsDir = path.join(root, 'dist', 'assets'),
-  }: { noindex?: boolean; assetsDir?: string } = {},
+    buildDir = path.join(root, 'dist'),
+  }: { noindex?: boolean; buildDir?: string } = {},
 ) {
   const { page, locale, entry } = spec;
   const { render } = (await import(pathToFileURL(bundle).href)) as PrerenderBundle;
@@ -253,9 +287,10 @@ export async function renderPage(
     `<title>${escapeHtml(out.title)}</title>`,
     ...(noindex ? [] : pageLinks(spec, site)),
     '<link rel="icon" type="image/svg+xml" href="/favicon.svg">',
-    ...fontPreloads(assetsDir, locale),
+    ...fontPreloads(path.join(buildDir, 'assets'), locale),
     '<link rel="stylesheet" href="/app.css">',
     `<script type="module" src="/${entry}.js"></script>`,
+    ...modulePreloads(buildDir, entry, locale),
     '</head>',
     '<body>',
     `<div id="root" data-page="${page}">${out.html}</div>`,

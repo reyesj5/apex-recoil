@@ -1,6 +1,6 @@
 # Spraydown brand
 
-*2026-10-22. ~~"Spraydown" is the working name until the owner decides~~ "Spraydown" is the name (owner, 2026-10-25: "The name wll be Spraydown no?"), with the domain spraydown.click ([ownership register](../docs/ownership-register.md)); the colors and type come from the [UI redesign](../docs/ui-redesign.md).*
+*2026-10-22. ~~"Spraydown" is the working name until the owner decides~~ "Spraydown" is the name (owner, 2026-10-25: "The name wll be Spraydown no?"), with the domain spraydown.click, and this logo is final (owner, 2026-10-25: "logo use the spray down one from the design system."); its files are the Design System's Logos ([ownership register](../docs/ownership-register.md)); the colors and type come from the [UI redesign](../docs/ui-redesign.md).*
 
 ## The mark
 

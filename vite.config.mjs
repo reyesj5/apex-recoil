@@ -132,6 +132,9 @@ const clientBuild = {
   outDir: 'dist',
   emptyOutDir: true,
   sourcemap: true,
+  // dist/.vite/manifest.json: each entry's chunks and each language's catalog by their hashed names,
+  // which the prerendered pages preload (modulePreloads in server/prerender.ts)
+  manifest: true,
   // Oxc, Vite 8's own minifier, leaves about 5 kB (gzip) less JavaScript per new page than esbuild
   minify: 'oxc',
   rollupOptions: {
@@ -160,6 +163,8 @@ const studioBuild = {
   ...clientBuild,
   emptyOutDir: false,
   copyPublicDir: false,
+  // One file, with no chunks to preload; the client build's manifest stays as it was
+  manifest: false,
   rollupOptions: { input: { studio: resolve(__dirname, 'client/entries/studio.tsx') }, output },
 };
 

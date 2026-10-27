@@ -7,17 +7,15 @@
  */
 
 import fs from 'node:fs';
+import { checkSettings } from './settings.ts';
 
 if (fs.existsSync('.env')) process.loadEnvFile('.env');
+// Each setting checked before anything starts: REDIS_URL among them, which a worker needs
+checkSettings('worker');
 
 // Loaded after .env, so they see its values
 const { startAnalysisWorker } = await import('./bull-queue.ts');
 const { getStorage } = await import('./storage.ts');
-
-if (!process.env.REDIS_URL) {
-  console.error('REDIS_URL is not set; the standalone worker only works with the Redis/BullMQ queue.');
-  process.exit(1);
-}
 
 const storage = getStorage();
 const handle = startAnalysisWorker({ redisUrl: process.env.REDIS_URL, storage });

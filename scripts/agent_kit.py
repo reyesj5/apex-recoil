@@ -47,9 +47,11 @@ SCRIPT = "scripts/agent_kit.py"
 #: .gitignore), so a later install takes back what the kit no longer has and never what the
 #: project had itself; and the kit's repository, for `outdated`. Committed, and never a path.
 RECORD = "scripts/agent_kit.json"
-RECORD_ABOUT = ("Written by `python scripts/agent_kit.py install`, never by hand: what the agent "
-                "kit added to this project, so a later install takes back only its own, and where "
-                "the kit is, for `python scripts/agent_kit.py outdated`.")
+RECORD_ABOUT = ("Written by `python scripts/agent_kit.py install` and `sync`, never by hand: what "
+                "the agent kit added to this project, so a later install takes back only its own; "
+                "where the kit is, for `python scripts/agent_kit.py outdated`; and the fingerprint "
+                "of what the agent files last said alike, so `sync` can tell its own copy from an "
+                "edit.")
 #: What the last `outdated --record` found, for the reminder at the start of a Claude Code session
 #: (the kit's update-check hook). One computer's own: .claude/logs/ is never committed.
 UPDATE_CHECK = ".claude/logs/agent-kit-update.json"
@@ -75,8 +77,10 @@ CLAUDE_LOCAL = [".claude/logs/", ".claude/settings.local.json", ".claude/worktre
 #: Above the rows `install` adds at the end of .gitignore, so a reader knows where they came from.
 GITIGNORE_NOTE = "# Set by the agent kit (python scripts/agent_kit.py install)"
 #: Never committed: throwaway agent work, the graph graphify generates, and the backups graphify's
-#: installers leave beside each settings file they change (which still hold the old paths).
-GENERATED = ["scratch/", "graphify-out/", "*.graphify-bak"]
+#: installers leave beside each settings file they change (which still hold the old paths) and
+#: beside each skill they replace (`<platform>/skills/graphify/SKILL.md.bak`, or Aider's
+#: `.aider/graphify/SKILL.md.bak`, overwritten by each install).
+GENERATED = ["scratch/", "graphify-out/", "*.graphify-bak", "**/graphify/SKILL.md.bak"]
 #: Tools that read the whole tree but not .gitignore, by the config files that say a project uses
 #: them, with what a config holds when it reads .gitignore after all. Each must leave scratch/
 #: alone itself (RULES.md, *scratch/*), or its checks read the kit's clone and other throwaway
@@ -85,6 +89,32 @@ TREE_TOOLS = (
     ("ESLint", ("eslint.config.js", "eslint.config.mjs", "eslint.config.cjs", "eslint.config.ts",
                 "eslint.config.mts", "eslint.config.cts"), "includeIgnoreFile"),
 )
+#: What the kit installs and graphify's installers write, which the project's linters and
+#: formatters leave as it is: every install replaces the kit's hooks and script word for word, a
+#: formatter that re-wraps the general rules can change what they say (`*x*` becomes `_x_`), and
+#: both write their settings in a layout of their own. A folder stands for the files in it.
+TOOL_WRITTEN = AGENT_FILES + (POINTER, CLAUDE_HOOKS + "/", ".claude/settings.json", RECORD,
+                              ".claude/CLAUDE.md", ".claude/skills/graphify/", ".codex/hooks.json",
+                              ".codex/skills/graphify/", ".gemini/settings.json",
+                              ".gemini/skills/graphify/", ".agents/skills/graphify/",
+                              ".agents/rules/graphify.md", ".agents/workflows/graphify.md")
+#: Linters and formatters that would change some of it unless their config says not to: each with
+#: its own config files, the section that says a shared pyproject.toml configures it, what it
+#: would read, and the word whose mention in its config leaves that alone.
+CODE_TOOLS = (
+    ("ESLint", TREE_TOOLS[0][1], None, CLAUDE_HOOKS + "/", ".claude"),
+    ("Ruff", ("ruff.toml", ".ruff.toml"), "[tool.ruff", SCRIPT, "agent_kit"),
+    ("Black", (), "[tool.black", SCRIPT, "agent_kit"),
+)
+#: What says a project formats with Prettier, besides package.json; and the files it formats, by
+#: their extension (it passes over the rest).
+PRETTIER = (".prettierrc", ".prettierrc.json", ".prettierrc.json5", ".prettierrc.yaml",
+            ".prettierrc.yml", ".prettierrc.toml", ".prettierrc.js", ".prettierrc.cjs",
+            ".prettierrc.mjs", ".prettierrc.ts", ".prettierrc.cts", ".prettierrc.mts",
+            "prettier.config.js", "prettier.config.cjs", "prettier.config.mjs",
+            "prettier.config.ts", "prettier.config.cts", "prettier.config.mts", ".prettierignore")
+FORMATTED = (".js", ".mjs", ".cjs", ".jsx", ".ts", ".mts", ".cts", ".tsx", ".json", ".json5",
+             ".jsonc", ".md", ".mdx", ".yaml", ".yml", ".css", ".scss", ".less", ".html", ".vue")
 #: The kit's files every project gets or follows, where a harvest looks for its project's words.
 GENERAL_FILES = ("RULES.md", "PROJECT.md", "MERGE.md", "HARVEST.md", "claude/settings.json")
 #: Settings files whose hook commands graphify writes. A command that runs one computer's graphify
@@ -159,6 +189,9 @@ STRUCK = re.compile(r"~~.*?~~", re.S)
 #: A paragraph that tells history may name what is gone.
 HISTORY = re.compile(r"removed|deleted|retired|git history|used to|no longer|\bgone\b"
                      r"|\bformer\b|\bold `", re.I)
+#: A paragraph that names another system's paths (an artifact's files, another repository's
+#: folders) says so with this, and they are not looked for here.
+ELSEWHERE = re.compile(r"<!--\s*agent-kit:\s*elsewhere\s*-->")
 
 
 def read(path):
@@ -221,6 +254,24 @@ def shared_part(text):
 def own_part(text):
     """What the project itself wrote: neither a tool's section nor the general rules."""
     return shared_part(BLOCK.sub("", text))
+
+
+def _rules_as_installed(match):
+    """Whether general rules (a BLOCK match) are as install wrote them: the body the marker's
+    fingerprint names, never edited in place."""
+    recorded = re.search(r"sha256:([0-9a-f]{12})", match.group("attrs"))
+    return bool(recorded) and recorded.group(1) == digest(match.group("body"))
+
+
+def _lost(shared, have, record):
+    """The lines a copy's shared part would lose to AGENTS.md's (`have`, its lines): those the
+    kit did not leave there. When its own part has the fingerprint the record keeps of what the
+    kit last left in all three (`synced`), what it says that AGENTS.md lacks is AGENTS.md's old
+    wording, and only general rules edited in place can be lost."""
+    if digest(own_part(shared)) == record.get("synced"):
+        shared = "\n".join(match.group("body") for match in BLOCK.finditer(shared)
+                           if not _rules_as_installed(match))
+    return [line for line in _lines(shared) if line not in have]
 
 
 def with_block(text, block):
@@ -428,12 +479,19 @@ def _install(project, kit, run):
         run.write(graphifyignore, GRAPHIFYIGNORE)
         lines.append(".graphifyignore: made")
     repository, folder = _source(kit, project)
-    record = json.dumps({"about": RECORD_ABOUT, "repository": repository, "folder": folder,
-                         "permissions": permissions, "gitignore": rows}, indent=2) + "\n"
+    fields = {"about": RECORD_ABOUT, "repository": repository, "folder": folder,
+              "permissions": permissions, "gitignore": rows}
+    alike = len({shared_part(new[name]) for name in AGENT_FILES}) == 1
+    synced = digest(own_part(new[AGENT_FILES[0]])) if alike else before.get("synced")
+    if synced:
+        fields["synced"] = synced
+    record = json.dumps(fields, indent=2) + "\n"
     path = os.path.join(project, *RECORD.split("/"))
     if read(path) != record:
         lines.append(f"{RECORD}: {'updated' if os.path.exists(path) else 'made'}")
         run.write(path, record)
+    if not run.dry:  # once all of it is there, for the merge to fix too
+        lines += kit_files_unignored(project)
     found = os.path.join(project, *UPDATE_CHECK.split("/"))
     if not run.dry and os.path.exists(found):  # what the last check found is out of date now
         os.remove(found)
@@ -666,14 +724,17 @@ def _lines(text):
 def sync(project, force=False):
     """Make CLAUDE.md and GEMINI.md say what AGENTS.md says, each keeping its tool sections.
     A file that says it already is left as it is, wherever its tool sections are (graphify adds
-    its own at the end). A file with a line AGENTS.md lacks is left alone, unless forced: a copy
-    would lose it. Returns (done, refused), a line each."""
+    its own at the end). A file with a line AGENTS.md lacks that the kit did not leave there
+    (`_lost`) is left alone, unless forced: that line was written there, and a copy would lose
+    it. AGENTS.md's old wording is replaced, edit after edit. Returns (done, refused), a line
+    each."""
     agents = read(os.path.join(project, "AGENTS.md"))
     if agents is None:
         raise SystemExit("sync makes the other files say what AGENTS.md says, and there is no "
                          "AGENTS.md")
     shared = shared_part(agents)
     have = set(_lines(shared))
+    record = _read_record(project)
     done, refused = [], []
     for name in AGENT_FILES[1:]:
         path = os.path.join(project, name)
@@ -681,7 +742,7 @@ def sync(project, force=False):
         tool, mine = split(text) if text else ([], "")
         if text is not None and mine == shared:
             continue
-        lost = [line for line in _lines(mine) if line not in have]
+        lost = _lost(mine, have, record)
         if lost and not force:
             refused.append(f"{name}: not changed. It has {len(lost)} line(s) AGENTS.md lacks, "
                            f"the first: {lost[0]!r}. Move them into AGENTS.md, or run sync "
@@ -691,6 +752,9 @@ def sync(project, force=False):
         if new != text:
             write(path, new)
             done.append(f"{name}: now says what AGENTS.md says")
+    if record and not refused and record.get("synced") != digest(own_part(shared)):
+        record["synced"] = digest(own_part(shared))  # all three say it now, as install records
+        write(os.path.join(project, *RECORD.split("/")), json.dumps(record, indent=2) + "\n")
     return done, refused
 
 
@@ -712,21 +776,23 @@ def files_of(project):
 
 def _ignored(project, paths):
     """Whether git ignores any of `paths`: a local database or a run's output is on the
-    owner's machine, not in a checkout."""
+    owner's machine, not in a checkout. They go to git as bytes: through a text-mode pipe,
+    Windows would end each but the last with a carriage return, which git reads as the path's."""
     try:
         out = subprocess.run(["git", "-C", project, "check-ignore", "--stdin"],
-                             input="\n".join(paths), capture_output=True, text=True)
+                             input="\n".join(paths).encode("utf-8"), capture_output=True)
     except OSError:
         return False
     return bool(out.stdout.strip())
 
 
 def references(text):
-    """(kind, name) for everything a doc's present-tense text names. Struck-through text and a
-    paragraph that tells history are not checked, nor a list right after one ending in a colon."""
+    """(kind, name) for everything a doc's present-tense text names. Struck-through text, a
+    paragraph that tells history or says its paths are another system's (ELSEWHERE), and a list
+    right after one of those ending in a colon are not checked."""
     history_list = False
     for paragraph in re.split(r"\n\s*\n", STRUCK.sub("", text)):
-        if HISTORY.search(paragraph):
+        if HISTORY.search(paragraph) or ELSEWHERE.search(paragraph):
             history_list = paragraph.rstrip().endswith(":")
             continue
         if history_list and paragraph.lstrip().startswith(("* ", "- ")):
@@ -753,6 +819,7 @@ def _path_ok(ref, files, project):
     """A path, or `path::name` with the name still in that file. A doc may name a path from
     inside one of the project's folders, so any file whose path ends with it will do."""
     ref, _, symbol = ref.partition("::")
+    folder = ref.endswith("/")
     ref = ref.strip("/")
     tail = "/" + ref
     hits = [f for f in files if ("/" + f).endswith(tail)]
@@ -761,8 +828,11 @@ def _path_ok(ref, files, project):
         return any(pattern.search(read(os.path.join(project, f)) or "") for f in hits)
     if hits or any(tail + "/" in "/" + f for f in files):
         return True
-    folders = sorted({f.rsplit("/", 1)[0] for f in files if "/" in f})
-    return _ignored(project, [ref] + [f"{folder}/{ref}" for folder in folders])
+    # A folder git ignores by a folder rule (`logs/`) matches only when asked about with its
+    # slash, and a folder a run makes may not exist yet.
+    name = ref + "/" if folder else ref
+    parents = sorted({f.rsplit("/", 1)[0] for f in files if "/" in f})
+    return _ignored(project, [name] + [f"{parent}/{name}" for parent in parents])
 
 
 def _module_ok(module, files):
@@ -1056,6 +1126,114 @@ def scratch_unignored(project):
     return problems
 
 
+def _uses_prettier(project):
+    """Whether the project formats with Prettier: a config or ignore file of its own, or Prettier
+    in package.json."""
+    if any(os.path.exists(os.path.join(project, name)) for name in PRETTIER):
+        return True
+    try:
+        package = json.loads(read(os.path.join(project, "package.json")) or "{}")
+    except ValueError:
+        return False
+    return isinstance(package, dict) and ("prettier" in package or any(
+        isinstance(package.get(key), dict) and "prettier" in package[key]
+        for key in ("dependencies", "devDependencies")))
+
+
+def _formatted(project):
+    """Of TOOL_WRITTEN, each entry this project has, with its files Prettier would format."""
+    found = {}
+    for entry in TOOL_WRITTEN:
+        target = os.path.join(project, *entry.rstrip("/").split("/"))
+        names = []
+        if entry.endswith("/"):
+            for dirpath, _, filenames in os.walk(target):
+                rel = os.path.relpath(dirpath, project).replace(os.sep, "/")
+                names += [f"{rel}/{name}" for name in filenames]
+        elif os.path.isfile(target):
+            names = [entry]
+        names = [name for name in names if name.lower().endswith(FORMATTED)]
+        if names:
+            found[entry] = names
+    return found
+
+
+def _ignore_rows(project, *names):
+    """The patterns of the ignore files `names` at the project's root, comments and negations
+    aside."""
+    rows = []
+    for name in names:
+        rows += [row.strip() for row in (read(os.path.join(project, name)) or "").split("\n")]
+    return [row for row in rows if row and not row.startswith(("#", "!"))]
+
+
+def _glob(pattern):
+    """An ignore file's pattern as a regular expression: `*` and `?` stay within one folder,
+    `**` crosses them."""
+    out, at = [], 0
+    while at < len(pattern):
+        if pattern.startswith("**/", at):
+            out.append("(?:.*/)?")
+            at += 3
+        elif pattern.startswith("**", at):
+            out.append(".*")
+            at += 2
+        elif pattern[at] in "*?":
+            out.append("[^/]*" if pattern[at] == "*" else "[^/]")
+            at += 1
+        elif pattern[at] == "[" and "]" in pattern[at + 2:]:
+            end = pattern.index("]", at + 2)
+            inside = pattern[at + 1:end]
+            out.append("[" + ("^" + inside[1:] if inside.startswith("!") else inside) + "]")
+            at = end + 1
+        else:
+            out.append(re.escape(pattern[at]))
+            at += 1
+    return re.compile("".join(out) + r"\Z")
+
+
+def _covered(path, rows):
+    """Whether ignore `rows` cover the file `path`, as git reads them: the file or a folder it is
+    in, by its name anywhere, or by its path from the root when the pattern has a folder in it."""
+    parts = path.split("/")
+    for row in rows:
+        folders_only, pattern = row.endswith("/"), row.strip("/")
+        anchored = row.startswith("/") or "/" in pattern
+        matches = _glob(pattern).match
+        for depth in range(1, len(parts) + (0 if folders_only else 1)):
+            if matches("/".join(parts[:depth]) if anchored else parts[depth - 1]):
+                return True
+    return False
+
+
+def kit_files_unignored(project):
+    """Each linter or formatter config that would change what the kit and graphify write
+    (TOOL_WRITTEN): one of CODE_TOOLS whose config never mentions what it must leave alone, and
+    Prettier, when the project formats with it, while its ignore rows (and .gitignore's, which it
+    reads too) leave any of that in."""
+    problems = []
+    pyproject = read(os.path.join(project, "pyproject.toml")) or ""
+    for tool, configs, section, target, mention in CODE_TOOLS:
+        if not os.path.exists(os.path.join(project, *target.rstrip("/").split("/"))):
+            continue
+        found = [(name, read(os.path.join(project, name))) for name in configs]
+        if section and section in pyproject:
+            found.append(("pyproject.toml", pyproject))
+        for name, text in found:
+            if text is not None and mention not in text:
+                problems.append(f"{name}: {tool} would read {target}, which every install "
+                                "replaces word for word. Add it to its ignores (MERGE.md, step 3).")
+    if _uses_prettier(project):
+        rows = _ignore_rows(project, ".prettierignore", ".gitignore")
+        left = [entry for entry, names in _formatted(project).items()
+                if not all(_covered(name, rows) for name in names)]
+        if left:
+            problems.append(".prettierignore: Prettier would rewrite what the kit and graphify "
+                            f"write: {', '.join(left)}. Add them to .prettierignore (MERGE.md, "
+                            "step 3).")
+    return problems
+
+
 def check(project, docs=(), history=()):
     """Every problem with the project's agent files, Claude Code settings and docs; none when
     all is well."""
@@ -1069,11 +1247,9 @@ def check(project, docs=(), history=()):
         if len(blocks) != 1:
             problems.append(f"{name} holds the general rules {len(blocks)} times, not once: "
                             "install them again from the kit.")
-        else:
-            recorded = re.search(r"sha256:([0-9a-f]{12})", blocks[0].group("attrs"))
-            if not recorded or recorded.group(1) != digest(blocks[0].group("body")):
-                problems.append(f"{name}: the general rules were edited here. Change them in "
-                                "the kit the marker names, and install them again.")
+        elif not _rules_as_installed(blocks[0]):
+            problems.append(f"{name}: the general rules were edited here. Change them in the "
+                            "kit the marker names, and install them again.")
         shared[name] = shared_part(text)
     names = list(shared)
     for name in names[1:]:
@@ -1085,7 +1261,8 @@ def check(project, docs=(), history=()):
             problems.append(f"{name} differs from {names[0]} at line {at + 1} of what they "
                             f"share: {line!r}. Change AGENTS.md, then run sync.")
     return (problems + claude_problems(project) + machine_paths(project)
-            + scratch_unignored(project) + stale_docs(project, docs, history))
+            + scratch_unignored(project) + kit_files_unignored(project)
+            + stale_docs(project, docs, history))
 
 
 def words_in(text, words):
@@ -1265,7 +1442,8 @@ def main(argv=None):
     mirror.add_argument("--force", action="store_true",
                         help="even over a file with lines AGENTS.md lacks")
     look = commands.add_parser("check", help="the agent files agree, the hooks are in place, "
-                                             "and the docs name only what exists")
+                                             "the linters and formatters leave the kit's files "
+                                             "alone, and the docs name only what exists")
     look.add_argument("--project", default=".")
     look.add_argument("--doc", action="append", default=[], metavar="FILE",
                       help="also check this doc (the agent files and READMEs always are)")

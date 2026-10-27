@@ -21,16 +21,16 @@ Spraydown (owner, 2026-10-25: "The name wll be Spraydown no? I have a domain now
 
 ### Checks
 
-Use pnpm, not npm: `package.json` pins pnpm 12 and npm refuses to run here (`EBADDEVENGINES`). Each check runs from the root unless it names a folder, and CI (`.github/workflows/ci.yml`) runs it on Ubuntu and on Windows unless it says otherwise.
+Use pnpm, not npm: `package.json` pins pnpm 12 and npm refuses to run here (`EBADDEVENGINES`). Each check runs from the root unless it names a folder, and CI (`.github/workflows/ci.yml`) runs it on Ubuntu and on Windows unless it says otherwise. A pull request runs only the jobs its files can affect (the workflow's `changes` job: the web checks and Lighthouse unless it changes `processing/` alone, the pipeline's tests when it changes the pipeline, `client/specs.json` or `arduino_mouse/`), while the end-to-end jobs and the agent files' check always run, and a push to `main` runs everything (owner, 2026-10-25: "ci path filters work").
 
 - **Python unit tests and shadow parity**, in `processing/`: `python -m pytest tests` and `python -m recoil_discovery.shadow_parity`. All 43 unit tests pass with 0 errors, and all 31 weapons pass full-document shadow parity (0.000000 coordinate drift, identical fields and order). The tests run on temporary databases; only `shadow_parity` reads `data/recoil.db`, after importing into it any edit made to `client/specs.json` (with `--no-sync` it only reports the drift).
 - **The specs' schema**, in `processing/`: `python -m recoil_discovery.cli verify`, whenever `client/specs.json` or the logic around specs changes. Every weapon shows `Status: OK`.
-- **Node tests**: `pnpm build && pnpm test`. All 63 tests pass, across the database, queue, storage, request parsing, API, server and prerender suites (`test/*.test.ts`, `node:test` running the TypeScript as it is). Without a build first, the two bundle tests are skipped: the trainer split from the Studio, and the new pages' first load (at most 200 kB of JavaScript, gzip). Tests never write to `data/recoil.db` or `client/specs.json`: give `createApp()` and the services throwaway paths, as the existing tests do. After a change to the job queue, storage, uploads or the discovery endpoints, also run the Redis, S3 and end-to-end suites: `docker compose up -d && pnpm test:services` (77 tests in all). CI runs them on Ubuntu only: their services are Linux containers, which Windows runners can't run.
+- **Node tests**: `pnpm build && pnpm test`. All 72 tests pass, across the database, queue, storage, request parsing, API, server, settings and prerender suites (`test/*.test.ts`, `node:test` running the TypeScript as it is). Without a build first, the two bundle tests are skipped: the trainer split from the Studio, and the new pages' first load (at most 200 kB of JavaScript, gzip). Tests never write to `data/recoil.db` or `client/specs.json`: give `createApp()` and the services throwaway paths, as the existing tests do. After a change to the job queue, storage, uploads or the discovery endpoints, also run the Redis, S3 and end-to-end suites: `docker compose up -d && pnpm test:services` (86 tests in all). CI runs them on Ubuntu only: their services are Linux containers, which Windows runners can't run.
 - **Unit, component and end-to-end tests**: `pnpm test:unit`, then `pnpm build && pnpm test:e2e`. All Vitest tests pass, and all 59 Playwright scenarios pass in Chrome (`e2e/trainer.spec.ts`, `e2e/patterns.spec.ts`, `e2e/progress.spec.ts`, `e2e/docs.spec.ts`, `e2e/gallery.spec.ts`, `e2e/studio.spec.ts`; what every scenario fails on is in `e2e/fixtures.ts`). They run the app on throwaway data (`e2e/server.mjs`) and need Python with the processing requirements for the discovery runs (skipped locally without it, required in CI). The Studio's live capture can't run headless: after a change to it, run [docs/studio-capture-check.md](docs/studio-capture-check.md) by hand (*Where this project differs from the general rules*). CI also runs Lighthouse on the pages, on Ubuntu (`lighthouserc.json`): 90 or more for performance and accessibility on the desktop profile.
 - **Types, lint and formatting**: `pnpm tsc`, `pnpm lint` and `pnpm format:check`. No TypeScript errors in the three configs (`tsconfig.json` for the browser, `tsconfig.node.json` for tool configs and `e2e/`, `tsconfig.server.json` for `server/`, `shared/` and `test/`), no ESLint errors or warnings, and every file Prettier formatted (`pnpm format` fixes it). `pnpm lint` also runs `scripts/check-conventions.mjs`: `client/styles/app.css` is the only stylesheet (with the generated `design-tokens.css`), it has no `@apply`, and the client has no hex colors and no `dark:` classes.
 - **The build**: after a change to CSS, TypeScript or the bundling, `pnpm build` (the client into `dist/`, the new pages' prerender into `dist-ssr/`) or `pnpm static` succeeds. A release (not every change) goes through `pnpm release`, which fails while placeholders remain in `site.json`, `NOTICE`, the copyright headers or the pages' documents (`scripts/check-release.mjs`, the ownership register); CI runs it for a version tag (`v*`). It fails today, by design, until the owner's values are in.
 - **Known vulnerabilities in the locks**: `pnpm audit` for `pnpm-lock.yaml`, and `pip-audit -r processing/requirements.txt --require-hashes --disable-pip` for the pipeline's (pip-audit 2.10.1, installed beside the project, never in its lock). Neither finds any. `.github/workflows/audit.yml` runs both on each change and every Monday, on Ubuntu only: a lock's advisories are the same on every system. A fix that a dependency doesn't take (it pins the vulnerable version) is an override in `pnpm-workspace.yaml`, kept only once the build is proven unchanged by it.
-- **The agent files**: `python scripts/agent_kit.py check --doc docs/architecture.md --doc docs/capture.md --doc docs/code-of-conduct.md --doc docs/contributing.md --doc docs/corrections.md --doc docs/faq.md --doc docs/ownership-register.md --doc docs/playbooks.md --doc docs/privacy-policy.md --doc docs/studio-capture-check.md --doc docs/ui-notes.md --doc docs/ui-redesign.md --doc docs/weapons-wiki-stats.md --history docs/roadmap.md --history docs/migration-plan.md --history docs/ui-migration-plan.md --history docs/release-notes.md --history docs/changelog.md --history docs/history/upstream-release-notes.md`: the three agent files agree, the general rules are as installed, Claude Code's hooks are in place, and the docs name only what exists. CI does not run it yet.
+- **The agent files**: `python scripts/agent_kit.py check --doc docs/architecture.md --doc docs/capture.md --doc docs/code-of-conduct.md --doc docs/contributing.md --doc docs/corrections.md --doc docs/faq.md --doc docs/ownership-register.md --doc docs/playbooks.md --doc docs/privacy-policy.md --doc docs/studio-capture-check.md --doc docs/ui-notes.md --doc docs/ui-redesign.md --doc docs/weapons-wiki-stats.md --history docs/roadmap.md --history docs/migration-plan.md --history docs/ui-migration-plan.md --history docs/release-notes.md --history docs/changelog.md --history docs/history/upstream-release-notes.md`: the three agent files agree, the general rules are as installed, Claude Code's hooks are in place, the linters and formatters leave the kit's files alone, and the docs name only what exists. CI runs it in a job of its own, on Ubuntu and Windows, for every change (owner, 2026-10-25: "CI - yes, as you recommend", once the kit's fixes were merged).
 - `python scripts/agent_kit.py outdated`: whether the kit changed since it was installed here, and what an update would change. It needs the kit's repository, so it is not for CI.
 
 ### Which doc to update
@@ -46,7 +46,7 @@ Use pnpm, not npm: `package.json` pins pnpm 12 and npm refuses to run here (`EBA
 ### Project shape
 
 - **The pages** (`client/`): React 19 with Tailwind 4 and shadcn/ui, which replaced the old pages in the UI rebuild (M11, Phases 0 to 5). `pnpm build` builds them with Vite 8 into `dist/` and prerenders them into `dist-ssr/`. The trainer is at `/`, `/ru` and `/zh-CN`, with `/patterns` and `/progress` after each; the privacy policy, FAQ and changelog at `/privacy`, `/faq` and `/changelog`; the Studio, for the specs' maintainers, at `/editor`; and the components' gallery at `/next/components`.
-- **The server** (`server/`): Express 5 in TypeScript, which Node runs as it is; `server/main.ts` starts the app that `createApp()` in `server/app.ts` builds. `pnpm start` serves the built pages and the API on port 3000 (or `PORT`; without it, the next free port up to 3010), and `pnpm dev` the client's sources through Vite with hot reload. Both listen on 127.0.0.1 only and refuse a request addressed to any host but this computer, since there is no sign-in yet. Its settings come from the environment or `.env` (`.env.example`).
+- **The server** (`server/`): Express 5 in TypeScript, which Node runs as it is; `server/main.ts` starts the app that `createApp()` in `server/app.ts` builds. `pnpm start` serves the built pages and the API on port 3000 (or `PORT`; without it, the next free port up to 3010), and `pnpm dev` the client's sources through Vite with hot reload. Both listen on 127.0.0.1 only and refuse a request addressed to any host but this computer, since there is no sign-in yet. Its settings come from the environment or `.env` (`.env.example`); `server/settings.ts` lists every one, with what it takes and when it is required, and checks them before the server or a worker starts, so a missing or malformed one stops the start with a message naming it (owner, 2026-10-25: "4.9 - yes, check at start."). A setting the server starts reading goes in that list, or `test/main.test.ts` fails.
 - **The job queue and storage**: analyses run in the server's process, or on Redis/BullMQ workers with `REDIS_URL` (the server runs one embedded worker, and `pnpm worker` starts more: `server/worker.ts`). Captures are kept on disk, or in S3-compatible storage with `STORAGE_PROVIDER=s3`. `compose.yaml` runs Redis and SeaweedFS (for S3) for this scaled mode and for `pnpm test:services`.
 - **Shared** (`shared/`): the API's zod schemas, used by the server and the browser.
 - **Discovery** (`processing/`, Python with OpenCV): the `recoil_discovery` package, which the server starts for each analysis, and its CLI, run from `processing/`: `python -m recoil_discovery.cli` with `verify`, `diff`, `process`, `batch`, `session` or `export-arduino`, which writes `arduino_mouse/src/recoil.inc` from `client/specs.json`. Its packages are locked with their hashes in `processing/requirements.txt`, which `uv pip compile` makes from `processing/requirements.in` (the command heads both files); `pip install -r requirements.txt` installs exactly them, and CI adds `--require-hashes`.
@@ -66,7 +66,7 @@ Each exception names the general rule it overrides.
 - **The mathematical invariants hold in every change**: the Source Engine scale factor, `K_px_to_mouse` = 3.36 (or 0.2976 px/mickey; `COUNTS_PER_PIXEL_1080P` in `client/studio/model/calibration.ts`); the Havoc TC's multiplier, 0.73 (y end -393.11); and the Arduino PROGMEM bound, exactly 55 elements per weapon array (`MAX_LENGTH` in `arduino_mouse/src/main.cpp` and in `export-arduino`).
 - **Both .gitignore files.** Temporary files, test outputs, trial JSONs, session recordings and cache folders that a change generates are gitignored in `.gitignore` and in `processing/.gitignore`.
 
-<!-- BEGIN:agent-rules from github.com/SphyrLabs/llm-workflow/agent-kit, sha256:603b4a1b675e. Change them there, never here: an update replaces everything up to the END marker. -->
+<!-- BEGIN:agent-rules from github.com/SphyrLabs/llm-workflow/agent-kit, sha256:916c3e16dc29. Change them there, never here: an update replaces everything up to the END marker. -->
 ## How these rules work
 
 These are the general rules for every assistant (Claude Code, Codex, Gemini, Antigravity or
@@ -81,12 +81,14 @@ around these.
   system) applies once it has one.
 - **The general rules are changed only where they come from** (the marker names it), never
   here: an update replaces everything between the markers, and
-  `python scripts/agent_kit.py check` fails when they were edited in place. A rule only this
-  project needs goes in its own part. A rule every project would need is for the owner to add
-  to the general rules: propose it, and with the owner's yes bring it in by the kit's
-  `HARVEST.md`, on a branch of the kit's repository. Nothing is committed to the kit's `main`
-  (owner, 2026-10-25: "no changes to the agent-kit should be committed to main"): it changes only
-  when the owner merges a branch.
+  `python scripts/agent_kit.py check` fails when they were edited in place. The project's
+  linters and formatters leave them alone, as they do the kit's hooks, script and settings:
+  `check` fails on a config that would not. A rule only this project needs goes in its own
+  part. A rule every project would need is for the owner to add to the general rules: propose
+  it, and with the owner's yes bring it in by the kit's `HARVEST.md`, on a branch of the kit's
+  repository. Nothing is committed to the kit's `main` (owner, 2026-10-25:
+  "no changes to the agent-kit should be committed to main"): it changes only when the owner
+  merges a branch.
 - **When the kit has changed, the owner decides when to follow.**
   `python scripts/agent_kit.py outdated` says whether these rules, the kit's hooks or its
   settings changed since they were installed here, and Claude Code says so when a session
@@ -129,7 +131,9 @@ Do all of these **before** reporting anything done.
      name it in your report. Never walk past it.
    - `python scripts/agent_kit.py check` fails when a present-tense doc names a file, a path
      or a function (`file.py::name`) that does not exist. It catches a stale name, not a stale
-     description; the search above is still yours.
+     description; the search above is still yours. A paragraph that names another system's
+     paths (an artifact's files, another repository's folders) says so with
+     `<!-- agent-kit: elsewhere -->`, and the check leaves them alone.
 
    | What changed | What to update |
    |---|---|
@@ -471,6 +475,10 @@ a point of sale, a third-party service):
 - **Resolve a setting when it is used, never copy it at import.** A copied path or setting keeps
   one test's, one user's or one request's value for every caller; a test patches a setting where
   it is defined.
+- **Check every setting when the program starts.** One list names each setting the program reads
+  from its environment, with its type and when it is required; a missing or malformed one stops
+  the start with a message naming it, never a failure at the first request that needs it. The
+  check only gates the start: each setting is still read where it is used.
 - **Compare paths safely**: on Windows, two paths on different drives make relative-path helpers
   raise; catch it, and normalise separators.
 - **Shared runners, not copies.** When variants share a workflow, it is written once and each
