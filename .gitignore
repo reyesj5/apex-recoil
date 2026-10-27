@@ -1,5 +1,11 @@
+# Output of the old Gulp build, no longer generated; still ignored for older clones
 public/
 static/
+dist/
+dist-ssr/
+# Lighthouse CI (lighthouserc.json): its working folder and reports
+.lighthouseci/
+lighthouse-results/
 
 # Logs
 logs
@@ -106,6 +112,10 @@ processing/data/
 processing/output/
 processing/runs/
 data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 *.webm
 *.mp4
 
@@ -115,6 +125,11 @@ scratch/
 .system_generated/
 arduino_mouse/build/
 
+# Playwright end-to-end output (pnpm test:e2e)
+test-results/
+playwright-report/
+blob-report/
+
 # Knowledge graph outputs (graphify)
 graphify-out/
 
@@ -122,3 +137,9 @@ graphify-out/
 .DS_Store
 Thumbs.db
 
+# Set by the agent kit (python scripts/agent_kit.py install)
+*.graphify-bak
+.claude/logs/
+.claude/settings.local.json
+.claude/worktrees/
+**/graphify/SKILL.md.bak

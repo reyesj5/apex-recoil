@@ -1,0 +1,123 @@
+/**
+ * Copyright 2021 Mikhail Goncharov
+ * Modified by [OWNER NAME], 2025-2026.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Points and vectors for the trainer's engine, moved from client/point.ts. The engine runs without a
+// DOM, so an invalid value is reported to the console instead of the page's error bar.
+
+export interface Vector2d {
+  x: number;
+  y: number;
+}
+
+export class PlainPoint {
+  x: number = 0;
+  y: number = 0;
+}
+
+export class Point implements Vector2d {
+  x: number = 0;
+  y: number = 0;
+  constructor(v?: number | Point | PlainPoint | Vector2d | null, y?: number) {
+    if (v == null) v = 0;
+    if (v instanceof Point) {
+      this.x = v.x;
+      this.y = v.y;
+      return;
+    }
+    const a = v as Vector2d;
+    if (a.x != null && a.y != null) {
+      this.x = a.x;
+      this.y = a.y;
+      return;
+    }
+    if (typeof v === 'number') {
+      this.x = v;
+    } else {
+      console.error(v, 'is not a valid init value for point');
+    }
+    if (y == undefined) y = 0;
+    this.y = y;
+  }
+  align(a: number | null): this {
+    if (a == null) return this;
+    this.x = Math.round(this.x / a) * a;
+    this.y = Math.round(this.y / a) * a;
+    return this;
+  }
+  clone(): this {
+    return new (this.constructor as new (x: number, y: number) => this)(this.x, this.y);
+  }
+  /** Multiply both coordinates by scalar v. */
+  s(v: number): this {
+    this.x = this.x * v;
+    this.y = this.y * v;
+    return this;
+  }
+  scale(v: number): this {
+    return this.s(v);
+  }
+  /** Multiply X coordinate by scalar v. */
+  sx(v: number): this {
+    this.x = this.x * v;
+    return this;
+  }
+  scaleX(v: number): this {
+    return this.sx(v);
+  }
+  /** Multiply Y coordinate by scalar v. */
+  sy(v: number): this {
+    this.y = this.y * v;
+    return this;
+  }
+  scaleY(v: number): this {
+    return this.sy(v);
+  }
+  sub(other: Vector2d): this {
+    this.x = this.x - other.x;
+    this.y = this.y - other.y;
+    return this;
+  }
+  add(other: Vector2d): this {
+    this.x = this.x + other.x;
+    this.y = this.y + other.y;
+    return this;
+  }
+  // Can be removed?
+  plain() {
+    return { x: this.x, y: this.y } as PlainPoint;
+  }
+  array(): [number, number] {
+    return [this.x, this.y];
+  }
+  distance(other: Vector2d): number {
+    const dx = this.x - other.x;
+    const dy = this.y - other.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  closeTo(other: Vector2d): boolean {
+    return this.distance(other) < 0.1;
+  }
+  atan2(): number {
+    return Math.atan2(this.y, this.x);
+  }
+  dot(o: Vector2d): number {
+    return this.x * o.x + this.y * o.y;
+  }
+  length(): number {
+    return Math.sqrt(this.x * this.x + this.y * this.y);
+  }
+}

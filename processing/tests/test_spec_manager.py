@@ -69,3 +69,18 @@ def test_diff_weapon_spec_empty():
     assert diff["status"] == "EMPTY_PATTERN"
     assert diff["mean_deviation"] == 0.0
 
+
+def test_atomic_save_specs(tmp_path):
+    specs_file = tmp_path / "specs.json"
+    manager = SpecManager(specs_path=specs_file)
+    test_specs = [{"name": "test_smg", "rpm": 900, "x": [0, 1], "y": [0, -5], "time_points": [0, 66]}]
+    manager.save_specs(test_specs)
+
+    assert specs_file.exists()
+    loaded = manager.load_specs(reload=True)
+    assert len(loaded) == 1
+    assert loaded[0]["name"] == "test_smg"
+    # Ensure no leftover .tmp files
+    tmp_files = list(tmp_path.glob("*.tmp.*"))
+    assert len(tmp_files) == 0
+

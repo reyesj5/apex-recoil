@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trainer, page not found or server error</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0C0F}
+*{box-sizing:border-box}
+button,select,input{font:inherit;color:inherit}
+a{color:#C5F23A}a:hover{color:#DDF98A}
+:focus-visible{outline:2px solid #C5F23A;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-direction: column; background: #0A0C0F; color: #ECEFF3; font-family: Inter, system-ui, sans-serif; font-size: 14px;">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid #1C2128; background: #0D1014;">
+    <a href="Main.dc.html" aria-label="Spraydown, home" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #ECEFF3;">
+      <span style="width: 32px; height: 32px; border-radius: 8px; background: #C5F23A; color: #0A0C0F; display: flex; align-items: center; justify-content: center;">
+        <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><circle cx="16" cy="19.95" r="4.6" fill="currentColor"></circle><circle cx="48" cy="19.95" r="4.6" fill="currentColor"></circle><circle cx="24" cy="30.95" r="5.2" fill="currentColor"></circle><circle cx="40" cy="30.95" r="5.2" fill="currentColor"></circle><circle cx="32" cy="42.45" r="6.2" fill="currentColor"></circle></svg>
+      </span>
+      <span style="font-family: 'Chakra Petch', sans-serif; font-weight: 700; font-size: 18px;">Spray<span style="color: #C5F23A;">down</span></span>
+    </a>
+    <nav aria-label="Main" style="display: flex; gap: 4px;">
+      <a href="Main.dc.html" style="padding: 8px 12px; border-radius: 8px; color: #A7B0BC; text-decoration: none;">Train</a>
+      <a href="Patterns.dc.html" style="padding: 8px 12px; border-radius: 8px; color: #A7B0BC; text-decoration: none;">Patterns</a>
+      <a href="Progress.dc.html" style="padding: 8px 12px; border-radius: 8px; color: #A7B0BC; text-decoration: none;">Progress</a>
+    </nav>
+  </header>
+
+  <main style="width: 100%; max-width: 800px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; gap: 40px; padding: 24px 20px 32px;">
+    <section style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px;">
+      <h1 style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 32px; font-weight: 700; line-height: 1.2;">{{title}}</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A7B0BC;">{{text}}</p>
+      <a href="Main.dc.html" style="margin-top: 8px; display: inline-flex; align-items: center; height: 38px; padding: 0 16px; border-radius: 9px; background: #C5F23A; color: #0A0C0F; font-weight: 700; text-decoration: none;">Go to the trainer</a>
+    </section>
+
+    <footer style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 14px; border-top: 1px solid #1C2128; font-size: 11px; line-height: 1.5; color: #848E9B;">
+      <nav aria-label="Legal and help" style="display: flex; flex-wrap: wrap; gap: 4px 12px;">
+        <a href="Document.dc.html" style="color: #A7B0BC;">Privacy</a>
+        <a href="#" style="color: #A7B0BC;">Cookie settings</a>
+        <a href="Document.dc.html" style="color: #A7B0BC;">FAQ</a>
+        <a href="Document.dc.html" style="color: #A7B0BC;">Changelog</a>
+      </nav>
+      <span>© [YEAR] [OWNER NAME]</span>
+      <span>Based on <a href="https://github.com/metaflow/apex-recoil" style="color: #A7B0BC;">apex-recoil</a> by Mikhail Goncharov, Apache License 2.0.</span>
+      <span>This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. Game content and materials are trademarks and copyrights of <a href="#" style="color: #A7B0BC;">Electronic Arts Inc.</a> or <a href="#" style="color: #A7B0BC;">Respawn Entertainment</a>. Some images and reference materials come from <a href="#" style="color: #A7B0BC;">Apex Legends Wiki</a>.</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"variant":{"editor":"enum","options":["not-found","error"],"default":"not-found"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // The same page answers an address the app doesn't have (404) and a request the server failed
+    // (its own status); the server error keeps the same way back to the trainer
+    const error = (this.props.variant ?? 'not-found') === 'error';
+    return error
+      ? { title: 'Something went wrong', text: "The server couldn't complete this request. Try again in a moment, or go back to the trainer." }
+      : { title: 'Page not found', text: 'There is nothing at this address. The link may be wrong, or the page may have moved.' };
+  }
+}
+</script>
+</body>
+</html>

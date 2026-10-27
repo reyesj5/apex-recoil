@@ -1,0 +1,19 @@
+<!-- @dsCard group="Fields" height=190 subtitle="Layer opacity with its value" -->
+<div class="sd-preview" style="font-size: 13px;">
+  <div class="sd-panel" style="max-width: 320px; gap: 12px;">
+    <div class="sd-stack" style="gap: 6px;">
+      <label class="sd-check-row"><input type="checkbox" class="sd-checkbox" checked><span class="sd-check-row__label">Wall image</span><span class="sd-check-row__value" id="wall-value">80%</span></label>
+      <input type="range" class="sd-slider" min="0" max="100" value="80" aria-label="Wall image opacity" id="wall">
+    </div>
+    <div class="sd-stack" style="gap: 6px;">
+      <label class="sd-check-row"><input type="checkbox" class="sd-checkbox" checked><span class="sd-check-row__label">Visual scale</span><span class="sd-check-row__value" id="scale-value">100%</span></label>
+      <input type="range" class="sd-slider" min="50" max="150" value="100" aria-label="Visual scale" id="scale">
+    </div>
+  </div>
+</div>
+<script>
+[['wall', 'wall-value'], ['scale', 'scale-value']].forEach(function (pair) {
+  var slider = document.getElementById(pair[0]);
+  slider.addEventListener('input', function () { document.getElementById(pair[1]).textContent = slider.value + '%'; });
+});
+</script>

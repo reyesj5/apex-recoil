@@ -1,0 +1,367 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+
+# Every check runs on Ubuntu and on Windows, where the project is developed, except the Redis and
+# S3 suites: they need the Linux containers of compose.yaml, which Windows runners cannot run.
+# Actions are pinned to their release's commit. On Windows, git keeps the files' LF endings, as
+# the repository has them, so Prettier and the byte-for-byte checks see what Linux sees. The two
+# locks are audited for known vulnerabilities in audit.yml, on each change and every week.
+#
+# A pull request runs only the jobs its files can affect (the `changes` job): the web checks and
+# Lighthouse unless it changes processing/ alone, and the pipeline's tests when it changes the
+# pipeline, the specs it reads or the Arduino export it writes. The end-to-end jobs run both parts,
+# and the agent files' check reads every doc, so those always run, as everything does on a push to
+# main or a tag. main requires no checks (2026-10-25): if it ever does, require a job that always
+# runs, since a matrix job skipped this way never reports its matrix's names.
+
+jobs:
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    outputs:
+      pages: ${{ steps.files.outputs.pages }}
+      pipeline: ${{ steps.files.outputs.pipeline }}
+
+    steps:
+    # A pull request's checkout is its merge into main, whose first parent is main
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 2
+
+    - name: The files the pull request changes
+      id: files
+      env:
+        EVENT: ${{ github.event_name }}
+      run: |
+        if [ "$EVENT" != "pull_request" ]; then
+          echo "pages=true" >> "$GITHUB_OUTPUT"
+          echo "pipeline=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        changed=$(git diff --name-only HEAD^1 HEAD)
+        echo "$changed"
+        if echo "$changed" | grep -qvE '^processing/'; then pages=true; else pages=false; fi
+        if echo "$changed" | grep -qE '^(processing/|arduino_mouse/|client/specs\.json$|\.github/workflows/ci\.yml$)'; then
+          pipeline=true
+        else
+          pipeline=false
+        fi
+        echo "pages: $pages, pipeline: $pipeline"
+        echo "pages=$pages" >> "$GITHUB_OUTPUT"
+        echo "pipeline=$pipeline" >> "$GITHUB_OUTPUT"
+
+  # The agent kit's check, run as AGENTS.md's Checks write it, so its list of docs is kept in one
+  # place: the three agent files agree, the general rules are as installed, the hooks are in place,
+  # the linters leave the kit's files alone, and the docs name only what exists. It fails, rather
+  # than checking less, if AGENTS.md stops naming the command.
+  agent-files:
+    name: Agent files and docs (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+    - name: Keep LF endings on Windows
+      if: runner.os == 'Windows'
+      run: git config --global core.autocrlf false
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.12'
+
+    - name: The agent kit's check
+      run: >-
+        python -c "import re, subprocess, sys;
+        command = re.search(r'python scripts/agent_kit.py check(?: --(?:doc|history) [\w./-]+)+', open('AGENTS.md', encoding='utf-8').read()).group(0);
+        print(command, flush=True); sys.exit(subprocess.call([sys.executable] + command.split()[1:]))"
+
+  web:
+    name: Web (${{ matrix.os }}, Node ${{ matrix.node-version }})
+    needs: changes
+    if: needs.changes.outputs.pages == 'true'
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        # The supported range in package.json (engines): jsdom 30 and Vitest 5 need Node 22.22+ or 24.15+
+        node-version: [22.x, 24.x]
+
+    steps:
+    - name: Keep LF endings on Windows
+      if: runner.os == 'Windows'
+      run: git config --global core.autocrlf false
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    # Version comes from devEngines.packageManager in package.json (pnpm 12 needs v6.1+)
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: pnpm
+
+    # The job queue tests spawn Python processes
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.12'
+
+    - name: Install
+      run: pnpm install --frozen-lockfile
+
+    - name: Lint
+      run: pnpm lint
+
+    - name: Formatting
+      run: pnpm format:check
+
+    - name: Typecheck (browser and Node configs)
+      run: pnpm tsc
+
+    - name: Unit and component tests (Vitest)
+      run: pnpm test:unit
+
+    - name: Build
+      run: pnpm build
+
+    - name: Test
+      run: pnpm test
+
+    - name: Static site build
+      run: pnpm static
+
+  integration:
+    name: Integration (Redis/BullMQ + S3, end-to-end)
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 24.x
+        cache: pnpm
+
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: processing/requirements.txt
+
+    # opencv-python needs the system OpenGL runtime
+    - name: System libraries
+      run: sudo apt-get update && sudo apt-get install -y libgl1
+
+    # Both from their locks: pnpm-lock.yaml, and processing/requirements.txt with every package's hashes
+    - name: Install
+      run: |
+        pnpm install --frozen-lockfile
+        pip install --require-hashes -r processing/requirements.txt
+
+    - name: Start Redis and S3 (compose.yaml)
+      run: |
+        docker compose up -d --wait redis
+        docker compose up -d s3
+        for i in $(seq 1 60); do
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8333/ || true)
+          if [ "$code" = "403" ] || [ "$code" = "200" ]; then exit 0; fi
+          sleep 1
+        done
+        docker compose logs s3
+        exit 1
+
+    - name: Build
+      run: pnpm build
+
+    - name: All Node tests, including Redis, S3 and end-to-end analysis
+      run: pnpm test:services
+
+    # Playwright drives the Google Chrome that the runner image already has (channel: 'chrome')
+    - name: End-to-end scenarios (Playwright)
+      run: pnpm test:e2e
+
+    - name: Playwright report
+      if: failure()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: playwright-report
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 7
+
+  # The end-to-end scenarios on Windows too (the Redis and S3 suites need Linux containers, above).
+  # One install per step: a PowerShell step's exit code is its last command's
+  e2e-windows:
+    name: End-to-end (windows-latest)
+    runs-on: windows-latest
+
+    steps:
+    - name: Keep LF endings
+      run: git config --global core.autocrlf false
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 24.x
+        cache: pnpm
+
+    # The discovery scenarios run the Python pipeline
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: processing/requirements.txt
+
+    - name: Install the pages' packages
+      run: pnpm install --frozen-lockfile
+
+    - name: Install the pipeline's packages
+      run: pip install --require-hashes -r processing/requirements.txt
+
+    - name: Build
+      run: pnpm build
+
+    # Playwright drives the Google Chrome that the runner image already has (channel: 'chrome')
+    - name: End-to-end scenarios (Playwright)
+      run: pnpm test:e2e
+
+    - name: Playwright report
+      if: failure()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: playwright-report-windows
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 7
+
+  # The trainer's pages with Lighthouse (docs/ui-migration-plan.md, Phase 2 exit): performance and
+  # accessibility of 90 or more on the desktop profile, the trainer's platform (it needs a mouse);
+  # the phone profile is recorded, its performance only warned about. The reports are kept as an
+  # artifact. lighthouserc.json and lighthouserc.mobile.json hold the pages and thresholds.
+  lighthouse:
+    name: Lighthouse
+    needs: changes
+    if: needs.changes.outputs.pages == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+    - name: Use Node.js 24
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 24.x
+        cache: pnpm
+
+    - name: Install
+      run: pnpm install --frozen-lockfile
+
+    - name: Build
+      run: pnpm build
+
+    # Lighthouse CI drives the Google Chrome that the runner image already has
+    - name: Lighthouse, desktop
+      run: pnpm dlx @lhci/cli@0.15.1 autorun --config=lighthouserc.json
+
+    - name: Lighthouse, phone
+      run: pnpm dlx @lhci/cli@0.15.1 autorun --config=lighthouserc.mobile.json
+
+    - name: Lighthouse reports
+      if: always()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: lighthouse-results
+        path: lighthouse-results/
+        retention-days: 30
+
+  # A version tag is a release: it fails while site.json, NOTICE, the copyright headers or the documents the
+  # pages render still hold placeholders (scripts/check-release.mjs, docs/ownership-register.md), then builds
+  # the server's files and the static site
+  release:
+    name: Release check
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+    - name: Use Node.js 24
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 24.x
+        cache: pnpm
+
+    - name: Install
+      run: pnpm install --frozen-lockfile
+
+    - name: Placeholders, then the build and the static site
+      run: pnpm release
+
+  processing:
+    name: Processing (${{ matrix.os }}, Python 3.12)
+    needs: changes
+    if: needs.changes.outputs.pipeline == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: processing
+
+    steps:
+    - name: Keep LF endings on Windows
+      if: runner.os == 'Windows'
+      working-directory: ${{ github.workspace }}
+      run: git config --global core.autocrlf false
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: processing/requirements.txt
+
+    # opencv-python needs the system OpenGL runtime on Linux
+    - name: System libraries
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y libgl1
+
+    # From the lock, with every package's hashes (requirements.in says how it is made)
+    - name: Install
+      run: pip install --require-hashes -r requirements.txt
+
+    - name: Unit tests
+      run: python -m pytest tests
+
+    - name: Spec schema verification
+      run: python -m recoil_discovery.cli verify
+
+    - name: Shadow parity (SQLite vs client/specs.json)
+      run: python -m recoil_discovery.shadow_parity

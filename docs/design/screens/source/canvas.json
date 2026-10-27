@@ -1,0 +1,168 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-22T12:00:00Z"
+  },
+  "title": "Recoil Trainer Redesign",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Trainer · ready",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Result.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Trainer · after a run",
+      "expand": "fill"
+    },
+    "Progress.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Trainer · progress",
+      "expand": "fill"
+    },
+    "Studio.dc.html": {
+      "x": 0,
+      "y": 1400,
+      "w": 1440,
+      "h": 900,
+      "title": "Studio · capture and edit",
+      "expand": "fill"
+    },
+    "Phone.dc.html": {
+      "x": 1520,
+      "y": 1400,
+      "w": 390,
+      "h": 844,
+      "title": "Phone · pattern viewer"
+    },
+    "Foundations.dc.html": {
+      "x": 1990,
+      "y": 1400,
+      "w": 1440,
+      "h": 1280,
+      "title": "Foundations"
+    },
+    "Logo.dc.html": {
+      "x": 3510,
+      "y": 1400,
+      "w": 1440,
+      "h": 900,
+      "title": "Logo"
+    },
+    "Patterns.dc.html": {
+      "x": 4560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Trainer · patterns",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Document.dc.html": {
+      "x": 0,
+      "y": 3200,
+      "w": 1440,
+      "h": 1760,
+      "title": "Trainer · a document (FAQ, privacy, changelog)",
+      "expand": "fill"
+    },
+    "NotFound.dc.html": {
+      "x": 1520,
+      "y": 3200,
+      "w": 1440,
+      "h": 900,
+      "title": "Trainer · page not found, server error",
+      "expand": "fill"
+    },
+    "Dialogs.dc.html": {
+      "x": 3040,
+      "y": 3200,
+      "w": 1560,
+      "h": 900,
+      "title": "Trainer · settings, help and weapon search"
+    },
+    "StudioPanels.dc.html": {
+      "x": 0,
+      "y": 5500,
+      "w": 1908,
+      "h": 1216,
+      "title": "Studio · side panels in use"
+    },
+    "StudioAnalysis.dc.html": {
+      "x": 1988,
+      "y": 5500,
+      "w": 1572,
+      "h": 888,
+      "title": "Studio · analysis and the check before saving"
+    },
+    "StudioShortcuts.dc.html": {
+      "x": 3640,
+      "y": 5500,
+      "w": 1392,
+      "h": 668,
+      "title": "Studio · keyboard shortcuts and a new weapon"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Result.dc.html",
+    "Progress.dc.html",
+    "Studio.dc.html",
+    "Phone.dc.html",
+    "Foundations.dc.html",
+    "Logo.dc.html",
+    "Patterns.dc.html",
+    "Document.dc.html",
+    "NotFound.dc.html",
+    "Dialogs.dc.html",
+    "StudioPanels.dc.html",
+    "StudioAnalysis.dc.html",
+    "StudioShortcuts.dc.html"
+  ],
+  "notes": {
+    "trainerTitle": {
+      "x": 0,
+      "y": -300,
+      "text": "Trainer",
+      "kind": "title1",
+      "maxW": 6000
+    },
+    "studioTitle": {
+      "x": 0,
+      "y": 1100,
+      "text": "Studio, phone, foundations and logo",
+      "kind": "title1",
+      "maxW": 4950
+    },
+    "pagesTitle": {
+      "x": 0,
+      "y": 2900,
+      "text": "Documents, errors and dialogs",
+      "kind": "title1",
+      "maxW": 4880
+    },
+    "studioPanelsTitle": {
+      "x": 0,
+      "y": 5200,
+      "text": "Studio panels and dialogs",
+      "kind": "title1",
+      "maxW": 5040
+    }
+  },
+  "designSystems": []
+}

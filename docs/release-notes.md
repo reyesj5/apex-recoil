@@ -1,22 +1,417 @@
 # v260922
 
+- **The Notebooks and the Wiki Script Removed (2026-10-26)**:
+  - **The notebooks** (owner: "i dont use the manual menthod, remove the notebooks"): the original project's `recoils.ipynb` and `convert_to_arduino_mouse.ipynb` are gone, so nothing needs JupyterLab. The Arduino export they made is `python -m recoil_discovery.cli export-arduino`, and the manual method's distance step in [capture.md](capture.md) now runs the pipeline's own `angular_pixel_distance`, which gives the notebook's results.
+  - **`processing/generate_wiki_docs.py`** (owner: "okay delete it then"): it could only render the wiki data the deleted scrapers made, which only the development computer had. Its doc, [weapons-wiki-stats.md](weapons-wiki-stats.md), stays as a dated reference: it and the README now say it holds the wiki's stats of 2026-09-26, where they called them live.
+
+- **Settings Checked at Start, Preloaded Pages, CI Path Filters, and Leftovers Removed (2026-10-25)**, the owner's decisions of that day:
+  - **The settings are checked before anything starts** (owner: "4.9 - yes, check at start."): [server/settings.ts](../server/settings.ts) lists the 22 settings the server and the worker read, with what each takes and when it is required, and a missing or malformed one stops the start with a message naming it, never repeating its value. Two problems that used to pass in silence now stop the start: `PORT=30oo` ran on port 30, and one S3 key without the other dropped both.
+  - **The pages preload their scripts** (owner: "2.13 - do preload hints"): each prerendered page names its entry's chunks, all the way down, and its language's catalog as `<link rel="modulepreload">`, read from the build's manifest (`dist/.vite/manifest.json`), so the browser fetches them together rather than one level at a time.
+  - **CI runs what a change can affect** (owner: "ci path filters work"): a pull request that changes only `processing/` skips the web checks and Lighthouse, and one that leaves the pipeline, the specs and the Arduino export alone skips the pipeline's tests. The end-to-end jobs and the agent files' check, now a job of its own, always run, and a push to `main` runs everything.
+  - **Removed**: the four one-off wiki scrapers, which read pages only the development computer had (owner: "5.8 - yes, delete them"), and the original project's Pipenv files (owner: "9.10 - remove them"); ~~the notebooks run with JupyterLab beside the pipeline's lock~~ the notebooks went the next day.
+  - **The logo is the Design System's Spraydown logo**, which the app already ships (owner: "logo use the spray down one from the design system.").
+  - Tests: 9 new Node tests (`test/settings.test.ts`, the start and the list in `test/main.test.ts`, the preloads in `test/prerender.test.ts`; 72 in all, 86 with the services). With JavaScript off, the browser refuses the preloaded scripts, which the end-to-end fixture now lets through for those scenarios only.
+
+- **The Agent Kit, Updated, and Its Check in CI (2026-10-25)**: the kit's `main`, with the fixes this project's merge found (merged by the owner), installed by its `MERGE.md`:
+  - **`sync` follows each edit to AGENTS.md** without `--force`, and still refuses a copy edited by hand: the record (`scripts/agent_kit.json`) keeps a fingerprint of what the three agent files last said alike.
+  - **`check`** gets git's answers right on Windows (each path it asked about but the last carried a carriage return), accepts a gitignored folder nothing has made yet (`processing/captures/` on a fresh checkout), leaves alone a paragraph marked `<!-- agent-kit: elsewhere -->` (the design snapshot's artifact paths), and fails on a linter or formatter config that would read or rewrite the kit's files. The graphify guard judges each step of a command by its own arguments.
+  - **The kit's check runs in CI**, in the web job on Ubuntu and Windows, as AGENTS.md's Checks write it (owner, 2026-10-25: "CI - yes, as you recommend").
+  - **A new general rule**, "Check every setting when the program starts": the server reads 22 settings, each checked only where it is used, so the roadmap holds the change (M11 4.9) for the owner's go.
+  - `.gitignore` ignores the `SKILL.md.bak` backups graphify's installers leave.
+
+- **A Sitemap, Legal Text on Phones and the www Address (2026-10-25)**:
+  - **The sitemap** (M11 2.15) (owner, 2026-10-25: "build the sitemap"): `/sitemap.xml` lists every page with its English, Russian and Chinese versions, from the same addresses as the pages' canonical links, and `/robots.txt` names it ([server/prerender.ts](../server/prerender.ts)). The server sends both, and `pnpm static` writes them; `etc/robots.txt` is gone, since robots.txt now names the site's full address. Without a `siteUrl` there is no sitemap.
+  - **Legal text at 12 px on phones** (M11 2.16) (owner, 2026-10-25: "Raising legal text to 12 px on phones would fix it, but that's a Design System change, so it's your call. do it."): on the phone profile Lighthouse's best practices stood at 96 on three pages, because the 11 px legal footer left 43 to 55 % of the text legible, under its 60 %. The Design System (version 15) has a `legal-phone` style, 12 px, which the legal footer and the Progress chart's axis labels take below 48rem; the four phone pages Lighthouse reads now have no text under 12 px, and the phone profile's run fails on that audit ([lighthouserc.mobile.json](../lighthouserc.mobile.json)). Computers keep 11 px.
+  - **The www address redirects** (owner, 2026-10-25: "Yes, i'll use the www address to redirect"): [docs/playbooks.md](playbooks.md) adds the DNS records, an nginx section that sends `www.spraydown.click` to the same path on `https://spraydown.click`, and one certificate for both. `www` has no DNS record yet.
+  - **A CI failure fixed**: CI run 40217011312 on 51d31d9 failed its Ubuntu end-to-end run on the gallery's overlay accessibility scenario, twice: axe checked the "Delete sample" alert dialog while it was still fading in, at about 80 % opacity, and measured its destructive button at 3.7:1. The scenario now waits for the overlay's own animations before checking, as the trainer's does ([e2e/gallery.spec.ts](../e2e/gallery.spec.ts)).
+  - Tests: 4 new Node tests (3 in `test/prerender.test.ts`, 1 in `test/app-api.test.ts`; 63 in all, 77 with the services), and font-size checks in 3 Playwright scenarios.
+
+- **The Name, the Domain and the Pages' Canonical Links (2026-10-25)**:
+  - **Spraydown it is, at spraydown.click** (owner, 2026-10-25: "The name wll be Spraydown no? I have a domain now. spraydown.click"). `siteUrl` in [site.json](../site.json) is https://spraydown.click, and the agent files, the docs, the brand book and the design canvas (version 23) no longer call the name a working one. The release check lists 46 placeholders, down from 47. The domain shows its registrar's page for now; [playbooks.md](playbooks.md) says how to deploy to it.
+  - **Canonical and language links** (M11 2.11): every prerendered page with an address names its canonical address on the site, and the trainer, Patterns and Progress pages name their English, Russian and Chinese versions, with `x-default` on the English one ([server/prerender.ts](../server/prerender.ts)). The static site has them too; the 404 and error pages have none.
+  - **Copy link in the phone viewer** copies the trainer in the page's language at the site's address. With the address set, it copied the bare root, which sent a Russian or Chinese visitor to the English page.
+  - **The identifiers that held `apex` take `spraydown`** (ownership register item 18): the compose project with its containers and volumes, the development S3 credentials, the queue prefix, the upload and job temp folders, and the tests' prefixes. A computer that ran the old ones keeps the `apex-recoil_*` volumes and the `apex` queue, unused.
+  - **A flaky test fixed**: the crashed-worker case in `test/bull-queue.test.ts` failed 2 or 3 runs in 3 on Windows, where starting Python can stall Node for up to 1.9 s, longer than the recovering worker's 1 s lock. That worker now takes 10 s; production keeps BullMQ's 30 s.
+  - Tests: 5 new Node tests (`test/prerender.test.ts`; 59 in all, 73 with the services) and 2 new Vitest tests (`client/trainer/links.test.ts`; 240 in all).
+
+- **Audited Locks and a Hashed Python Lock (2026-10-25)**:
+  - **Known vulnerabilities**: a new workflow, [audit.yml](../.github/workflows/audit.yml), audits `pnpm-lock.yaml` (`pnpm audit`) and the pipeline's lock (pip-audit) on each change and every Monday, since an advisory can appear while nothing here changes. Both are clean.
+  - **`postcss-selector-parser` 7**: `@tailwindcss/typography` pins 6.0.10, whose advisory (GHSA-rj75-hqrm-r3gf, quadratic selector parsing) is fixed only in 7, so `pnpm-workspace.yaml` overrides it to 7.1.6. Built both ways, every one of the 84 files in `dist/` is byte for byte the same, `app.css` and its prose rules included.
+  - **The pipeline's lock**: `processing/requirements.txt` pins every package with its hashes, for Linux, Windows and macOS on Python 3.12. It is made from the requirements as written, now in `processing/requirements.in`, by `uv pip compile` ([processing/README.md](../processing/README.md), *Dependencies*), and pins the same 22 versions CI installed that day; CI installs it with `--require-hashes`. The README asks for Python 3.12, the lock's, where it said 3.10+.
+  - **CI on Windows passed its first run** on GitHub: all nine jobs, Windows on Node 22 and 24 included (run 40210519106).
+
+- **Progress in One Place, the Server on This Computer Only, and CI on Windows (2026-10-25)**:
+  - **One tracker** (owner, 2026-10-25: "Yes, fix the process tracking to match agent kit guidelines"): [docs/roadmap.md](roadmap.md) is the only place progress is tracked. Its dashboard has a row for each phase of M10 and M11, M11's boxes carry their plan's step ids, and what the progress report kept open (the Lighthouse record, canonical links, a `modulepreload` idea, two Chinese weapon names, the manual capture check, a realistic screenshot fixture and the owner's values) is boxes there. The milestone plans keep their scope and lose their ticks.
+  - **New docs**: [corrections.md](corrections.md), seven corrections to the plan, each with a row in the roadmap's banner; [architecture.md](architecture.md), the parts, the specs' store, the analyses, the pages' routing and the code folder by folder; and the progress report became [ui-notes.md](ui-notes.md): the design references, the conventions and the pitfalls.
+  - **The server answers this computer only**: it listens on 127.0.0.1 in every mode, not only with `pnpm dev`, and refuses a request addressed to any other host, since there is no sign-in yet. Four new tests (`test/main.test.ts` starts the server as `pnpm start` does, on throwaway data).
+  - **CI on Windows too**, where the project is developed: the web checks, the pipeline's tests and the end-to-end scenarios; the Redis and S3 suites stay on Ubuntu, whose runners can run their Linux containers. Every action is pinned to its release's commit.
+  - **Docs**: the README has a *Directory Structure*; the 392 links that named one computer (`file:///c:/Users/...`) are relative; and the old Antigravity rule is gone, since the kit's sends Antigravity to AGENTS.md.
+
+- **The Owner's Design Decisions (M11, 2026-10-25)**:
+  - **The Design System is the ground truth for design choices** (owner, 2026-10-25: "fix it to match the design system artifact, that's the ground truth for design choices"). Its radius scale stays, and the written spec ([ui-redesign.md](ui-redesign.md)) now matches it; the dialog's close button, the app's one radius off its role, takes the system's 6 px.
+  - **Contrast**: the selected item of a neutral toggle (fire mode, Recoil moves, the Patterns page's fire modes) and of the Studio's capture tabs takes a 1 px field outline, 3.6:1 against its track where its fill stands 1.4:1 ([toggle-group.tsx](../client/components/ui/toggle-group.tsx), [tabs.tsx](../client/components/ui/tabs.tsx)); the outline of destructive buttons and danger notices rises from 45 % to 65 % opacity, 3.2:1 on panel and 3.1:1 on dialogs and cards (`danger-line` in [tokens.json](../client/styles/tokens.json)); the tries bars in the Progress chart stay as they are, their counts given as text.
+  - **No scores yet**: before the first run the session card showed a 56 px dash that read as a bar; now its hint takes the score's place, "Your first run today shows up here." ([score-card.tsx](../client/components/score-card.tsx)). A stat tile's or a Progress total's missing value is a thin en dash in the muted color instead of the display face's bold one ([stat-tile.tsx](../client/components/stat-tile.tsx)).
+  - **The design artifacts and their snapshot** follow: the canvas (version 22) and the Design System (version 14), refreshed in [docs/design/](design/README.md). 5 new component tests.
+
+- **The Agent Kit's General Rules (2026-10-25)**:
+  - **One set of rules for every assistant**: [AGENTS.md](../AGENTS.md) ends with the general rules of the agent kit (`agent-kit/` in SphyrLabs' llm-workflow), between markers that `python scripts/agent_kit.py install` replaces at each update. This project's own part comes first, under the kit's headings: where things are kept, the checks, which doc to update, the project's shape, where it differs from the general rules, and its own rules. Rules the general ones now say were removed from it, and the math invariants moved there from the migration plan's protocol. `CLAUDE.md` and `GEMINI.md` say the same (`python scripts/agent_kit.py sync`), and `python scripts/agent_kit.py check` fails while the three differ or a doc names what does not exist.
+  - **Claude Code's hooks** (`.claude/hooks/agent-kit/`, set in `.claude/settings.json`): a guard that refuses destructive commands and opening pull requests, graphify's LLM work kept on Gemini, every shell command logged in `.claude/logs/` (gitignored), notifications when a turn ends or a permission is needed, and Claude Code's credit lines off.
+  - **graphify for each assistant**: its setup for Claude Code, Codex, Gemini and Antigravity (`graphify install --project`), and a `.graphifyignore` that leaves out the generated files and the design snapshot. The graph was rebuilt, its documents and communities on Gemini.
+  - **ESLint and Prettier** leave the kit's hooks and the settings that the kit and graphify write alone.
+  - **Docs corrected on the way**: the Python test count in the README (43), the first-load test's name, and the run recorder and the axe baseline, which no longer exist.
+
+- **The Design Covers Every Screen (M11 design follow-ups, 2026-10-24)**:
+  - **The design canvas** has fourteen artboards: new ones for the Patterns page, a document page, the 404 and server error page, the trainer's settings, help and weapon search, and the Studio's side panels in use, its analysis with the check before saving, and its shortcuts and new-weapon dialogs. Main, Result and Phone draw the path to follow from the start point at the top, as the trainer does; Main shows the Studio link, the selected class chip's count and the Rampage's thermite grenade, and Result switches to a run below today's median.
+  - **The Design System** has 30 components: Dialog, AlertDialog, Drawer and CommandPalette are designed, with the error toast, the danger badge, a run below the median, the result card's line for a first run or a run that isn't saved, and each button on hover. [docs/design/](design/README.md) is refreshed from both.
+  - **The app follows**: dialog, alert dialog and drawer titles use the type scale's panel title (Chakra Petch 18 px) instead of shadcn's default; an error toast has a danger disc like the success toast's volt one; an alert dialog's Cancel is a secondary button; a drawer from the bottom has a 40 by 4 px handle and the phone sheets' shadow. The component gallery shows the error toast.
+  - **Studio fixes found while drawing it**: a Library card no longer spills "Add to Screenshots" out of its 130 px (the button reads Add, and its name for screen readers still names the file) and shows the day and the size on one line, in MB above 1024 KB ([other-panels.tsx](../client/studio/panels/other-panels.tsx)); an analysis' progress no longer repeats its count ("Processing image 2 of 3, image 2 of 3"), with a test ([analysis-status.tsx](../client/studio/panels/analysis-status.tsx)); fields whose labels wrap keep their inputs in line (the Manual tab's anchor distance); the Server library's placeholder fits ("Choose a screenshot").
+
+- **Lock-in (M11 Phase 5, 2026-10-24)**:
+  - **Checked on every change**: `pnpm lint` runs [scripts/check-conventions.mjs](../scripts/check-conventions.mjs) after ESLint, which fails on a stylesheet besides `app.css`, on `@apply`, and on a hex color or a `dark:` class in the client. The Tailwind lint also refuses deprecated, duplicated and badly spaced classes.
+  - **Checked before a release**: `pnpm release` stops while a placeholder is left in `site.json`, `NOTICE`, the copyright headers or the privacy policy, FAQ and changelog ([scripts/check-release.mjs](../scripts/check-release.mjs)), then builds the server's files and the static site. CI runs it for a version tag. Today it lists 47 placeholders, all values the owner has to provide.
+  - **Deleted**: the dependencies nothing used (`hotkeys-js`, `json-diff`, `stats-lite` and their types, `ts-assert-exists`, `tslib`, `react-hook-form`, `@hookform/resolvers`) and four shadcn components no page used (collapsible, form, sheet, sidebar).
+  - **Formatting**: Prettier formats the build scripts, `vite.config.mjs` and `app.css` too; only generated files, data, the Design System's `tokens.json` and the docs keep their own layout.
+  - **Dev tools' advisories**: `minimatch`, `brace-expansion` and `picomatch` are pinned to their fixed versions; the remaining moderate advisory is in a build-time parser the typography plugin pins.
+  - **CI**: `actions/checkout`, `setup-node`, `setup-python` and `upload-artifact` move to v7, their releases on the Node 24 action runtime.
+  - **The redesign's color table** ([docs/ui-redesign.md](ui-redesign.md)) lists every color of the tokens with its contrast, and the three marks under 3:1 with what carries their meaning.
+  - **The ownership register** marks the header logo and the release history done; renaming the `apex` identifiers waits for the final name.
+  - **A run below today's median**: the result card's score turns neutral as well as its pill, since volt marks good results ([score-card.tsx](../client/components/score-card.tsx); the owner approved the design on 2026-10-24). The component gallery shows both states.
+
+- **The Server in TypeScript, Split into Routers (M11 Phase 4, 2026-10-24)**:
+  - **No pug**: the Studio and the component gallery get a bare shell from the server ([server/prerender.ts](../server/prerender.ts)), and a request the server fails gets an error page in the new design, prerendered like the 404 page, with the error's status (and in development the error itself under it); anything but a browser gets plain text. `views/` and the `pug` dependency are gone, and `pnpm static` writes `editor.html` from the same shell.
+  - **Express 5 and multer 2**: Express 5.3, multer 2.5 (1.4.5-lts.1 was deprecated, and multer before 2.5 has a denial-of-service advisory) and morgan 1.12 (log injection fixed). `cookie-parser`, `debug` and `http-errors` are gone, and `pnpm-workspace.yaml` pins the `undici` that node-gyp brings to 6.29.1 (two advisories). `pnpm audit --prod` finds nothing.
+  - **TypeScript that Node runs as it is**: `app.js`, `bin/www` and `server/*.js` became [server/](../server/): `createApp()` in [server/app.ts](../server/app.ts), routers for the specs, discovery, jobs, captures and pages in [server/routes/](../server/routes/), and upload staging and the error handler in modules of their own. Node strips the types, so there is no build step (`pnpm start` is `node server/main.ts`); `pnpm tsc` checks the server with `tsconfig.server.json`, and the package is ES modules (`"type": "module"`).
+  - **One set of schemas for the API**: the zod schemas moved from `client/lib/api/` to [shared/api.ts](../shared/api.ts), and the server's responses are typed with them. [shared/requests.ts](../shared/requests.ts) reads requests as leniently as the API always did (form fields arrive as text, and a setting the server can't use falls back to the discovery CLI's default), with two differences for malformed requests: a spec whose pattern holds anything but numbers is refused (400), and an analysis setting that isn't a positive number is left out instead of reaching the CLI (`--zoom NaN` failed the job).
+  - **`pnpm start` no longer restarts on file changes** (it ran nodemon, which waits for a change after a crash instead of exiting); `pnpm dev` still restarts the server, on changes to `server/` and `shared/`. `GET /api/discovery/status` names the queue the server runs on, not the one `REDIS_URL` suggests.
+  - **Lint**: the server, the tests and the scripts follow the same rules as the client; the 219 warnings the JavaScript had are gone.
+  - **License notices**: the original's copyright line and the `Modified by` line are on every file that holds code moved or ported out of the original project's files. An audit added them to the 17 files that lacked them: the score history ([client/engine/stats.ts](../client/engine/stats.ts)), the trainer's sound and settings, the Studio's analysis, calibration, capture, live capture, decal finder and spec export, and every server file split out of `app.js`. The [ownership register](ownership-register.md) lists the 24 files.
+  - **Tests**: the Node tests are TypeScript (`node:test`, which stays the server's runner) and build the app around a throwaway database, storage and job queue instead of environment variables; 5 new tests cover the request parsing and the CLI arguments it makes (50 in `pnpm test`, 64 with Redis and S3). A Playwright scenario and a Node test cover the error page (59 scenarios).
+
+- **The Studio Replaces the Recoil Editor (M11 Phase 3, 2026-10-24)**:
+  - **The Studio at `/editor`** ([client/studio/](../client/studio/)), rebuilt from the Studio artboard in React with Tailwind, shadcn/ui and react-konva: a top bar with the weapon picker, the unsaved-changes badge, undo, redo, the shortcuts and Save spec; an icon rail for Capture, the screenshot library, saved sessions and Import; the canvas with its tool palette (select, pan, align, correct shots, fit), zoom, spray navigator and status pill; the inspector (fire rate, multiplier, magazine sizes, sample count, layers, visual scale, the shown pattern, the comparison and the saved versions); and a status bar with the job queue and the storage. `/editor/next`, where it was previewed, redirects there.
+  - **Saves change only what was edited**. The Recoil Editor's save rewrote parts of a spec nobody touched: each magazine's sound became `<weapon>_<size>` (sounds the trainer doesn't have), a weapon with one magazine got three, and the shot times became even intervals (the Devotion's spin-up and the Nemesis' and Hemlok's bursts were lost); an edit without a screenshot rescaled a pattern taller than the canvas; and shots that weren't moved were measured again, so a merged spec's values could shift by 0.01. A changed fire rate now moves the shot times with it (even times stay even, a burst keeps its shape).
+  - **Editing**: the canvas edits the weapon's spec wherever it is shown (a screenshot, a session's spray, or the spec's own units), and an edit comes back through the same placement. Correct shots (C) adds a shot where it fits the sequence; Align (A) moves the whole spray onto the decals; a right click removes a shot and a middle click marks an anchor. Undo covers the pattern, its anchors and where it sits.
+  - **The analysis' result**: progress by stage, then the shots found against a full magazine, the measured fire rate (clips only: screenshots reported the one sent), the convergence, how the samples went in, and a check against the saved spec, with Save and Compare. An analysis that finds no shots leaves the spec as it was. Results are checked as they arrive, so a changed pipeline fails with a message naming the field.
+  - **The save checkpoint and the comparison** keep the Recoil Editor's figures and thresholds (recorded from it and compared in the tests): shot count, average and largest stray, a shortened, longer or inverted pattern.
+  - **The live capture** runs on a tested sequence (the gunfire sensor, the re-aim buffer, Snap wall, the 20 s cut-off, the playback mute) and keeps recording while you switch tabs or sections. Screen capture can't run in automated tests: [docs/studio-capture-check.md](studio-capture-check.md) is the check by hand.
+  - **Kept between visits**: the weapon, the capture setup (distance, field of view, optic), the color correction, the trigger level and the re-aim time (new keys under `editor:`), with the editor's layout, tab and visual scale as before.
+  - **The Manual tab's decal finder** no longer runs out of stack on a large dark area, finds the same targets in the image's own pixels, and adds them where they are.
+  - **The Studio builds on its own** (`vite build --mode studio`), so the trainer's first load stays as it was (sharing chunks with it would have cost the trainer 3.2 kB).
+  - **Server**: `GET /api/discovery/status` tells the Studio's status bar where captures are kept (local or S3) and how analyses run (in-process or Redis).
+  - **Deleted**: `views/editor.pug` and its icon mixins, `client/modules/`, `client/editor.ts` and the other editor scripts, `client/styles/base.css`, `components.css`, `editor.css`, `tailwind.css` and `theme-tokens.css`, `theme.json`, `scripts/style-snapshot.mjs`, and the editor's accessibility baseline: every page now has no axe violations. The error page keeps its template until Phase 4.1, on the new stylesheet.
+  - **Tests**: 69 Vitest tests for the Studio's logic and store, and 14 Playwright scenarios in place of the editor's 12 (the Python discovery runs included).
+
+- **The New Pages Replace the Old Trainer (M11 Phase 2.7 and 2.8, 2026-10-24)**:
+  - **The switch**: the rebuilt trainer serves `/`, `/ru` and `/zh-CN`, with its Patterns and Progress pages after each (`/patterns`, `/ru/progress`, ...). The `/next/...` previews redirect to them (301), except the component gallery at `/next/components`. Settings and score history carry over: the pages read the keys the old trainer wrote.
+  - **The privacy policy, FAQ and changelog are pages** (`/privacy`, `/faq`, `/changelog`): Markdown in `docs/`, converted to HTML at build time by a Vite plugin ([scripts/markdown-plugin.mjs](../scripts/markdown-plugin.mjs)) and shown between the top bar and the legal footer in English. Headings can be linked to (`/faq#controller-support`), wide tables scroll in their own box on phones, and each document's description comes from a comment on its first line. `site.json` can point `privacyUrl`, `faqUrl` and `changelogUrl` to them once their placeholders are filled; the footer opens the app's own pages in place.
+  - **A changelog for players** ([docs/changelog.md](changelog.md)); the original project's release history moved to [docs/history/upstream-release-notes.md](history/upstream-release-notes.md) (ownership register, item 16). The FAQ no longer describes the old page (its warning text and FPS counter), and a few garbled sentences read properly.
+  - **Unknown addresses return 404**, with a page of their own for browsers and a bare 404 for files and the API (the owner's decision; it was planned for Phase 4.1). A missing stylesheet or script no longer comes back as the trainer's HTML.
+  - **Deleted**: the trainer templates (`views/index*.pug`), `client/game.ts`, `client/stats.ts`, `client/trainer_main.ts`, `client/styles/trainer.css`, the legacy `bundle.js` router, Plotly and `plot.js`, tarteaucitron, the old trainer's images and icons, the Google Fonts links and `scripts/record-runs.mjs` (the recorded runs stay, and still replay in the tests). The Recoil Editor keeps its page until Phase 3; it now self-hosts Inter and JetBrains Mono and has `lang="en"`, which removes one of its accessibility violations.
+  - **Privacy policy**: section 4 says where the consent choice is kept (local storage, `consent:analytics`, 12 months), and the Google Fonts paragraph is gone.
+  - **Static site**: a folder per page (`ru/patterns/index.html`), `404.html`, and the trainer still under `index.html`, `index-ru.html` and `index-zh-CN.html`, so servers set up for the old files keep working; the nginx example serves the 404 page.
+  - **Faster first paint**: the server renders every page when it starts; the pages preload the fonts of their first paint, which removes the text shift as they arrive; the weapon grid's images load lazily instead of 31 preloads; and the trainer and Patterns pages hydrate each layout separately. Measured with Playwright under 4× CPU (Lighthouse's curves on Chrome's own metrics), the trainer's blocking time fell from 488 to 136 ms.
+  - **Lighthouse in CI**: a `lighthouse` job checks the trainer, Patterns, Progress and FAQ pages on the desktop profile (90 or more for performance and accessibility) and records the phone profile ([lighthouserc.json](../lighthouserc.json)).
+  - **Tests**: the specs drop their `-next` names and test the real addresses (57 Playwright scenarios: 5 new for the documents and the 404 page; the old trainer's scenarios and its accessibility baselines went with it), a Node test for the redirects and 404s, and a prerender test for the documents and the 404 page.
+
+- **The Patterns Page, Previewed at `/next/patterns` (M11 Phase 2.2, 2026-10-24)**:
+  - **[client/trainer/patterns/](../client/trainer/patterns/)**, the redesign's pattern library, at `/next/patterns`, `/next/ru/patterns` and `/next/zh-CN/patterns`, prerendered like the other new pages with its own title and description. The top bar now reads Train, Patterns, Progress, as in the design:
+    - **The library**: every weapon's pattern with the chosen magazine and fire mode, filtered by class. All patterns share one scale and start point ([pattern-frame.ts](../client/trainer/pattern-frame.ts)), so a short burst looks short beside a long spray.
+    - **The selected pattern**: drawn large, with Play spray (the rounds appear as they fire), its magazines and fire modes, and Practice with this weapon, which opens the trainer with it picked (both pages share the settings).
+    - **Phones**: the pattern viewer, now at the same shared scale. Its language select keeps you on the page you were on.
+  - **Fixed on the way**: the fire rate under a weapon's name no longer breaks inside "выстр./мин" in Russian, and Play spray stops when you pick another weapon mid-spray.
+  - **Smaller downloads**: the build minifies with Oxc, Vite 8's own minifier, instead of esbuild, which leaves 5.4 kB (gzip) less JavaScript on every new page. A third page had split the shared code into more chunks and cost the trainer 3.4 kB. First loads: the trainer 189.0 to 194.3 kB, the Patterns page 172.2 to 177.4 kB, the Progress page 172.5 to 177.7 kB.
+  - **Tests**: 6 Playwright scenarios for the Patterns page (the library and the selected pattern, magazines, fire modes and Play spray, the way to the trainer, Russian and Chinese, without JavaScript, the phone), a Vitest test for its prerender, and the budget test covers it.
+
+- **Translation Review (2026-10-24)**: every Russian and Chinese string checked against the English, at the owner's request.
+  - **Russian**: the page title starts with a capital after the separator ("Spraydown · Тренажёр отдачи для Apex Legends"). The weapon count reads "Всего: 31" instead of the slang "31 ствол", and "Искажённый" gets its ё like the rest. Play spray is "Показать стрельбу", no longer "Показать очередь", which clashed with the Burst fire mode ("Очередь") in the same panel. The cookie banner is labelled "Аналитические cookie". The sensitivity tip and the Progress page's two empty states now read more naturally, and the pointer-precision link searches for the label Windows uses.
+  - **Chinese**: the support link reads 支持 (support the project) instead of 支援 (in-game backup), the Studio 后坐力工作室, the period chip 全部时间, and the akimbo weapons take full-width parentheses. The ADS hint and the "Recoil moves" label read more naturally. The pointer-precision link searches Bing in Chinese, since Google can't be reached from mainland China.
+  - **English**: the middle-click shortcut is "Switch result style", like "Switch fire mode".
+  - **Kept**: the weapon names from the original pages (the game's localized names) and the EA disclaimer in English. Two Chinese weapon names look doubtful and are left for a native speaker: G7侦灵枪 and 猎手冲锋枪.
+
+- **Prerendered Pages and Consent on `/next` (M11 Phase 2.4 to 2.6, 2026-10-23)**:
+  - **Prerendered in each language**: `pnpm build` also builds the new pages for Node ([client/entries/prerender.tsx](../client/entries/prerender.tsx)), and [server/prerender.mjs](../server/prerender.mjs) renders each of the six pages (the trainer and the Progress page in English, Russian and Chinese) into HTML with the server's `site.json` values. Express renders a page on its first request and serves it from memory; `pnpm static` writes `static/next/.../index.html`. A page shows before its JavaScript runs, or without it; the browser then hydrates it and loads the stored settings and history.
+  - **A title and meta description per page and language**: written for the trainer and the Progress page in English, Russian and Chinese, replacing the old site's English sentence about the Studio.
+  - **Consent on the new pages**: the banner, the footer's Cookie settings and an address ending in `#cookies` work with the values the server runs with (each page carries them in `<script id="site-json">`), and the Google tag loads only after Accept.
+  - **Smaller downloads**: `cn()` merges classes with tables compiled at build time ([client/lib/cn-tables.ts](../client/lib/cn-tables.ts)) instead of compiling Tailwind's default configuration in every browser: 5.6 kB less JavaScript (gzip) on every new page, with the same results (the prerendered pages and every class on the new pages compared before and after, and 422,105 random class combinations).
+  - **The budget is a test**: after a build, `pnpm test` checks that each new page loads at most 200 kB (200,000 bytes) of JavaScript, gzip: 191.0 kB on the trainer in English, 196.1 kB in Russian, 195.5 kB in Chinese, and 176.6 to 181.8 kB on the Progress page. Sizes in the entries below are KiB (1,024 bytes).
+  - **Tests**: 4 Playwright scenarios (the pages without JavaScript, consent on the trainer and the Progress page, the consent sheet on a phone), 3 Vitest tests for the prerender, and the budget test.
+
+- **The Progress Page, Previewed at `/next/progress` (M11 Phase 2.2, 2026-10-23)**:
+  - **[client/trainer/progress/](../client/trainer/progress/)**, the redesign's Progress page, in English, Russian and Chinese, linked from the trainer's top bar and its session panel:
+    - **Totals**: runs, best score, median with its change since the first week, and days practiced, for one weapon or all, over 7 days, 30 days or all time.
+    - **Score per day**: the best and the median as lines, the tries as bars (Recharts, which loads after the rest of the page).
+    - **By weapon**: each weapon's runs, best and median, the most practiced first.
+    - **Recent runs**: when, weapon, magazine, mode and score, from a run log the rebuilt trainer now keeps (`game::runs`, the last 200 saved runs); the score history has no times, so earlier runs show only in the totals. The privacy policy now says saved runs keep their date and time (in the browser only).
+    - **Export CSV**: the days shown, a row per weapon, magazine and mode, readable by spreadsheets in every language.
+  - **Smaller downloads**: the catalogs drop the old pages' strings the new pages never show. The trainer loads 191.3 to 196.3 KiB of JavaScript (gzip) by language, the Progress page 177.3 to 182.3 KiB.
+  - **Tests**: 5 Playwright scenarios for the Progress page (the empty state, a seeded history summed up, filtered and exported, a run saved in the trainer, Russian and Chinese, the phone) and Vitest tests for its figures, the run log and plural forms in Russian.
+
+- **The Rebuilt Trainer, Previewed at `/next` (M11 Phase 2.2 to 2.4, 2026-10-23)**:
+  - **The redesign's trainer ([client/trainer/](../client/trainer/))** at `/next`, `/next/ru` and `/next/zh-CN`, next to the current pages until it replaces them:
+    - **Top bar**: the weapon search (Ctrl K), language, the Studio, help and settings.
+    - **Loadout**: the selected weapon, a filter, class chips with counts, all 31 weapons with their art, magazine tiers with their capacities, fire mode, and switches for the corrupted stock and the Rampage's thermite grenade.
+    - **The range**: the weapon's path before a run, the options floating over it (Follow path, still or moving target; results around the target, as dots or as lines; replay speed), the mouse settings in one chip, and after each run a result card with the score, the gap to today's median, Replay and Next run.
+    - **Session**: the last score, today's tries, median and best, the all-time best, today's trend, tips and the legal footer.
+    - **Phones**: a pattern viewer instead of a dead end, with every weapon's path, Play spray, its magazines and Copy link.
+    - **Dialogs**: settings for mouse, practice, display and sound, and a help dialog with every key.
+  - **It scores exactly like the current page**: the range ([client/trainer/range/renderer.ts](../client/trainer/range/renderer.ts)) drives the engine step for step as the current trainer does. The 12 runs recorded from the current trainer replay through it with the same rounds, times and scores, bit for bit in Chrome ([e2e/trainer-next.spec.ts](../e2e/trainer-next.spec.ts)). Settings and scores stay under the current keys, so both pages share them.
+  - **New settings**: the ADS multiplier (`game::ads`; runs use sensitivity × ADS, and 1 leaves a stored sensitivity as it was) and the replay speed (`game::replay-speed`).
+  - **Under 200 KiB**: 191.5 KiB of JavaScript (gzip) on first load in English, 197.3 KiB in Russian, 196.7 KiB in Chinese, against about 500 kB for the current trainer. Konva, the dialogs, the sounds and the other languages load when they are needed; the trend is a plain SVG, so Recharts stays out.
+  - **Fixed on the way**: one stylesheet (`dist/app.css`) for every new page, which a shared chunk had swallowed; a selected filter chip's count now meets contrast; translated links named `<link>` lost their text (a test now rejects HTML void element names as tags).
+  - **Tests**: 21 Playwright scenarios for `/next` (the current trainer's scenarios on the new page, axe with no violations with every overlay open, the phone viewer, and the 12 recorded runs), and Vitest tests for the catalog, the loadout changes, the score history and plural forms per language.
+
+- **The Trainer's Engine, Split from the Page (M11 Phase 2.1, 2026-10-23)**:
+  - **[client/engine/](../client/engine/)**: what decides a run, without a DOM, so the new trainer can use it and tests can drive it.
+    - `weapons.ts`: fire modes, magazines, the corrupted stock, attachments and sounds.
+    - `pattern.ts`: patterns scaled for the sensitivity, and the path to follow.
+    - `run.ts`: one spray from the first press to the score, in full auto, bursts and single fire, with shot and finish events.
+    - `target.ts`, `stats.ts`: the target, and the score history with its upgrades of older data.
+    - `point.ts` and the history logic moved here from `client/`.
+  - **The current trainer runs on it**: `client/game.ts` keeps its drawing and sounds and takes the timing and scoring from the engine. The editor now imports the weapon rules from the engine instead of loading the trainer's code.
+  - **Proof it scores the same ([recorded-runs.fixture.json](../client/engine/recorded-runs.fixture.json))**: twelve runs were recorded from the trainer before the split, under a paused fake clock in Chrome: full auto on four weapons, the Rampage's thermite grenade, half firing speed, an early release, two burst weapons, and single fire clicked fast, slowly and left idle. Replayed through the engine, every shot fires at the same moment with the same score, and the trainer running on the engine reproduces the recordings bit for bit. [scripts/record-runs.mjs](../scripts/record-runs.mjs) records them again while the old page exists.
+  - **Tests**: 40 for the engine, which replace the 4 history tests in `client/`; 129 Vitest tests in all. The 28 Playwright scenarios pass on the trainer running on the engine.
+
+- **Design System in Code, Component Gallery & Shared Foundations (M11 Phase 1, 2026-10-23)**:
+  - **Design tokens drive the theme ([client/styles/tokens.json](../client/styles/tokens.json))**: the Design System's tokens generate the Tailwind theme at build time: colors, radii, shadows, sizes, fonts and `type-*` text styles, with Tailwind's default palette switched off. [client/styles/app.css](../client/styles/app.css) is the new interface's only stylesheet, with self-hosted Chakra Petch, Inter and JetBrains Mono and shadcn/ui's variables mapped onto the tokens. The current pages keep their styles until they are replaced.
+  - **Components ([client/components/](../client/components/))**: 31 shadcn/ui components (Radix) restyled to the design, plus WeaponTile, TierOption, StatTile, ScoreCard, RunResult, ConsentBanner and InputWithUnit. Classes merge with the `cn` package, taught the token names.
+  - **Component gallery at `/next/components`**: every component in its states, at desktop and phone widths. Three new Playwright scenarios check that it renders on the tokens, has no axe violations (WCAG 2.1 A and AA) with every overlay open, and fits a phone screen. Building it closed gaps in the design: unnamed slider thumbs, links told apart by color alone, a table that scrolled without keyboard access, and low-contrast text on a selected weapon tile.
+  - **Shared foundations ([client/lib/](../client/lib/))**:
+    - `storage`: settings and score history under the existing `localStorage` keys and formats, tested against values recorded from the current app, so players keep their data.
+    - `api`: responses checked with zod; TanStack Query hooks for specs, history, sessions, screenshots and jobs; uploads straight to object storage with the server as the fallback; job progress over Server-Sent Events, with polling.
+    - `i18n`: English, Russian and Chinese catalogs extracted from the trainer pages and the game code ([client/locales/](../client/locales/)), with typed keys and a completeness test.
+    - `analytics`: the consent state and Google Analytics with Consent Mode v2, loaded only after Accept and only when `site.json` has a measurement ID and a privacy policy; the choice lasts 12 months.
+    - `site`: typed access to `site.json` with the ownership rules.
+  - **Design references for every agent ([docs/design/](design/README.md))**: the design canvas's seven artboards and the Design System's component previews as PNGs, with the brand book, the tokens, each component's rules and the artboards' markup, so agents that can't open the claude.ai artifacts can work from them. Claude keeps working from the artifacts; [scripts/export-design.mjs](../scripts/export-design.mjs) refreshes the snapshot from their files, rendering the artboards with the canvas's own runtime.
+  - **Type scale steps**: every size the type styles use is also a font-size utility (`text-13`, `text-11`), generated from `tokens.json`, so components use no arbitrary sizes; the gallery renders pixel for pixel as before.
+  - **Icons**: Lucide for every generic icon, with each old pug, PNG and SVG icon mapped to its Lucide name in the progress report; the logo and the crosshair placeholder are our own SVG components.
+  - **Design System synced with the app (version 7)**: its tokens now equal the app's copy (the self-hosted font names), and its rules and previews include what building the components taught: radio groups for single-choice controls, underlined links in running text, the selected weapon tile's fire-rate color, keyboard access for tables that scroll sideways, slider names on the thumb, and how the tokens reach Tailwind in code.
+  - **Tests**: 93 Vitest tests (components, storage, API, translations, analytics, site) and 28 Playwright scenarios.
+  - **Handoff**: [docs/ui-migration-progress.md](ui-notes.md) (`docs/ui-notes.md` since 2026-10-25, with its conventions and pitfalls) records the status, the conventions, the pitfalls and the next steps for whoever continues; AGENTS.md points to it.
+
+- **Spraydown Name & Logo, Phase 0 Tooling and Test Safety Net (M11, 2026-10-22)**:
+  - **Placeholder name "Spraydown"**: page titles (from `site.json`), the README, the processing README, the package name and the server's startup message use it until the owner settles on a name.
+  - **Logo ([brand/](../brand/))**: a mark of five shots in a downward chevron and a Chakra Petch wordmark ("down" in volt), in dark, light, graphite and one-color versions; new favicons (SVG, 16 and 32 px PNG, ICO) and an Apple touch icon in `etc/`. `python brand/source/build_logo.py` rebuilds every file, for example after a rename.
+  - **Toolchain**: React 19.3 with the React Compiler, TypeScript 6.0 (strict, bundler resolution, `@/` alias) with separate browser and Node configs, Konva 10.9, ESLint 10 (typescript-eslint, React Hooks, jsx-a11y, Tailwind class checks) and Prettier 3.9 with the Tailwind plugin. New scripts: `pnpm lint`, `pnpm format`, `pnpm format:check`, `pnpm test:unit`, `pnpm test:e2e`; `pnpm tsc` checks both configs.
+  - **Development server with hot reload ([app.js](../app.js), [bin/www](../bin/www))**: `pnpm dev` runs Express with Vite in middleware mode. Style changes apply in place, code and template changes reload the page, and React components will keep their state. It listens on this computer only. `npm-run-all` is gone.
+  - **Compression and caching**: Brotli or gzip for text responses (the analysis event streams stay uncompressed so progress arrives as it happens); hashed chunks are cached for a year as immutable, while pages and entry files revalidate. [docs/playbooks.md](playbooks.md) has the same for nginx, which no longer gzips images and audio.
+  - **End-to-end scenarios ([e2e/](../e2e/))**: 25 Playwright scenarios in Chrome, run against the built app on throwaway data (`e2e/server.mjs`). A scenario fails on any page error, console error or failed request.
+    - Trainer: weapons, search, categories, fire modes, magazines and attachments; settings across a reload (exact `localStorage`); a scored spray with its history and chart; `/ru` and `/zh-CN`; the phone notice; consent deny and accept with no Google request before consent.
+    - Editor: specs, point editing with undo and redo, saving with versions, the save checkpoint, shortcuts, layout memory, scale calibration and overlays, the legacy threshold tools at pixel ratios 1 and 2, and clip and screenshot analysis through the Python pipeline with progress, saved sessions and the screenshot library.
+    - Accessibility: axe (WCAG 2.1 A and AA) on all four pages, failing on anything beyond today's baseline.
+  - **Unit and component tests**: Vitest 5 with Testing Library and MSW, starting with the trainer's scoring math.
+  - **Node and CI**: Node 22.22+ or 24.15+ (`engines`). The CI web job runs on Node 22 and 24 with lint, formatting, both typechecks and unit tests; the integration job runs the end-to-end scenarios on Node 24 and keeps their report when they fail.
+  - **Fixes found by the scenarios**:
+    - The editor's legacy threshold and auto-target tools threw "Unable to apply filter" on high-density screens since Konva 10, which caches at the device pixel ratio; that image is cached at ratio 1 again ([canvas.ts](../client/modules/editor/canvas.ts)).
+    - Trainer tooltips stayed open while hovered and swallowed clicks meant for the controls under them, such as the trace buttons below the target-mode row; they no longer take pointer events ([components.css](../client/styles/components.css)).
+    - Component tests let requests without an MSW handler through: MSW 3 renamed the option to `onUnhandledFrame`.
+
+- **Our Own Project: Placeholders, Privacy Policy & License Notices (M11, 2026-10-22)**:
+  - **No more links to the original author ([site.json](../site.json))**: the trainer pages read names, links and the Google Analytics ID from `site.json`, which holds placeholders until the owner fills them in. An empty link is hidden.
+    - The original author's Google Analytics ID and PayPal donation link are gone.
+    - So are links to his repository, FAQ, issues, release notes, privacy policies, Reddit post and YouTube video.
+    - The redirect that sent `.online` visitors to his domain is gone too.
+    - The FAQ, deploy playbook, contribution terms and issue template use placeholders as well.
+  - **Analytics only when configured**: the cookie banner and Google Analytics load only on the public trainer pages, and only once a measurement ID and a privacy policy link are set; the editor never loads them.
+  - **New privacy policy ([docs/privacy-policy.md](privacy-policy.md))**: covers browser storage, server logs, Google Analytics with consent, the consent choice, transfers, retention and rights, with placeholders for the owner's details. The original's policies, English and German, are removed.
+  - **License handled as Apache-2.0 asks**:
+    - The 30 files with the original copyright line keep it and now say `Modified by [OWNER NAME], 2025-2026.`
+    - A [NOTICE](../NOTICE) file, the README and one footer line credit apex-recoil by Mikhail Goncharov.
+  - What the owner still has to provide, and a command that lists every placeholder: [docs/ownership-register.md](ownership-register.md).
+
+- **pnpm 12 Only, Deduplicated Dependencies & Old Build Folder Removed (M10, 2026-10-22)**:
+  - **pnpm 12, no npm ([package.json](../package.json), [pnpm-workspace.yaml](../pnpm-workspace.yaml))**:
+    - `package.json` pins pnpm 12.14.0 under `devEngines.packageManager`, replacing the `packageManager` pin on 10.8.1. Any pnpm 11 or newer switches to that version; npm refuses to install or run scripts (`EBADDEVENGINES`). `package-lock.json` is gone.
+    - The list of dependencies allowed to run install scripts moved from the `pnpm` field of `package.json`, which pnpm no longer reads, to `allowBuilds` in `pnpm-workspace.yaml`: esbuild and sqlite3 build, and msgpackr-extract keeps using its prebuilt binary. A new dependency with an install script now fails the install until it is listed there.
+    - `pnpm-lock.yaml` also pins pnpm itself, with a checksum for each platform's binary.
+    - CI installs pnpm with `pnpm/action-setup@v6`, which added pnpm 12 support in v6.1.
+    - Docs, code comments and test messages use pnpm commands.
+  - **Deduplicated dependencies**: semver 7.7.3 merged into 7.8.5. pnpm 12's first full resolution also links `debug`'s optional `supports-color` peer and records `libc` for platform-specific packages; no other version changed.
+  - **Old `public/` build folder removed**: Express served it after `dist/`, so it still answered with the Gulp build's `style.css`, `bundle.js` and compiled JavaScript from October 6–7. Its 190 files were copies of `assets/` and `etc/` (tracked in git) or obsolete build output, so nothing was lost. `tsconfig.json` now sets `noEmit`, since `pnpm tsc` kept writing compiled JavaScript into `public/javascripts`; Vite bundles the code and tsc only typechecks.
+
+- **Tailwind Migration, Editor Modules & First CI Run (M10, 2026-10-22)**:
+  - **All styles in Tailwind, no Sass ([client/styles/](../client/styles/))**:
+    - `style.scss`, `reset.scss`, `theme.scss` and the `sass` dependency are gone. Their rules are plain CSS in `base.css`, `components.css`, `trainer.css` and `editor.css`, using CSS nesting and `theme.json` tokens; `theme-tokens.css` now also carries the shades and alpha variants Sass used to compute.
+    - Pages load a single stylesheet, `tailwind.css` (90.5 kB; previously 106 kB of `style.css` plus 1 kB).
+    - The app CSS sits in one cascade layer below Tailwind's utilities, so a utility class always overrides it.
+    - The page layout of the trainer (all three languages) and the editor is Tailwind utilities in the templates; the stateful widgets (tiles, pills, buttons, dialogs, capture studio, HUD) stay component CSS.
+    - Utilities have no `tw:` prefix anymore. The legacy `.grid` class, which would have turned into Tailwind's `display: grid`, became flex utilities.
+    - No Tailwind preflight: it would restyle images, links, borders and form controls, so the original reset stays.
+    - Nothing looks different: the computed style and position of every element are identical before and after on all pages at desktop and phone widths, through a scripted editor session (including a real analysis and its results) and a trainer session in all three languages, with forced hover, focus and active states.
+  - **Recoil Editor split into modules ([client/modules/editor/](../client/modules/editor/))**: the 5,153-line `client/editor.ts` is now a ~100-line entry plus 11 modules (state, layout, toolbar, canvas, calibration, overlays, weapon manager, capture studio, screenshots, sessions, analysis dialog). The code moved unchanged; only the 36 assignments to seven shared variables go through setters in `state.ts`. A scripted editor session gives identical DOM, canvas shapes and storage before and after.
+  - **CI**: the first run on GitHub (PR #2) passed all four jobs.
+  - Tests: 41 Node tests (the stylesheet test now checks `tailwind.css` and its cascade layers), plus 14 Redis/S3/end-to-end tests with `pnpm test:services`; 43 Python tests.
+
+- **Scaled Mode: Redis/BullMQ Queue, S3 Capture Storage & Tailwind Foundation (M10, 2026-10-21)**:
+  - **Persistent job queue ([server/bull_queue.js](../server/bull_queue.js))**: with `REDIS_URL` set, analysis jobs go through BullMQ instead of the in-process queue.
+    - Queued jobs survive server restarts. A job whose worker dies is retried by another worker, and the editor's progress stream, status and cancel endpoints work unchanged.
+    - The API runs an embedded worker; `npm run worker` ([server/worker.js](../server/worker.js)) adds workers, on other machines too when S3 storage is used.
+    - Cancelling a running job reaches whichever worker holds it.
+    - Results that finished while the API was down are still indexed when it starts.
+  - **S3-compatible capture storage ([server/storage.js](../server/storage.js))**: with `STORAGE_PROVIDER=s3`, saved sessions, the screenshot library and job inputs live in a bucket (AWS S3, R2, SeaweedFS, ...).
+    - The editor uploads recordings straight to the bucket with presigned URLs, falling back to uploading through the server.
+    - Media is still loaded from `/captures/...`; the server streams it from S3 with seeking (HTTP ranges).
+    - Unsubmitted uploads expire after a day.
+  - **Local services**: [compose.yaml](../compose.yaml) runs Redis and SeaweedFS (MinIO no longer publishes community images); [.env.example](../.env.example) documents every setting, and `.env` is loaded by `npm start` and `npm run worker`. Without these settings nothing changes: in-process queue, captures in `processing/captures`.
+  - **Tailwind CSS foundation (3.4)**:
+    - Tailwind 4 now builds next to the SCSS ([client/styles/tailwind.css](../client/styles/tailwind.css)).
+    - Utilities are prefixed `tw:` so existing class names like `.grid` and `.hidden` are not affected, and colors come only from `theme.json`.
+    - The trainer footer is the first component migrated.
+    - [scripts/style-snapshot.mjs](../scripts/style-snapshot.mjs) compares every element's computed style and box before and after a migration: zero differences on all trainer and editor pages at desktop and phone widths, including hover.
+  - **Fixes**:
+    - SSE keepalive timers are now stopped when a stream ends from the server side, too.
+    - Errors from Redis connections are logged at most every 30 s instead of being unhandled.
+    - Missing `/captures/...` files return 404 instead of the trainer page.
+  - **CI**: new integration job running all Node suites against the `compose.yaml` services, including end-to-end analysis with the real Python CLI. All CI jobs were dry-run from a clean copy of the tree.
+  - **Dependencies**: `bullmq` 6.3.11, `ioredis` 6.0.0, `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner` 3.1140.0, `tailwindcss` and `@tailwindcss/vite` 4.3.3 (versions at least two weeks old, pinned exactly).
+  - **Decided against**: re-decoding the settled video frame instead of buffering it. It saves ~130 MB per 1080p clip but costs +22% CPU.
+  - **Correction**: the previous entry's audit noted that `client/storage.ts` registers every setting twice. That was a misreading; there is a single registration (confirmed in a browser).
+  - Tests: 41 Node tests by default, plus 14 Redis/S3/end-to-end tests with `npm run test:services`; 43 Python tests.
+
+- **Migration Audit & Hardening (M10, 2026-10-19)** — full findings in the [Audit Log](migration-plan.md):
+  - **Spec store integrity ([server/db.js](../server/db.js), [processing/recoil_discovery/db.py](../processing/recoil_discovery/db.py))**:
+    - Specs are stored losslessly (`spec_json`) in `client/specs.json` order. Previously the database dropped fields such as havoc_tc's `raw_1x_x/raw_1x_y`, added `multiplier: 0.73` to 10 weapons that have none (the editor treats a missing multiplier as 1.0), and exports re-sorted the file.
+    - Edits made to `specs.json` outside the API (Python CLI, git pull) are imported as new versions before every API read and write; previously the next web-editor save overwrote them with the stale database copy.
+    - Saves merge into the current spec like the original flat-file API, skip unchanged content, run in `BEGIN IMMEDIATE` transactions, and rewrite only the changed weapon's block (unchanged blocks stay byte-identical, indentation and line endings preserved).
+    - `DatabaseService.init()` is idempotent (concurrent calls had seeded every weapon twice). A malformed `specs.json` no longer blocks startup: reads serve the stored specs and saves are refused until it is fixed.
+    - The Python `DatabaseManager` now shares the exact schema; its export previously kept only 8 fields and would have erased `mods` and `ping_points` for every weapon. Connections are closed after use.
+    - [Shadow parity](../processing/recoil_discovery/shadow_parity.py) compares every field and the weapon order (it previously passed while 11 weapons differed). New `--no-sync` flag reports drift without importing.
+  - **Tests no longer touch real data**: `test/app_api.test.js` had written 17 test versions of flatline into `data/recoil.db` and rewrote `client/specs.json` on every run. Tests use temp paths through `RECOIL_DB_PATH`, `RECOIL_SPECS_PATH`, `RECOIL_CAPTURES_DIR` and `RECOIL_UPLOAD_TMP_DIR`. The test rows were pruned from the local database (backup: `data/recoil.pre-audit-cleanup.db`).
+  - **Recoil Studio sessions ([app.js](../app.js))**:
+    - Loading a past session works again: the session list always comes from the capture folders (with the video/screenshot URLs the editor loads) and merges the indexed RPM, shot count and convergence.
+    - Sessions are indexed by a per-job completion hook (the shared `once('job:completed')` listener could fire for another job and drop the record). `sample_count` counts clips, not clips plus wall screenshots.
+    - Saving a single screenshot analyzes only that screenshot (the CLI used to process the entire screenshot library) and still files it in the library.
+    - Rejected uploads no longer leave temp files; upload limit errors return JSON (413) instead of failing to render a missing `error` view (added [views/error.pug](../views/error.pug)).
+  - **Job queue ([server/job_queue.js](../server/job_queue.js), [client/modules/utils.ts](../client/modules/utils.ts))**:
+    - Timed-out processes that ignore SIGTERM are now killed (the SIGKILL escalation never fired). Temp folders are removed after a killed process exits.
+    - `PROGRESS:` lines split across output chunks are parsed. Python can be overridden with the `PYTHON` environment variable.
+    - Failures and cancellations arrive as an SSE `failed` event (the former `error` event collided with EventSource connection errors, so failures were only noticed by polling). The client stops waiting with a clear message when the server no longer knows the job (e.g. after a restart).
+  - **Frontend bundles ([client/stage.ts](../client/stage.ts), [views/layout.pug](../views/layout.pug))**:
+    - Route splitting is real: the trainer page loads `trainer.js` (89 kB gzip with its shared chunk, no editor code) and the editor loads `editor.js`. Before, every page loaded the combined `bundle.js` (118.7 kB gzip), and the separate entries imported it, which would have started the app twice. `/bundle.js` remains as a tiny router for cached pages.
+    - `client/editor.ts` uses `modules/analysis/DiscrepancyInspector.ts` instead of its duplicated copy.
+    - Fixed HDR tone mapping in `modules/utils.ts`, which computed the blue channel from green after the extraction.
+  - **Build & tooling**:
+    - `npm run static` builds the deployable `static/` site again ([scripts/build-static.mjs](../scripts/build-static.mjs)): bundles, `etc/`, `assets/` and the four pages rendered from pug.
+    - Vite regenerates `theme.scss` from `theme.json` (lost with Gulp).
+    - [CI](../.github/workflows/ci.yml) replaces the Gulp workflow (which ran a removed `gulp`): typecheck, build, Node tests and static build on Node 20/22; pytest, `verify` and shadow parity on Python 3.12.
+    - Regenerated the stale `package-lock.json` (it still listed the Gulp toolchain, so `npm ci` would fail).
+    - `nodemon` watches only server code, so Vite rebuilds and spec saves no longer restart the server and kill running analysis jobs.
+    - `server/storage.js` S3/MinIO mode throws "not implemented" instead of reporting uploads it never performed.
+  - **Discovery engine ([pipeline.py](../processing/recoil_discovery/pipeline.py))**:
+    - Fixed a `NameError` (leftover `frames_gray`) that failed the whole session when a clip decoded no frames.
+    - Frame buffers trimmed to the 21 frames the tracker can use, and the baseline-frame rule matches the pre-streaming decoder exactly. New parity tests compare the streaming decoder with the full-decode algorithm.
+  - **Corrections to earlier notes below**: decoder memory is 328 MB peak on a 5 s 1080p clip (constant with clip length), not "<35MB"; the job queue is in-process (no Redis/BullMQ/Celery); React is not used; S3/MinIO is URL resolution only; the trainer bundle was not separated until this audit.
+  - Test suites: 43 Python tests (was 35) and 38 Node tests (was 18).
+
+- **Modern Platform & Architectural Overhaul Inception (M10)**:
+  - Established the comprehensive master [Architectural Migration Plan](migration-plan.md) and synchronized with [docs/roadmap.md](roadmap.md).
+  - Outlined a 5-phase migration strategy: Phase 1 (Memory hardening & non-blocking I/O), Phase 2 (Async compute worker pool via Redis & Celery/BullMQ), Phase 3 (Vite + React component decomposition), Phase 4 (PostgreSQL/S3 persistence), and Phase 5 (Shadow parity verification).
+  - Defined automated quality gates: memory footprint capped under 50MB per video clip, 0 event-loop blocking syscalls, and 100% mathematical parity across all 31 weapons.
+
+- **Phase 1: Stabilization, Memory Hardening & Non-Blocking I/O Completion ([migration-plan.md](migration-plan.md))**:
+  - **Streaming Multipart File Ingestion ([app.js](../app.js), [client/editor.ts](../client/editor.ts))**:
+    - Replaced the vulnerable 150MB global Base64 JSON parser in Express with `multer` streaming file uploads capped at 60MB per file, lowering global JSON body limits to 20MB.
+    - Updated `client/editor.ts` to stream binary `FormData` containing raw clip `Blob`s and decoded screenshots directly to `POST /api/discovery/process-session` and `POST /api/discovery/process-static-image`, eliminating CPU-heavy base64 stringification on the client and JSON string parsing on the server.
+    - Maintained full backwards compatibility with legacy Base64 JSON payloads.
+  - **Non-Blocking Asynchronous Directory Traversal ([app.js](../app.js))**:
+    - Converted synchronous blocking `fs.readdirSync` and `fs.statSync` in `GET /api/discovery/sessions` and `GET /api/discovery/screenshots` to non-blocking `fs.promises` with concurrency-safe `Promise.all`.
+    - Added in-memory TTL caching (60s) with automatic invalidation on session capture saves, eliminating repeated blocking disk I/O on large capture directories.
+  - **Atomic File Write Safeguards ([app.js](../app.js), [spec_manager.py](../processing/recoil_discovery/spec_manager.py))**:
+    - Implemented write-to-temp followed by atomic replacement (`fs.rename` / `Path.replace()`) across both Express backend and Python discovery engines, guarding `specs.json` against truncation or corruption during server restarts or concurrent writes.
+    - Added unit test `test_atomic_save_specs` in [`processing/tests/test_spec_manager.py`](../processing/tests/test_spec_manager.py).
+  - **Python Frame-Streaming Video Decoder ([pipeline.py](../processing/recoil_discovery/pipeline.py))**:
+    - Refactored `process_video_clip` to use a rolling buffer (`collections.deque(maxlen=30)`) for settled frames instead of accumulating all uncompressed video frames in memory.
+    - Replaced in-memory temporal differencing arrays with on-demand sparse seeking, slashing peak video decoding RAM from ~2GB to <35MB per clip.
+
+- **Phase 2: Compute Worker Service & Asynchronous Job Architecture Completion ([migration-plan.md](migration-plan.md))**:
+  - **Decoupled Asynchronous Job Queue Service ([server/job_queue.js](../server/job_queue.js))**:
+    - Created an event-driven `JobQueue` worker engine with CPU-aware concurrency ceilings (`os.cpus() - 1`, capped at 4) and job lifecycle tracking (`queued`, `running`, `completed`, `failed`, `cancelled`).
+    - Added hard timeout guard (120 seconds) with graceful process termination (`SIGTERM` followed by `SIGKILL`) to prevent zombie background processes.
+    - Added automated temporary directory cleanup on job completion, failure, or cancellation.
+    - Implemented unit test suite in [`test/job_queue.test.js`](../test/job_queue.test.js) and integrated `npm test` script into [`package.json`](../package.json).
+  - **Asynchronous HTTP API & Server-Sent Events (SSE) ([app.js](../app.js))**:
+    - Converted `POST /api/discovery/process-session` and `POST /api/discovery/process-static-image` to return `202 Accepted` with a unique `job_id`, `events_url`, and `status_url` while preserving synchronous fallback (`?sync=true` or `x-sync: true`).
+    - Added `GET /api/discovery/jobs/:id` for pollable job status inspection.
+    - Added `GET /api/discovery/jobs/:id/events` providing real-time Server-Sent Events (SSE) with automatic 15-second keepalive heartbeats.
+    - Added `POST /api/discovery/jobs/:id/cancel` allowing users to terminate in-flight or queued jobs immediately.
+  - **Structured Pipeline Progress Protocol ([pipeline.py](../processing/recoil_discovery/pipeline.py), [cli.py](../processing/recoil_discovery/cli.py))**:
+    - Added `progress_callback` support to `process_clips_session` and `process_images_session`.
+    - Implemented structured `PROGRESS:{"stage": "...", "progress": X, "details": ...}` stderr emission in `cmd_session`, enabling non-blocking progress streaming to Node.js without affecting stdout JSON payloads.
+  - **Client Real-Time Progress Streaming ([client/editor.ts](../client/editor.ts))**:
+    - Added `pollOrStreamJobResult` utility subscribing to SSE event streams and automatically falling back to polling if connections disconnect.
+    - Updated UI to display live percentage meters (`[0%..100%]`), current processing stages, and clip counts (`Clip 1/3`) during session processing.
+
+- **Phase 3: Modern Frontend Architecture & Component Decomposition ([migration-plan.md](migration-plan.md))**:
+  - **Vite 8 Bundler Integration ([vite.config.mjs](../vite.config.mjs), [package.json](../package.json))**:
+    - Introduced modern Vite 8 toolchain with esbuild minification, tree-shaking, and sub-second production builds (1.21s vs 19s legacy Gulp).
+    - Configured multi-entry bundles: `main` (trainer + editor router), `trainer` (standalone lightweight aim trainer), and `editor` (full Recoil Studio).
+    - Added `"build:vite": "vite build"` and `"dev:vite": "vite"` scripts alongside legacy pipeline.
+  - **Core Aim Trainer Bundle Isolation ([client/trainer_main.ts](../client/trainer_main.ts))**:
+    - Decoupled the public aim trainer from the heavy computer vision and editing toolchain.
+    - Slashed standalone bundle footprint to 118.37 kB gzip (<150kB budget target), completely omitting Plotly, MediaRecorder, and WebGL image filters from the player bundle.
+  - **Recoil Editor Component Decomposition ([client/modules/](../client/modules/))**:
+    - Extracted TypeScript interfaces to [`client/modules/types.ts`](../client/modules/types.ts).
+    - Extracted binary data conversions (`dataUrlToBlob`, `blobToBase64`), tone mapping, and SSE polling streaming to [`client/modules/utils.ts`](../client/modules/utils.ts).
+    - Extracted discrepancy calculations, pixel scaling ($K_{px\_to\_mouse} = 3.36$), and vector report generation to [`client/modules/analysis/DiscrepancyInspector.ts`](../client/modules/analysis/DiscrepancyInspector.ts).
+    - Refactored monolithic [`client/editor.ts`](../client/editor.ts) to consume these modular exports.
+
+- **Phase 4: Database Layer & Persistent Asset Storage Completion ([migration-plan.md](migration-plan.md))**:
+  - **Relational SQLite Schema & Versioned Weapon Specifications ([server/db.js](../server/db.js), [processing/recoil_discovery/db.py](../processing/recoil_discovery/db.py))**:
+    - Created an ACID-compliant SQLite persistence architecture with Write-Ahead Logging (`WAL`) mode and foreign key constraints shared between Node.js and Python.
+    - Designed `weapons` table, versioned `weapon_specs` table, and `spec_revisions` audit log table tracking exact coordinate diffs, RPM tweaks, authors, and timestamps.
+    - Enabled seamless dual-write: updates save versioned history to SQLite and sync back to [`client/specs.json`](../client/specs.json) with `.bak` safety guards.
+    - Added `GET /api/specs/history/:weapon` endpoint delivering complete revision audit logs.
+  - **Indexed Session Metadata Persistence ([server/db.js](../server/db.js), [app.js](../app.js))**:
+    - Replaced blocking disk traversals in `GET /api/discovery/sessions` with indexed SQLite queries against `discovery_sessions` table (<1ms response latency).
+    - Automatically captures shot counts, measured RPM, sample counts, and convergence scores upon job completion in the background worker pool.
+  - **Unified Asset Storage Service ([server/storage.js](../server/storage.js))**:
+    - Implemented `AssetStorageService` abstracting local filesystem asset storage and S3/MinIO cloud object storage.
+    - Added support for generating presigned upload URLs and resolving asset URLs across local and cloud environments.
+    - Added comprehensive unit and integration test suites: [`test/db.test.js`](../test/db.test.js), [`test/app_api.test.js`](../test/app_api.test.js), [`test/storage.test.js`](../test/storage.test.js), and [`processing/tests/test_db.py`](../processing/tests/test_db.py) (100% pass rate).
+
+- **Phase 5: Shadow Parity Validation & Microcontroller Firmware Alignment ([migration-plan.md](migration-plan.md))**:
+  - **Automated Dual-Run Shadow Parity Suite ([processing/recoil_discovery/shadow_parity.py](../processing/recoil_discovery/shadow_parity.py))**:
+    - Developed automated verification harness checking cross-layer parity between SQLite active specifications and verified ground truth [`client/specs.json`](../client/specs.json).
+    - Verified 100% mathematical coordinate parity ($0.000000$ drift) across all 31 weapons in the arsenal.
+    - Integrated continuous parity assertions into Python testing suite ([`processing/tests/test_shadow_parity.py`](../processing/tests/test_shadow_parity.py)).
+  - **Microcontroller Firmware Alignment ([processing/recoil_discovery/cli.py](../processing/recoil_discovery/cli.py))**:
+    - Validated that `export-arduino` generates [`arduino_mouse/src/recoil.inc`](../arduino_mouse/src/recoil.inc) with exact 55-element array alignment and zero memory drift for ATmega32U4 PlatformIO targets.
+  - **Decommissioning Legacy Tooling & Pure Vite 8 Cutover ([package.json](../package.json), [app.js](../app.js))**:
+    - Completely decommissioned and deleted `gulpfile.js`, Browserify, Tsify, Watchify, and 20 legacy Gulp plugins.
+    - Cut over frontend build infrastructure to pure standalone Vite 8 (`pnpm build` / `npm run build`, `pnpm dev` / `npm run dev`) with **1.1s** builds.
+    - Updated Express in [`app.js`](../app.js) to serve Vite's production bundles (`dist/bundle.js`, `dist/style.css`, `dist/trainer.js`, `dist/editor.js`) directly.
+
+- **Phase 6: Frontend Runtime Module Resolution & Weapon Manager Polish ([views/layout.pug](../views/layout.pug), [client/editor.ts](../client/editor.ts), [server/db.js](../server/db.js))**:
+  - **ES Module Script Resolution ([views/layout.pug](../views/layout.pug))**:
+    - Added `type="module"` to the bundle script tag (`script(type="module" src='/bundle.js')`), resolving `SyntaxError: Unexpected token 'export'` caused by Vite's ESM output and restoring client runtime execution across Aim Trainer (`/`) and Recoil Editor (`/editor`).
+  - **Spec Metadata & SQLite Schema Resilience ([server/db.js](../server/db.js), [client/game.ts](../client/game.ts))**:
+    - Added `mods` and `ping_points` columns with automated `ALTER TABLE` migrations to SQLite `weapon_specs` table, ensuring all optional attributes from [`client/specs.json`](../client/specs.json) are preserved when exporting and versioning specs.
+    - Resolved TypeScript compile errors (`TS2339`) with type-safe accessors in [`client/game.ts`](../client/game.ts).
+    - Added active spec deduplication in `getAllActiveSpecs()`, maintaining strict 31-weapon canonical parity with zero coordinate drift.
+  - **New Weapon Spec Creation ([views/editor.pug](../views/editor.pug), [client/editor.ts](../client/editor.ts))**:
+    - Added "+ New Weapon" button (`#add-weapon-btn`) in the Recoil Editor specs manager, prompting for weapon identifier, creating calibrated baseline spec template, adding to dropdown, and rendering editable points on canvas.
+    - Updated `saveCurrentWeaponSpec` to automatically sync canvas-edited points (`syncSpecFromPoints()`) before saving and preserve user-facing status messages upon reload.
+
+- **Developer Experience & Package Manager Alignment**:
+  - Updated [`README.md`](../README.md), [`AGENTS.md`](../AGENTS.md), and developer guides ([`docs/roadmap.md`](roadmap.md), [`docs/contributing.md`](contributing.md), [`docs/capture.md`](capture.md), [`docs/playbooks.md`](playbooks.md), [`docs/migration-plan.md`](migration-plan.md)) to include first-class `pnpm` command equivalents (`pnpm install`, `pnpm rebuild sqlite3`, `pnpm build`, `pnpm test`, `pnpm tsc`, `pnpm dev`, `pnpm static`) alongside `npm`.
+  - Added native module compilation documentation (`pnpm rebuild sqlite3` / `pnpm approve-builds`) for pnpm v10+ compatibility with the SQLite persistence layer.
+
 - **Comprehensive UI/UX Modernization, Ergonomics & Accessibility**:
-  - **Modern Typography & Global Theming ([views/layout.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/layout.pug), [style.scss](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss))**:
+  - **Modern Typography & Global Theming ([views/layout.pug](../views/layout.pug), [style.scss](../style.scss))**:
     - Replaced generic browser fonts with Google Fonts `Inter` (sans-serif) for high-clarity UI typography and `JetBrains Mono` for monospace data displays, timestamps, and numbers.
     - Enabled subpixel font-smoothing (`-webkit-font-smoothing: antialiased`, `-moz-osx-font-smoothing: grayscale`) across the body.
     - Added `:focus-within` and `:hover` triggers to `.tooltip` elements for keyboard navigation accessibility.
     - Replaced deprecated `@media (max-device-width: 900px)` with standard `@media (max-width: 768px)` viewport width querying, enabling responsive desktop window resizing below 900px without breaking layout.
     - Unified dark mode aesthetics across text inputs, select dropdowns, and range sliders with custom accent thumbs.
-  - **Trainer Ergonomics, Instant Search & Category Filtering ([views/index.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index.pug), [client/game.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts))**:
+  - **Trainer Ergonomics, Instant Search & Category Filtering ([views/index.pug](../views/index.pug), [client/game.ts](../client/game.ts))**:
     - Added `#weapon-filter-bar` featuring an instant live search input and category pills (`All`, `AR`, `SMG`, `LMG`, `Mark`, `Snip`, `Shot`, `Pist`).
     - Categorized all 31 weapons via `data-category` attributes; dynamic search matches both internal weapon tags and localized weapon display names in real time.
     - Redesigned weapon selection cards with clean vertical flex flow, eliminating artwork overlap by placing names statically beneath thumbnails.
     - Added live magazine capacity badges (`span.mag-cap`) displaying exact round counts for each weapon tier and stock penalties.
-    - Created custom vector artwork for Tier 4 Corrupted Magazine ([`assets/images/corrupted_mag.svg`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/assets/images/corrupted_mag.svg)) with authentic crystalline shard geometry.
+    - Created custom vector artwork for Tier 4 Corrupted Magazine ([`assets/images/corrupted_mag.svg`](../assets/images/corrupted_mag.svg)) with authentic crystalline shard geometry.
     - Redesigned `#invert-y-btn` into a modern toggle pill with active state styling.
     - Bound `Escape` key to instantly dismiss instruction overlays and detailed stat graphs.
-    - Fully synchronized localized templates ([`views/index-ru.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index-ru.pug), [`views/index-zh-CN.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index-zh-CN.pug)).
-  - **Recoil Editor Toolbar Reorganization & Sub-1400px Responsive Compacting ([views/editor.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug), [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts), [style.scss](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss))**:
+    - Fully synchronized localized templates ([`views/index-ru.pug`](../views/index-ru.pug), [`views/index-zh-CN.pug`](../views/index-zh-CN.pug)).
+  - **Recoil Editor Toolbar Reorganization & Sub-1400px Responsive Compacting ([views/editor.pug](../views/editor.pug), [client/editor.ts](../client/editor.ts), [style.scss](../style.scss))**:
     - Reorganized the 16-button `#stage-toolbar` into compact segmented control groups (`.segmented-btn-group`) for Undo/Redo, Canvas Modes (Pan, Align, Correct), and View Controls.
     - Implemented a 2-tier responsive compaction engine resolving toolbar crowding on sub-1400px viewports:
       - **Tier 1 (`< 1450px`)**: Hides verbose text labels for Opacity/Scale sliders, tightens slider track widths to 50px, truncates view select to 160px, and collapses secondary utilities (`Shortcuts`, `Clear BG`, `Fit`) to sleek icon-first buttons.
@@ -24,42 +419,42 @@
       - Added a 3px modern custom scrollbar for extreme window shrinks without hidden overflows.
     - Added minimize/restore button (`#min-hud-btn`) to the floating `#discrepancy-hud`, collapsing the card into a sleek 1-line title bar.
     - Implemented global `Escape` key handling to dismiss all open modals, cancel active comparison overlays, or exit shot correction mode.
-  - **Accessibility, Vector Icons & High-Contrast Visual Overhaul ([accessibility_audit.md](file:///C:/Users/micro.VADER/.gemini/antigravity-ide/brain/733f6ac0-5f64-4bff-9739-d504f9dfdc0d/accessibility_audit.md), [views/mixins/icons.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/mixins/icons.pug), [style.scss](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss), [views/editor.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug))**:
+  - **Accessibility, Vector Icons & High-Contrast Visual Overhaul (`accessibility_audit.md` (an assistant's notes, never committed), [views/mixins/icons.pug](../views/mixins/icons.pug), [style.scss](../style.scss), [views/editor.pug](../views/editor.pug))**:
     - **Comprehensive Recoil Editor Canvas Tools & Toolbar Contrast Overhaul**:
-      - **Stage Toolbar Button Aesthetics**: Eliminated browser user-agent `buttonface` light grey backgrounds by adding a clean reset in [`reset.scss`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/reset.scss) and comprehensive first-class styling for all toolbar buttons (`.small-btn`, `.tool-btn`, `.icon-btn`, `.segmented-btn-group`). Standalone buttons now sport a sleek dark slate background (`rgba(30, 41, 59, 0.9)`), crisp borders (`rgba(255, 255, 255, 0.22)`), vibrant `#f8fafc` text (17.5:1 contrast, WCAG AAA), and sky cyan (`#38bdf8`) vector icons.
+      - **Stage Toolbar Button Aesthetics**: Eliminated browser user-agent `buttonface` light grey backgrounds by adding a clean reset in [`reset.scss`](../reset.scss) and comprehensive first-class styling for all toolbar buttons (`.small-btn`, `.tool-btn`, `.icon-btn`, `.segmented-btn-group`). Standalone buttons now sport a sleek dark slate background (`rgba(30, 41, 59, 0.9)`), crisp borders (`rgba(255, 255, 255, 0.22)`), vibrant `#f8fafc` text (17.5:1 contrast, WCAG AAA), and sky cyan (`#38bdf8`) vector icons.
       - **Save Spec & Primary Buttons**: Resolved severe 1.58:1 contrast failure (previously white text on bright yellow `$active`) by enforcing dark slate text (`#0f172a`) and icons on Apex gold (`#f59e0b`), achieving an exceptional 9.8:1 contrast ratio (WCAG AAA).
       - **Segmented Canvas Mode Buttons (`Pan`, `Align`, `Correct`)**: Replaced invisible white-on-light-grey rendering with explicit transparent button backgrounds over a dark-slate container (`rgba(15, 23, 42, 0.7)`), bright `#f8fafc` labels, and high-contrast amber active states (`#f59e0b` background with `#0f172a` text and icon strokes).
-      - **Canvas Graphics & In-Game Wall Contrast**: Upgraded Konva canvas rendering in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) with dark drop shadows (`shadowColor: '#000000', shadowBlur: 3, shadowOpacity: 0.9`) on point circles, edge lines, and comparison trajectories. Bullet hole decals, candidate specs, and delta vectors now maintain razor-sharp contrast whether viewed against bright sunlit rock walls, concrete, or dark canvas backgrounds. Added stroke outlines (`fill: '#ffffff', stroke: '#000000', strokeWidth: 2`) to delta distance text labels (`Δ28px`).
+      - **Canvas Graphics & In-Game Wall Contrast**: Upgraded Konva canvas rendering in [`client/editor.ts`](../client/editor.ts) with dark drop shadows (`shadowColor: '#000000', shadowBlur: 3, shadowOpacity: 0.9`) on point circles, edge lines, and comparison trajectories. Bullet hole decals, candidate specs, and delta vectors now maintain razor-sharp contrast whether viewed against bright sunlit rock walls, concrete, or dark canvas backgrounds. Added stroke outlines (`fill: '#ffffff', stroke: '#000000', strokeWidth: 2`) to delta distance text labels (`Δ28px`).
       - **Toolbar Controls & Sliders**: Styled WebKit range slider tracks (`#334155` background with border) and glowing sky cyan thumbs (`#38bdf8`), high-contrast slider labels (`#cbd5e1`), and JetBrains Mono percentage readouts (`#38bdf8`). Upgraded the Wall toggle into a structured interactive pill with hover highlights.
       - **Sidebar & Form Accessibility**: Raised form label contrast to `#e2e8f0` (14.2:1), recalibrated magazine tier badges (`.tier-0` through `.tier-4`) so every tier meets or exceeds WCAG AA ($\ge 5:1$), upgraded method panel tabs (`#38bdf8` active tab with `#0f172a` text, 12.5:1), and raised muted helper and status badge text from 2.6:1/3.8:1 up to $\ge 5.4:1$ (`#94a3b8`).
-      - **Main Trainer Canvas & Fire Modes**: Replaced low-contrast `colorHintPath` (4.5:1) and dark-green `colorStartCircle` (2.47:1) in [`theme.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/theme.json) with vibrant emerald green (`hsl(120, 65%, 45%)`, 7.2:1) and slate (`hsl(215, 20%, 68%)`, 7.5:1). Upgraded recovery lines in [`client/game.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts) from `rgba(255, 255, 255, 0.25-0.3)` to `0.55` (5.2:1) and fire mode selection to high-contrast amber.
+      - **Main Trainer Canvas & Fire Modes**: Replaced low-contrast `colorHintPath` (4.5:1) and dark-green `colorStartCircle` (2.47:1) in [`theme.json`](../theme.json) with vibrant emerald green (`hsl(120, 65%, 45%)`, 7.2:1) and slate (`hsl(215, 20%, 68%)`, 7.5:1). Upgraded recovery lines in [`client/game.ts`](../client/game.ts) from `rgba(255, 255, 255, 0.25-0.3)` to `0.55` (5.2:1) and fire mode selection to high-contrast amber.
     - **High-Contrast Undo/Redo Controls**: Resolved WCAG 2.1 AA contrast failure (previously 1.8:1 washed-out `opacity: 0.35`) by overhauling disabled and enabled states. Disabled buttons now maintain structural visibility with solid borders (`rgba(255, 255, 255, 0.22)`), visible background tint, and crisp Slate 500 (`#64748b` / `#94a3b8`) icons and text achieving $\ge 5.4:1$ contrast. Enabled buttons provide vibrant `#f1f5f9` text and Sky Cyan (`#38bdf8`) vector accents.
     - **Vector Icon Standardization (Replaced All System Emojis)**: Implemented an SVG icon mixin system (`+icon(name)`) replacing all platform-dependent, inconsistent emojis across the Recoil Editor toolbar, modal headers, action controls, and trainer navigation links with crisp, scalable inline vector SVGs with `aria-hidden="true"`.
     - **Global Visible Focus Indicator (WCAG 2.4.7)**: Added high-contrast `:focus-visible` ring (`2px solid #38bdf8`, `outline-offset: 2px`, `box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25)`) across all interactive controls.
     - **Enlarged Touch Targets (WCAG 2.5.5 / 2.5.8)**: Expanded interactive bounds for secondary icon controls (`#scale-reset-btn`, `#min-hud-btn`, `#close-hud-btn`, `#reset-samples-btn`) to $\ge 28\times 28$px / $26\times 26$px.
     - **Screen Reader Accessibility (WCAG 4.1.2)**: Added descriptive `aria-label` attributes to magazine tier inputs (`mag-0` through `mag-4`), toolbar mode buttons, and modal dialog close buttons.
-  - **Recoil Pattern Opacity & Visibility Inspection Controls ([views/editor.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug), [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts), [style.scss](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss))**:
+  - **Recoil Pattern Opacity & Visibility Inspection Controls ([views/editor.pug](../views/editor.pug), [client/editor.ts](../client/editor.ts), [style.scss](../style.scss))**:
     - Added dedicated pattern overlay visibility toggle (`#toggle-pattern`) and smooth opacity slider (`#pattern-opacity-slider`, 0% to 100%) directly into the stage toolbar alongside background wall controls.
     - Bound keyboard shortcut `P` to instantly toggle pattern visibility on/off, allowing analysts to quickly hide the recoil pattern overlay and inspect underlying bullet decal marks and CV detections on wall screenshots without visual obstruction.
     - Added reactive canvas batch-draw updates (`applyPatternVisibilityAndOpacity`) that propagate opacity and visibility changes instantaneously across all bullet markers, connector lines, baseline curves, candidate overlays, discrepancy lines, and delta distance text.
     - Documented `P` shortcut in the interactive Keyboard Shortcuts Reference dialog (`#shortcuts-modal`).
-  - **Tactile 3D Screenshot Analysis Button & Action Flow Upgrade ([views/editor.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug), [style.scss](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss), [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts))**:
+  - **Tactile 3D Screenshot Analysis Button & Action Flow Upgrade ([views/editor.pug](../views/editor.pug), [style.scss](../style.scss), [client/editor.ts](../client/editor.ts))**:
     - Overhauled `#analyze-wall-file-btn` and `.file-import-label` with tactile 3D button affordances, defined borders, drop shadows, and bevel depths (`.analyze-screenshot-btn`).
     - Resolved ambiguous disabled state by styling disabled buttons with visible dark-slate gradients, crisp borders, and informative tooltip guidance instead of flat low-contrast slabs.
     - Added dynamic button status updates: once screenshots are selected or loaded, `#analyze-wall-file-btn` transitions into an energized golden-amber ready state with glowing pulse animation (`pulse-ready-glow`), updating its label dynamically to show the exact batch count (e.g. `⚡ Analyze 3 Screenshots`).
     - Upgraded `.file-import-label` into a prominent secondary action button with hover lifts and active depressions.
-  - **Ground-Truth Screenshot-Accurate Scaling & Discrepancy Inspection ([client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts))**:
+  - **Ground-Truth Screenshot-Accurate Scaling & Discrepancy Inspection ([client/editor.ts](../client/editor.ts))**:
     - **Physical Decal Alignment**: Resolved scale shrinkage in `renderCompareOverlay` ("Inspect Discrepancies") and `renderSelectedOverlay`: candidate points (`candPts`) now directly overlay the ground-truth detected bullet decals (`frame_points` / `preview_points`) on the screenshot wall without shrinking to theoretical formula sizes.
     - **Empirical Spec-to-Capture Scale Factor**: Implemented `computeCaptureToSpecScale` using least-squares regression between capture decal displacements and canonical spec coordinates, computing the exact empirical screenshot pixels per spec unit ($K_{\text{cap}}$).
     - **Scaled Baseline Spec**: Dynamically scaled the baseline spec (`baselinePts`) to match the physical scale of the capture on the screenshot wall, ensuring that discrepancy vectors and delta labels (`Δpx`) represent true image pixel deviations on the wall.
     - **General Screenshot Alignment**: Extended capture-accurate scaling to `spec`, `batch_spec`, and `median` views over background screenshots and preserved discrepancy comparison mode across batch screenshot transitions.
-  - **Recoil Editor High-Performance Overhaul (Smooth 60–144Hz Interaction & Latency Elimination) ([client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts), [style.scss](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss))**:
+  - **Recoil Editor High-Performance Overhaul (Smooth 60–144Hz Interaction & Latency Elimination) ([client/editor.ts](../client/editor.ts), [style.scss](../style.scss))**:
     - **Elimination of Canvas Software Gaussian Blur Rasterization**: Removed 10 instances of `shadowBlur` across Konva circle markers, connecting lines, candidate specs, and discrepancy vectors in `addPoint`, `updateShapes`, `addEdge`, `autoFilter`, and `renderCompareOverlay`. Canvas 2D `shadowBlur` forces browser graphics engines (Skia) into costly CPU-bound software Gaussian blur passes per shape per frame, which previously dragged comparison rendering below 5 FPS. Standardized on solid crisp stroke outlines (`strokeWidth: 1.5–2.2`) delivering razor-sharp contrast ($\ge 10:1$ WCAG AAA) with zero off-screen rasterization overhead.
     - **Decoupled Dragmove I/O & Micro-Optimized Point Dragging**: Replaced full `updateShapes()` calls during point dragging (`c.on('dragmove')`) with a lightweight `updateEdgePoints()` routine that only mutates in-memory line coordinate buffers (< 0.05ms). Eliminated synchronous `localStorage.setItem` writes (`aPoints.set()`, `aAnchors.set()`, `aEdges.set()`) and DOM textarea serialization during drag movement, deferring state persistence cleanly to `dragend`. Removed redundant `moveToTop()` calls during movement, eliminating 35 array splices per mouse move event.
     - **`requestAnimationFrame`-Throttled Canvas Panning**: Wrapped stage panning coordinates inside `window.requestAnimationFrame`, buffering pointer deltas and preventing 500–1000Hz gaming mice from choking the main UI thread with redundant canvas redraws.
     - **Debounced Marker Scaling on Wheel Zoom**: Decoupled stage zoom transformation from marker radius re-scaling; zooming now applies instantaneous hardware-accelerated CSS/Canvas transformation while marker radius recalculation is debounced by 40ms.
     - **Continuous CSS Repaint Elimination**: Replaced the continuous `@keyframes pulse-ready-glow` CSS `box-shadow` spread animation on `.ready-to-analyze` with a performant static glow (`box-shadow: 0 0 16px rgba(245, 158, 11, 0.55)`), preventing full sidebar compositing layer invalidation on every VSync frame.
-  - **Dedicated Collapsible Right Editing Tools Sidebar & Minimal Stage Header ([views/editor.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug), [client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts), [style.scss](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss), [views/mixins/icons.pug](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/mixins/icons.pug))**:
+  - **Dedicated Collapsible Right Editing Tools Sidebar & Minimal Stage Header ([views/editor.pug](../views/editor.pug), [client/editor.ts](../client/editor.ts), [style.scss](../style.scss), [views/mixins/icons.pug](../views/mixins/icons.pug))**:
     - **Overcrowding & Horizontal Scrolling Elimination**: Completely dismantled the horizontally overflowing 16-button `#stage-toolbar`, moving all canvas editing, layer inspection, and spec tools into a structured, dedicated right sidebar (`#editor-tools-sidebar`).
     - **Clean Minimal Stage Header**: Replaced the cluttered canvas top bar with a sleek, 44px minimal header featuring the left sidebar toggle (`[M]`), a live canvas status pill (`🎯 Weapon • Shots • Scale`), a shortcuts guide trigger (`[?]`), and the right panel toggle button (`[E]`).
     - **Logical Vertical Card Structure**: Organized editing controls into 4 high-density, accessible cards:
@@ -69,39 +464,39 @@
       - **View & Comparison**: Active view selector, batch screenshot carousel (`Prev` / `Next`), and full-width `Compare Spec vs Candidate` (`[O]`) with embedded Discrepancy HUD metrics.
     - **Collapsible & Minimized Workspace**: Right sidebar collapses smoothly via `#collapse-tools-sidebar-btn` or `#toggle-tools-panel-btn`, expanding the Konva canvas to 100% of the screen. State persists in `localStorage` (`editor_tools_collapsed`).
     - **Global Keyboard Shortcut `E`**: Bound `E` key (outside text inputs) to instantly toggle the right tools panel, matching `M` for the left sidebar.
-  - **CV Discovery Pipeline Circular Reference Fix & Robust Error Reporting ([pipeline.py](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py), [cli.py](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/cli.py), [app.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js))**:
+  - **CV Discovery Pipeline Circular Reference Fix & Robust Error Reporting ([pipeline.py](../processing/recoil_discovery/pipeline.py), [cli.py](../processing/recoil_discovery/cli.py), [app.js](../app.js))**:
     - **Self-Referential Dictionary Cycle Elimination**: Fixed a critical self-referencing circular dictionary bug in `RecoilPipeline.aggregate_and_build_spec` where `batch_spec["standalone_batch_spec"] = batch_spec` was assigned when `merge_strategy == "overwrite"` (or fallback from non-matching accumulate specs). This circular pointer caused `json.dumps(result)` to crash with `ValueError: Circular reference detected`, exiting Python with code 1 after completing all spray and decal analyses.
     - **Isolated Batch Spec Deepcopy**: Standardized on `copy.deepcopy(batch_spec)` for both `overwrite` and `accumulate` strategies, ensuring standalone batch specs are isolated without reference cycles.
     - **Full Traceback to `sys.stderr`**: Attached `traceback.print_exc(file=sys.stderr)` to `cmd_session` in `cli.py`, guaranteeing that any Python-side exceptions emit comprehensive stack traces to stderr.
     - **Structured Error Extraction in Express Backend**: Upgraded Express error parsing in `app.js` (`/api/discovery/process-session` and `/api/discovery/process-static-image`) to inspect `stdoutData` and extract structured error JSON messages when child processes exit with non-zero exit codes, preventing Python error messages from ever being swallowed or obscured by standard log text.
-    - **Unit Test Coverage**: Added `test_pipeline_overwrite_json_serializable` in [`test_pipeline.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/tests/test_pipeline.py) validating clean JSON serialization of specs across both overwrite and accumulate strategies with 31/31 unit tests passing.
+    - **Unit Test Coverage**: Added `test_pipeline_overwrite_json_serializable` in [`test_pipeline.py`](../processing/tests/test_pipeline.py) validating clean JSON serialization of specs across both overwrite and accumulate strategies with 31/31 unit tests passing.
   - **Security & Link Hygiene**:
     - Added `rel="noopener noreferrer"` to all outbound target="_blank" links across all templates, mitigating tab-nabbing vulnerabilities.
     - Enriched interactive buttons and form inputs with descriptive `aria-label` attributes.
 
 
 - **Full-Stack Codebase Hardening, Correctness & Error Resilience**:
-  - **Server & Process Safety ([app.js](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js))**:
+  - **Server & Process Safety ([app.js](../app.js))**:
     - Added `proc.on('error')` failure listeners to `spawn()` calls in `/api/discovery/process-session` and `/api/discovery/process-static-image`, guarding against uncaught Node.js server crashes if Python or virtual environment binaries are missing or misconfigured.
     - Fixed weapon name extraction regex/split in `/api/discovery/sessions` (`parts.slice(1, -2).join('_')`) to properly support multi-part weapon tags (e.g. `havoc_tc`, `p2020_akimbo`, `mozambique_akimbo`).
     - Converted synchronous blocking `fs.writeFileSync` in `POST /api/specs` to non-blocking async `await fs.promises.writeFile`.
     - Added strict parameter sanitization for CLI command-line arguments (`weaponTag`, `cleanHdr`, `cleanStrategy`, and positive numeric validation for `shots`, `rpm`, `multiplier`, `distance`, `zoom`, `fov`).
     - Added `isValidWeaponSpec` JSON schema validation for spec payloads with error logging and backup protection on save failures.
-  - **Python Discovery Engine Robustness ([processing/recoil_discovery/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/))**:
-    - [`tracker.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/tracker.py): Initialized `cx = w // 2` unconditionally before `roi_mask` check to prevent `UnboundLocalError`; moved `maximum_filter` to module top-level imports.
-    - [`spec_manager.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/spec_manager.py): Added memory caching in `load_specs`; handled `common_len == 0` in `diff_weapon_spec` returning an `EMPTY_PATTERN` status without crashing.
-    - [`aggregator.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/aggregator.py): Fixed `mean_recoil` returning `([0.0], [0.0])` on empty trials; synchronized `time_points` length to `max_len` in `weighted_merge_recoil`.
-    - [`cli.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/cli.py): Enforced `MAX_LENGTH = 55` and sliced/padded coordinates strictly to 55 elements in `cmd_export_arduino` to match Arduino firmware memory layout.
-    - [`pipeline.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py): Removed unreachable duplicate `elif in_game_dist and len(raw_x) >= 2:` branch; hoisted `tone_map_hdr_image` to module top level.
-    - [`shot_detector.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/shot_detector.py): Added `min_rpm` sanity validation.
+  - **Python Discovery Engine Robustness ([processing/recoil_discovery/](../processing/recoil_discovery/))**:
+    - [`tracker.py`](../processing/recoil_discovery/tracker.py): Initialized `cx = w // 2` unconditionally before `roi_mask` check to prevent `UnboundLocalError`; moved `maximum_filter` to module top-level imports.
+    - [`spec_manager.py`](../processing/recoil_discovery/spec_manager.py): Added memory caching in `load_specs`; handled `common_len == 0` in `diff_weapon_spec` returning an `EMPTY_PATTERN` status without crashing.
+    - [`aggregator.py`](../processing/recoil_discovery/aggregator.py): Fixed `mean_recoil` returning `([0.0], [0.0])` on empty trials; synchronized `time_points` length to `max_len` in `weighted_merge_recoil`.
+    - [`cli.py`](../processing/recoil_discovery/cli.py): Enforced `MAX_LENGTH = 55` and sliced/padded coordinates strictly to 55 elements in `cmd_export_arduino` to match Arduino firmware memory layout.
+    - [`pipeline.py`](../processing/recoil_discovery/pipeline.py): Removed unreachable duplicate `elif in_game_dist and len(raw_x) >= 2:` branch; hoisted `tone_map_hdr_image` to module top level.
+    - [`shot_detector.py`](../processing/recoil_discovery/shot_detector.py): Added `min_rpm` sanity validation.
     - Added unit test coverage in `test_spec_manager.py` and `test_aggregator.py`, bringing suite to 30/30 passing tests.
-  - **Client Math & State Engine ([client/](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/))**:
-    - [`point.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/point.ts): Swapped arguments in `Point.atan2()` to `Math.atan2(this.y, this.x)` conforming to standard mathematical convention; added docstrings and aliases `scale`, `scaleX`, `scaleY`.
-    - [`storage.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/storage.ts): Set `attrUpdatesActive = true` before invoking `poke()` in `resumeAttrUpdates()` to prevent dropping initial updates.
-    - [`stats.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/stats.ts): Wrapped `loadStats()` in `try/catch` to guard against JSON corruption in `localStorage`; eliminated duplicate push bug during legacy migration.
-    - [`main.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/main.ts): Upgraded legacy origin migration redirect to HTTPS.
-    - [`game.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts): Fixed `0 / 0 = NaN` stat corruption in `Shooting.finish()` when `hitIndex == -1`; guarded trail rendering when index out of bounds; renamed `displayTace()` typo to `displayTrace()`; eliminated dead code `const w = selectedWeapon();` in `TracePreview`; merged `aMovingTarget` into the multi-attribute `watch([...], showStats)` array resolving legacy TODOs.
-  - **UI Robustness & Security ([client/editor.ts](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts))**:
+  - **Client Math & State Engine ([client/](../client/))**:
+    - [`point.ts`](../client/engine/point.ts): Swapped arguments in `Point.atan2()` to `Math.atan2(this.y, this.x)` conforming to standard mathematical convention; added docstrings and aliases `scale`, `scaleX`, `scaleY`.
+    - [`storage.ts`](../client/storage.ts): Set `attrUpdatesActive = true` before invoking `poke()` in `resumeAttrUpdates()` to prevent dropping initial updates.
+    - [`stats.ts`](../client/stats.ts): Wrapped `loadStats()` in `try/catch` to guard against JSON corruption in `localStorage`; eliminated duplicate push bug during legacy migration.
+    - [`main.ts`](../client/main.ts): Upgraded legacy origin migration redirect to HTTPS.
+    - [`game.ts`](../client/game.ts): Fixed `0 / 0 = NaN` stat corruption in `Shooting.finish()` when `hitIndex == -1`; guarded trail rendering when index out of bounds; renamed `displayTace()` typo to `displayTrace()`; eliminated dead code `const w = selectedWeapon();` in `TracePreview`; merged `aMovingTarget` into the multi-attribute `watch([...], showStats)` array resolving legacy TODOs.
+  - **UI Robustness & Security ([client/editor.ts](../client/editor.ts))**:
     - Guarded `update()` against empty point graphs (`pp.length === 0`), returning safe empty spec without throwing `TypeError: Cannot read properties of undefined (reading 'clone')`.
     - Added HTTP status verification (`!res.ok`) before calling `res.json()` on `/api/discovery/process-session` and `/api/discovery/process-static-image`, surfacing human-readable server error messages.
     - Added `escapeHtml()` utility to sanitize all dynamic weapon, mode, and filename variables before injecting into `innerHTML`.
@@ -109,8 +504,8 @@
     - Resolved legacy TODOs: removed redundant `img.draw()` call and added `img.isCached()` guard during filter re-caching in `initImage()`; added user-facing warning and console warning when anchor count $\ne 2$ in manual calibration mode.
 
 - **Removed Legacy Development Hiatus & End-of-Support Splash Notice**:
-  - Removed outdated September 2024 development update notice (`#notify-splash`) and its associated state/watcher (`aShowDevUpdate`, `maybeShowDevUpdate`) from [`views/index.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/index.pug) and [`client/game.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts).
-  - Cleaned up obsolete splash styling rules in [`style.scss`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss).
+  - Removed outdated September 2024 development update notice (`#notify-splash`) and its associated state/watcher (`aShowDevUpdate`, `maybeShowDevUpdate`) from [`views/index.pug`](../views/index.pug) and [`client/game.ts`](../client/game.ts).
+  - Cleaned up obsolete splash styling rules in [`style.scss`](../style.scss).
 
 - **Direct 1-Click Spec Saving & Stage Toolbar Save**:
   - Solved user workflow friction where the save button was tucked away in the left sidebar accordion.
@@ -135,23 +530,23 @@
   - Added `🔬 New Batch Alone` option in the stage View dropdown (`#stage-preview-select`) to seamlessly compare newly captured batch samples against the accumulated canonical spec.
 
 - **Recoil Editor Usability, Zoom-Adaptive Markers & Smart Trajectory Editing**:
-  - **Zoom & Pan Preservation**: Guarded stage position and scale resets in `renderPointsOnImage`, `loadSampleScreenshotOnCanvas`, and overlay transitions in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts). Zooming into specific wall decals is now preserved when toggling views (`spec`, `analyzed`, `trial-X`), clicking loaded images in the batch list, or clicking `🔄 Reload`.
+  - **Zoom & Pan Preservation**: Guarded stage position and scale resets in `renderPointsOnImage`, `loadSampleScreenshotOnCanvas`, and overlay transitions in [`client/editor.ts`](../client/editor.ts). Zooming into specific wall decals is now preserved when toggling views (`spec`, `analyzed`, `trial-X`), clicking loaded images in the batch list, or clicking `🔄 Reload`.
   - **Zoom-Adaptive Pinpoint Decal Markers**: Marker circle radii, stroke widths, and trajectory lines scale inversely with canvas zoom ($r = 4.5 / s$, $w = 1.2 / s$). At high zoom levels (3x–8x), markers remain crisp ~4.5px pinpoint dots instead of bloating into giant circles, with translucent fills (`rgba(0, 229, 255, 0.22)`) and green shot 0 indicator so decals underneath remain clearly visible.
   - **Full Undo / Redo System (`↩ Undo`, `↪ Redo`)**: Added 50-level history stack tracking all marker additions, deletions, drags, and clears. Toolbar buttons `#undo-stage-btn` and `#redo-stage-btn` enable/disable dynamically, with global keyboard shortcuts (`Ctrl+Z`, `Ctrl+Y`, and `Ctrl+Shift+Z`) documented in the shortcuts modal.
-  - **Smart Trajectory Insertion & Auto-Connecting Pattern Lines**: Adding a marker in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) calculates the nearest sequential trajectory segment ($P_i \to P_{i+1}$) or spray endpoint, automatically inserting the shot at its chronological index, re-indexing remaining points, and reconnecting lines $0 \to 1 \dots \to N-1$ seamlessly without requiring manual edge linking. Right-clicking a marker deletes it, re-indexes points, and rejoins lines automatically.
+  - **Smart Trajectory Insertion & Auto-Connecting Pattern Lines**: Adding a marker in [`client/editor.ts`](../client/editor.ts) calculates the nearest sequential trajectory segment ($P_i \to P_{i+1}$) or spray endpoint, automatically inserting the shot at its chronological index, re-indexing remaining points, and reconnecting lines $0 \to 1 \dots \to N-1$ seamlessly without requiring manual edge linking. Right-clicking a marker deletes it, re-indexes points, and rejoins lines automatically.
   - **Crowded Decal Hitbox Scaling & Elimination of Bold Click State**: Fixed circle hitboxes swallowing clicks in tight clusters by scaling `hitStrokeWidth` with zoom. Eliminated legacy `edgeStartName` bolding so left-clicking a marker never turns it bold.
 
   - Addressed why Havoc's multiplier was temporarily set to 1.0: the automated CV discovery pipeline extracts pure 1.0x mouse mickeys directly (deflection ending at $y = -538.5$).
-  - In [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json), canonical weapon curves store coordinates scaled by the weapon's in-game engine sensitivity multiplier ($0.73$ for assault rifles/SMGs like R-99 and R-301, $0.75$–$0.85$ for marksman/shotguns).
+  - In [`client/specs.json`](../client/specs.json), canonical weapon curves store coordinates scaled by the weapon's in-game engine sensitivity multiplier ($0.73$ for assault rifles/SMGs like R-99 and R-301, $0.75$–$0.85$ for marksman/shotguns).
   - Normalized Havoc (`havoc_tc`) back to `multiplier: 0.73` ($y$ ending at $-393.11$) so all 31 weapons adhere to the identical standard, while preserving unscaled `raw_1x_x` and `raw_1x_y` (ending at $-538.5$) for exact precision.
-  - Re-exported [`arduino_mouse/src/recoil.inc`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/arduino_mouse/src/recoil.inc) to match.
+  - Re-exported [`arduino_mouse/src/recoil.inc`](../arduino_mouse/src/recoil.inc) to match.
 
 - **HDR-to-SDR Color Tone-Mapping & Over-Exposure Correction**:
   - Solved washed-out, foggy, overblown screenshot and video colors caused by Windows HDR / Auto HDR clamping high dynamic range framebuffers into 8-bit SDR without monitor tone mapping (where mean luminance exceeded 193 out of 255).
   - Added dedicated HDR color profile dropdowns (`#capture-hdr-select` and `#static-hdr-select`) in both In-Game Live Studio and Saved Wall Screenshots calibration panels, featuring `☀️ HDR Fix (Natural)` (default), `☀️ HDR Fix (Vibrant)`, and `Standard (SDR)`.
-  - Implemented high-performance 2D Canvas LUT-based tone mapping ($\gamma \approx 1.6$, exposure $0.85$, contrast $1.20$, and saturation boost $1.25$) on canvas screenshot snapping and background rendering in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts), with preference persisted in `localStorage`.
+  - Implemented high-performance 2D Canvas LUT-based tone mapping ($\gamma \approx 1.6$, exposure $0.85$, contrast $1.20$, and saturation boost $1.25$) on canvas screenshot snapping and background rendering in [`client/editor.ts`](../client/editor.ts), with preference persisted in `localStorage`.
   - Added real-time CSS filter (`brightness(0.85) contrast(1.22) saturate(1.25)`) to the live stream video preview (`#capture-preview-video`).
-  - Added automated HDR tone mapping (`tone_map_hdr_image`) and `--hdr` CLI flag in [`processing/recoil_discovery/tracker.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/tracker.py), [`pipeline.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py), and [`cli.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/cli.py) so offline images and preview thumbnails restore crisp bullet contrast and natural colors automatically.
+  - Added automated HDR tone mapping (`tone_map_hdr_image`) and `--hdr` CLI flag in [`processing/recoil_discovery/tracker.py`](../processing/recoil_discovery/tracker.py), [`pipeline.py`](../processing/recoil_discovery/pipeline.py), and [`cli.py`](../processing/recoil_discovery/cli.py) so offline images and preview thumbnails restore crisp bullet contrast and natural colors automatically.
 
 - **View Dropdown Synchronization & Non-Session Integration**:
   - Resolved an issue where the stage View dropdown (`#stage-preview-select`) failed to update when clicking between loaded screenshots in the batch list, or after clicking the reload button (`🔄 Reload`).
@@ -162,19 +557,19 @@
 
 - **Fit & Center Pattern & User Correction Preservation**:
   - Fixed an issue where clicking `🎯 Fit & Center` (`#recenter-stage-btn`) behaved like a full reset: it was calling `renderSelectedOverlay()` which cleared all points on canvas and forcibly re-loaded the spec pattern, discarding manual corrections added via `🔧 Correct Shots`.
-  - Removed overlay re-fetching from `fitAndCenterCanvas()` in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts): `fitAndCenterCanvas()` now purely re-centers the stage and linearly rescales the existing Konva points on canvas. It preserves whatever pattern the user was actively inspecting (analyzed decals, spec overlay, or manual corrections) without altering or deleting points.
+  - Removed overlay re-fetching from `fitAndCenterCanvas()` in [`client/editor.ts`](../client/editor.ts): `fitAndCenterCanvas()` now purely re-centers the stage and linearly rescales the existing Konva points on canvas. It preserves whatever pattern the user was actively inspecting (analyzed decals, spec overlay, or manual corrections) without altering or deleting points.
 
 - **Automated FOV 104 Perspective Projection & Mickeys Derivation**:
   - Resolved the mathematical relationship between Source Engine recoil deflection (measured in mouse counts / mickeys) and on-screen bullet decal pixel spacing across different Fields of View (FOV).
   - Factored camera angular focal length into the projection layer: $\text{fovFactor} = \frac{1}{\tan(\text{FOV} / 2)}$. At in-game FOV 104°, $\tan(52^\circ) \approx 1.28$, meaning decals on screen are visually $\approx 22\%$ smaller in pixels than at default 90° FOV for identical mouse mickeys.
-  - Generalised conversion formulas in [`processing/recoil_discovery/pipeline.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py) and [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts):
+  - Generalised conversion formulas in [`processing/recoil_discovery/pipeline.py`](../processing/recoil_discovery/pipeline.py) and [`client/editor.ts`](../client/editor.ts):
     $$\text{px\_to\_mouse} = \frac{3.36}{\text{zoom}} \times \frac{1080}{H} \times \tan\left(\frac{\text{FOV}}{2}\right)$$
     $$\text{mouse\_to\_px} = \frac{\text{zoom}}{3.36} \times \frac{H}{1080} \times \frac{1}{\tan(\text{FOV} / 2)}$$
-  - Added dedicated In-Game FOV inputs (`#static-fov-input` and `#capture-fov-input`, default 104°) to both live and offline calibration panels, passing `--fov` through [`app.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) and [`processing/recoil_discovery/cli.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/cli.py). Visual scale overlay and mouse mickeys now calibrate 100% automatically without manual slider guesswork.
+  - Added dedicated In-Game FOV inputs (`#static-fov-input` and `#capture-fov-input`, default 104°) to both live and offline calibration panels, passing `--fov` through [`app.js`](../app.js) and [`processing/recoil_discovery/cli.py`](../processing/recoil_discovery/cli.py). Visual scale overlay and mouse mickeys now calibrate 100% automatically without manual slider guesswork.
 
 - **Pre-Analysis Reticle Alignment & Offline Screenshot Positioning**:
   - Resolved an issue where loading an offline screenshot prior to analysis placed the weapon recoil pattern too low (down in the weapon iron sights) upon reload.
-  - Corrected anchor position in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) (`displayWeaponOnCanvas`): coordinates now anchor at the physical firing range target board crosshair ($X \approx 48.7\%, Y \approx 49.5\%$) matching the in-game ADS aim position before and after discovery.
+  - Corrected anchor position in [`client/editor.ts`](../client/editor.ts) (`displayWeaponOnCanvas`): coordinates now anchor at the physical firing range target board crosshair ($X \approx 48.7\%, Y \approx 49.5\%$) matching the in-game ADS aim position before and after discovery.
   - Dynamically reads optic zoom via `getActiveOpticZoom()` and binds optic change events so selecting 1x, 2x, 3x, or 4x updates the visual overlay scale immediately.
 
 - **Interactive Keyboard Shortcuts & Controls Reference (`⌨️ Shortcuts` / `?`)**:
@@ -192,9 +587,9 @@
 - **1:1 In-Game Recoil Scale & Editor Visualization Calibration**:
   - Resolved scale discrepancy where newly analyzed recording patterns produced coordinates roughly $3.36\times$ smaller than canonical in-game specs, while canonical specs appeared magnified over wall screenshots.
   - Formulated the exact geometric relationship between Source Engine in-game mouse mickeys ($0.022^\circ/\text{count}$) and decal pixels on a 1080p wall screenshot ($1\text{ decal pixel at 1080p 1x} \approx 3.36\text{ in-game mouse counts}$).
-  - Updated [`processing/recoil_discovery/pipeline.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py) so newly discovered sprays automatically convert screenshot decal pixels into canonical in-game mouse counts matching the rest of the game specs.
-  - Updated [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) (`renderSelectedOverlay`, `displayWeaponOnCanvas`, and `syncSpecFromPoints`): canonical in-game specs are now scaled dynamically using `getMouseToPixelScale(imgHeight, zoom)` to match wall screenshot decals 1:1 on the canvas, while manual corrections convert cleanly back to true in-game mouse counts.
-  - Restored Havoc Rifle (`havoc_tc`) in [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json) with authentic modern ground loot magazine capacities `[18, 21, 25, 29, 35]` (Base, L1, L2, L3, Corrupted L4) and full-scale canonical recoil trajectory ($y$ ending at $-538.7$, 672 RPM).
+  - Updated [`processing/recoil_discovery/pipeline.py`](../processing/recoil_discovery/pipeline.py) so newly discovered sprays automatically convert screenshot decal pixels into canonical in-game mouse counts matching the rest of the game specs.
+  - Updated [`client/editor.ts`](../client/editor.ts) (`renderSelectedOverlay`, `displayWeaponOnCanvas`, and `syncSpecFromPoints`): canonical in-game specs are now scaled dynamically using `getMouseToPixelScale(imgHeight, zoom)` to match wall screenshot decals 1:1 on the canvas, while manual corrections convert cleanly back to true in-game mouse counts.
+  - Restored Havoc Rifle (`havoc_tc`) in [`client/specs.json`](../client/specs.json) with authentic modern ground loot magazine capacities `[18, 21, 25, 29, 35]` (Base, L1, L2, L3, Corrupted L4) and full-scale canonical recoil trajectory ($y$ ending at $-538.7$, 672 RPM).
 
 
 - **Shot Count Mismatch Detection & Manual Correction Mode**:
@@ -208,28 +603,28 @@
 
 - **Sidebar Footage & Image Previews Fit**:
   - Resolved an issue where video and screenshot previews inside the sidebar appeared massive, overflowed horizontally, or showed only a cropped fragment of the footage.
-  - Corrected an SCSS nesting mismatch in [`views/editor.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug) and [`style.scss`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss): restored `.capture-studio-section` and broadened parent selectors to `#method-panel-live` and `.method-panel`, ensuring all sidebar media constraints apply reliably across all recording method tabs.
+  - Corrected an SCSS nesting mismatch in [`views/editor.pug`](../views/editor.pug) and [`style.scss`](../style.scss): restored `.capture-studio-section` and broadened parent selectors to `#method-panel-live` and `.method-panel`, ensuring all sidebar media constraints apply reliably across all recording method tabs.
   - Constrained `.sample-media-row .media-col video, img` to `height: 95px; max-height: 95px; object-fit: contain; background: #000; display: block;` with column `min-width: 0; overflow: hidden;`. This allows spray video clips and companion wall decal screenshots to fit side-by-side inside the 380px sidebar, with 100% of the game window and decals visible without cropping.
   - Fixed thumbnail class name mismatch in `.batch-screenshots-list`: added styling for `img.batch-thumb` with fixed `width: 52px; height: 38px; object-fit: contain; flex-shrink: 0;` and `.batch-info` text clipping with ellipsis, eliminating horizontal blowout from unconstrained 2560px images in the offline tab.
   - Added `overflow-x: hidden;` to `#tools` and `.batch-screenshots-list`, guaranteeing zero horizontal scrollbars or container expansion.
 
 - **Duplicate Screenshot & Clip Upload Prevention**:
-  - Added strict duplicate prevention across all upload and import workflows in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts):
+  - Added strict duplicate prevention across all upload and import workflows in [`client/editor.ts`](../client/editor.ts):
     - **Disk File Upload** (`#wall-screenshot-file-input`): Inspects selected files against current batch screenshots by filename and base64 content. Omitted duplicates are tracked and reported with informative badges (`ℹ️ Added X screenshot(s) (Y duplicate(s) omitted)`).
     - **Server Screenshots Library** (`#load-saved-screenshot-btn`): Checks existing batch items by filename and source URL before fetching, blocking redundant downloads and alerting the user immediately.
     - **Live Studio Import** (`#import-clips-input`): Deduplicates imported video clips and companion wall images against `capturedSamples` and `batchScreenshots`.
 
 - **1:1 Recoil Game Scale Calibration & True Muscle Memory Guarantee**:
   - Thoroughly investigated and addressed the scale discrepancy between captured decals and weapon specs upon reload.
-  - Identified that legacy `havoc_tc` in [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json) originated from May 2021 before the Source engine $0.73$ multiplier and optic zoom calibrations were standardized, causing a vertical climb of $-538.5$ that blew up to $-1077$ px when magnified by $2.0\times$.
-  - Re-calibrated `havoc_tc` in [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json) with `"multiplier": 0.73`, authentic 36-round energy mag capacities (24, 28, 32, 36), and accurate mouse-count coordinates extracted from real Firing Range captures.
-  - Updated spec overlay math in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) (`renderSelectedOverlay` and `displayWeaponOnCanvas`): accurately converts mouse counts to screen pixels using $\text{pixels} = \left(\frac{\text{spec}}{\text{multiplier}}\right) \times \text{zoom}$.
+  - Identified that legacy `havoc_tc` in [`client/specs.json`](../client/specs.json) originated from May 2021 before the Source engine $0.73$ multiplier and optic zoom calibrations were standardized, causing a vertical climb of $-538.5$ that blew up to $-1077$ px when magnified by $2.0\times$.
+  - Re-calibrated `havoc_tc` in [`client/specs.json`](../client/specs.json) with `"multiplier": 0.73`, authentic 36-round energy mag capacities (24, 28, 32, 36), and accurate mouse-count coordinates extracted from real Firing Range captures.
+  - Updated spec overlay math in [`client/editor.ts`](../client/editor.ts) (`renderSelectedOverlay` and `displayWeaponOnCanvas`): accurately converts mouse counts to screen pixels using $\text{pixels} = \left(\frac{\text{spec}}{\text{multiplier}}\right) \times \text{zoom}$.
   - The spec pattern now lands directly on top of the physical bullet decals on canvas with 1:1 precision, ensuring the recoil translates identically to in-game muscle memory.
 
 - **Batch Multi-Screenshot Analysis & Fast Stage Carousel Navigation**:
   - Added support for analyzing multiple wall screenshots in a single batch. Users can select multiple images from disk or load saved screenshots directly from the server library.
   - Each screenshot is tracked in a dedicated batch manager card list with live status badges (`Ready`, `Analyzing...`, `N shots`), thumbnail previews, and remove controls.
-  - Extended the backend pipeline with `process_images_session` in [`processing/recoil_discovery/pipeline.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py) and CLI `recoil_discovery.cli session` to batch-extract decals from each screenshot, measure shot counts, and calculate a unified median aggregated spec with automatic outlier rejection.
+  - Extended the backend pipeline with `process_images_session` in [`processing/recoil_discovery/pipeline.py`](../processing/recoil_discovery/pipeline.py) and CLI `recoil_discovery.cli session` to batch-extract decals from each screenshot, measure shot counts, and calculate a unified median aggregated spec with automatic outlier rejection.
   - Added Stage Toolbar navigation controls (`◀ Prev` / `Next ▶`, indicator `🖼️ 1/N`) and keyboard shortcuts `[` and `]` to cycle through screenshots on canvas, inspect individual spray decals, and compare against the median pattern or canonical saved spec.
 
 - **In-Game Live Studio - Past Sessions & Older Captures Loader**:
@@ -241,7 +636,7 @@
 
 - **Reload Spec Loading & Overlay Distinction Fix**:
   - Solved an issue where, after analyzing an image, clicking `🔄 Reload` only reset the photo's predicted pattern and failed to reload the weapon's saved spec from `specs.json`.
-  - Disentangled the `'spec'` key (canonical weapon spec from `specs.json`) from `'analyzed'` (detected decal points from the photo) in `populateStagePreviewDropdown()` and `renderSelectedOverlay()` in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts).
+  - Disentangled the `'spec'` key (canonical weapon spec from `specs.json`) from `'analyzed'` (detected decal points from the photo) in `populateStagePreviewDropdown()` and `renderSelectedOverlay()` in [`client/editor.ts`](../client/editor.ts).
   - Updated `displayWeaponOnCanvas` so clicking `🔄 Reload` or switching weapons in `#weapon-select` explicitly updates `activeSessionData.spec = w`, sets `stage-preview-select` to `'spec'`, and displays the canonical weapon spec from `specs.json` overlaid directly on the wall screenshot aligned with the initial shot impact (`origin`).
   - Added seamless toggling in `#stage-preview-select` between `📐 Saved Spec: <WEAPON> (<N> shots)` and `🎯 Detected Decals (<N> shots)`, allowing direct side-by-side visual comparison between in-game recoil specs and computer vision detections.
   - Enhanced `🗑 Clear Image` to cleanly reset `activeSessionData` and redraw the weapon pattern centered on canvas.
@@ -250,16 +645,16 @@
   - Added an interactive glassmorphic confirmation modal (`#analysis-confirm-modal`) prompted before analyzing any image or video recording session.
   - Enforces explicit confirmation and selection of the target **Weapon** and **Fire Mode**, preventing accidental tagging of sprays as the default `r99`.
   - Added a **Save capture to library** toggle (default: unchecked for offline screenshots loaded from existing video captures), eliminating duplicate files in `processing/captures/screenshots/`.
-  - Updated backend API in [`app.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) to execute unsaved analysis inside OS temporary directories (`os.tmpdir()`) with immediate cleanup (`fs.unlinkSync`/`fs.rmSync`), ensuring zero disk pollution.
+  - Updated backend API in [`app.js`](../app.js) to execute unsaved analysis inside OS temporary directories (`os.tmpdir()`) with immediate cleanup (`fs.unlinkSync`/`fs.rmSync`), ensuring zero disk pollution.
 
 - **Dynamic Stage Sizing & Auto-Resize for Smaller Screens**:
   - Fixed issues where the screenshot or pattern did not fit on smaller laptop screens or when the 380px sidebar was open.
-  - In [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts), updated `syncStageSize` to dynamically measure the `#stage-container` client dimensions minus toolbar height, preventing fixed-pixel canvas overflow.
+  - In [`client/editor.ts`](../client/editor.ts), updated `syncStageSize` to dynamically measure the `#stage-container` client dimensions minus toolbar height, preventing fixed-pixel canvas overflow.
   - Implemented debounced `ResizeObserver` on `#stage-container` and `window` resize listeners that automatically invoke `fitAndCenterCanvas`, proportionally resizing background wall screenshots and all bullet decal points to fit any viewport dynamically.
-  - Centered weapon pattern display origin in [`displayWeaponOnCanvas`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) relative to the visible stage area instead of total window width.
+  - Centered weapon pattern display origin in [`displayWeaponOnCanvas`](../client/editor.ts) relative to the visible stage area instead of total window width.
 
 - **Clean UI: Recording Method Tabs & Collapsible Sidebar**:
-  - Decluttered the editor interface in [`views/editor.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug) and [`style.scss`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/style.scss) by introducing segmented recording method tabs:
+  - Decluttered the editor interface in [`views/editor.pug`](../views/editor.pug) and [`style.scss`](../style.scss) by introducing segmented recording method tabs:
     - **🎥 In-Game Live Studio**: WebRTC screen share, gunfire audio trigger, and post-reload ADS screenshot capture.
     - **🖼️ Offline Screenshot**: Direct upload/analysis of saved wall screenshots without needing the game running.
     - **🎯 Manual / Legacy**: Color thresholding, auto-targets, and manual point connection.
@@ -267,10 +662,10 @@
   - Added a collapsible sidebar menu toggle (`#toggle-sidebar-btn` / `[M]` keyboard shortcut) to hide the 380px tools panel and maximize canvas workspace, smoothly triggering canvas re-centering on collapse/expand.
 
 - **Capture Naming Conventions (Weapon & Mode Tracking)**:
-  - Updated session directory formatting in [`app.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) to `session_<weapon>_<mode>_<timestamp>` (e.g. `session_havoc_auto_1790712363072`).
+  - Updated session directory formatting in [`app.js`](../app.js) to `session_<weapon>_<mode>_<timestamp>` (e.g. `session_havoc_auto_1790712363072`).
   - Updated static screenshot upload formatting to `<weapon>_<mode>_<timestamp>_wall.jpg`.
   - Renamed previous untagged capture folders in `processing/captures/` to `session_havoc_auto_1790671079628` and `session_havoc_auto_1790712363072`.
-  - Added a dedicated **Fire Mode** selector (`#weapon-mode-select`) in [`views/editor.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug) populated dynamically from weapon configuration in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts), and passed `mode` in analysis requests.
+  - Added a dedicated **Fire Mode** selector (`#weapon-mode-select`) in [`views/editor.pug`](../views/editor.pug) populated dynamically from weapon configuration in [`client/editor.ts`](../client/editor.ts), and passed `mode` in analysis requests.
 
 - **Recoil Multiplier & Optic Zoom Calibration Engine**:
   - Documented Source Engine mouse sensitivity physics ($0.022^\circ$ per mouse count at sensitivity 1.0) and how the `multiplier` scalar converts screen pixels into mouse counts.
@@ -278,16 +673,16 @@
 
 - **Responsive Canvas Viewport & Fit & Center Fix**:
   - Fixed an issue where clicking `🎯 Fit & Center` or loading wall screenshots pushed the background image to the far right of the canvas with a huge black void on the left.
-  - In [`client/main.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/main.ts), updated Konva stage initialization to use the stage container's actual client dimensions instead of `window.screen.width`/`height`.
-  - In [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts), implemented dynamic stage dimension synchronization (`syncStageSize`), registered `ResizeObserver` on `#stage` to automatically handle layout and window resize events, and completely overhauled `fitAndCenterCanvas` to accurately scale and center background wall images and bullet decal points within the visible stage viewport.
+  - In [`client/main.ts`](../client/main.ts), updated Konva stage initialization to use the stage container's actual client dimensions instead of `window.screen.width`/`height`.
+  - In [`client/editor.ts`](../client/editor.ts), implemented dynamic stage dimension synchronization (`syncStageSize`), registered `ResizeObserver` on `#stage` to automatically handle layout and window resize events, and completely overhauled `fitAndCenterCanvas` to accurately scale and center background wall images and bullet decal points within the visible stage viewport.
   - Ensured `loadSampleScreenshotOnCanvas` and `renderSelectedOverlay` always center content relative to the visible stage container.
 
 - **Robust Plain Concrete Wall Extraction & Bottom Extent Calibration**:
-  - Solved pipeline crash (`Mean of empty slice`, `cv::morphologyEx !_src.empty()`) in [`processing/recoil_discovery/tracker.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/tracker.py) when recording sprays against plain concrete walls or pillars without dark bordering girders: evaluated relative median intensity drops (`center_val - 35.0`) with minimum corridor margin fallback.
+  - Solved pipeline crash (`Mean of empty slice`, `cv::morphologyEx !_src.empty()`) in [`processing/recoil_discovery/tracker.py`](../processing/recoil_discovery/tracker.py) when recording sprays against plain concrete walls or pillars without dark bordering girders: evaluated relative median intensity drops (`center_val - 35.0`) with minimum corridor margin fallback.
   - Extended the default vertical board scan limit from `0.52h` to `0.75h` (searching up to `0.85h`), preventing lower bullet decals from being cropped out on tall target boards and plain walls.
 
 - **34-Hole Decal Detection, Cluster Peak Decomposition & Railing Traverse**:
-  - Solved pattern truncation on tall or high-capacity sprays (e.g. Havoc 35-round magazine): updated dynamic board isolation in [`processing/recoil_discovery/tracker.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/tracker.py) so vertical scanning does not stop early on the middle horizontal railing divider, seamlessly capturing all bullet holes in both the upper white board and lower grey board.
+  - Solved pattern truncation on tall or high-capacity sprays (e.g. Havoc 35-round magazine): updated dynamic board isolation in [`processing/recoil_discovery/tracker.py`](../processing/recoil_discovery/tracker.py) so vertical scanning does not stop early on the middle horizontal railing divider, seamlessly capturing all bullet holes in both the upper white board and lower grey board.
   - Implemented local intensity peak decomposition (`maximum_filter`) on Black Top-Hat response to isolate individual bullet pits inside merged/touching decal clusters (such as Havoc's dense 13-round zig-zag hook).
   - Added detour-minimizing path insertion to weave unvisited side hooks into the primary vertical trajectory without leaving branches behind.
   - Added overlapping impact interpolation: when magazine capacity exceeds visible hole count (e.g. 34 visible holes for 35 rounds due to 1 direct overlapping hit), the system automatically detects the largest merged cluster and outputs the full magazine complement.
@@ -295,9 +690,9 @@
 
 - **20-Meter Capture Distance Calibration & Optic Zoom Controls**:
   - Calibrated shooting distance standard to **20 meters** from the white target board in the Firing Range (with **2x HCOG Bruiser** optic), resolving bullet decal overlap issues at close ranges while maintaining crystal-clear decal separation and clean camera FOV.
-  - Added dedicated **🎯 Distance** inputs (default: `20m`) to both the Live Auto-Capture Studio and the Offline Wall Screenshot Analysis Drawer in [`views/editor.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug) and [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts).
+  - Added dedicated **🎯 Distance** inputs (default: `20m`) to both the Live Auto-Capture Studio and the Offline Wall Screenshot Analysis Drawer in [`views/editor.pug`](../views/editor.pug) and [`client/editor.ts`](../client/editor.ts).
   - Paired 20-meter capture with standard **2x HCOG Bruiser** optic scaling (`zoom = 2.0`), auto-scaling raw pixels to 1x canonical game units.
-  - Enhanced target board isolation in [`processing/recoil_discovery/tracker.py`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/tracker.py) with dynamic column/row median profiling, 5% inner safety margin to eliminate pillar seam shadows, and capped nearest-neighbor step relaxation (`1.5 * max_step`) preventing jumps across the frame.
+  - Enhanced target board isolation in [`processing/recoil_discovery/tracker.py`](../processing/recoil_discovery/tracker.py) with dynamic column/row median profiling, 5% inner safety margin to eliminate pillar seam shadows, and capped nearest-neighbor step relaxation (`1.5 * max_step`) preventing jumps across the frame.
   - Added 3-second audible countdown delay with Web Audio tones (440Hz tick / 880Hz chime) on `Re-snap Wall` to allow refocusing Apex and holding ADS.
   - Added full Stage Panning (Right-Click / Middle-Click / Spacebar / Pan tool toggle) and smooth mouse-wheel zoom centered on cursor in the editor canvas.
   - Replaced redundant sample Re-record button with direct `💾 Save Image` download button.
@@ -305,10 +700,10 @@
 
 - **Decoupled Video Cadence & Post-Reload ADS Wall Screenshot Decal Extraction**:
   - Decoupled the recording role: video and audio recordings are now dedicated to measuring RPM, shot timing cadence, and capturing weapon sound, while decal pattern extraction is performed on a crystal-clear screenshot taken when the player is re-aimed in ADS.
-  - Added a configurable **Post-Firing Reload & Re-Aim Buffer** slider (`#reaim-buffer-slider`, 1.5s to 8.0s, default 4.5s) in [`views/editor.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug) so the player has ample time for the empty magazine reload animation to finish, right-click back into ADS, and steady the crosshair on the wall decals.
+  - Added a configurable **Post-Firing Reload & Re-Aim Buffer** slider (`#reaim-buffer-slider`, 1.5s to 8.0s, default 4.5s) in [`views/editor.pug`](../views/editor.pug) so the player has ample time for the empty magazine reload animation to finish, right-click back into ADS, and steady the crosshair on the wall decals.
   - Added live countdown indicators (`#reaim-indicator`, `#reaim-status-badge`) and an instant **`📸 Snap Wall & Finish`** button (with `[Spacebar]` shortcut) allowing users to snap the screenshot the exact second they are aimed, without waiting out the countdown.
-  - Upgraded sample card UI in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) to a side-by-side layout displaying both the spray video (with audio playback) and the ADS wall decal screenshot thumbnail, complete with a `📷 Re-snap Wall` button to instantly recapture the wall without refiring the weapon.
-  - Updated backend pipeline ([`process_video_clip`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py)) and API in [`app.js`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/app.js) to automatically pair companion wall screenshots (`spray_XX_wall.jpg`) for high-resolution static decal extraction.
+  - Upgraded sample card UI in [`client/editor.ts`](../client/editor.ts) to a side-by-side layout displaying both the spray video (with audio playback) and the ADS wall decal screenshot thumbnail, complete with a `📷 Re-snap Wall` button to instantly recapture the wall without refiring the weapon.
+  - Updated backend pipeline ([`process_video_clip`](../processing/recoil_discovery/pipeline.py)) and API in [`app.js`](../app.js) to automatically pair companion wall screenshots (`spray_XX_wall.jpg`) for high-resolution static decal extraction.
 - **Visual Pattern Alignment & Wall Image Overlay**:
   - Overlaid the exact recorded settled frame directly beneath the extracted recoil pattern on the editor canvas (`#stage`), allowing direct visual inspection of how points line up with in-game bullet impact decals.
   - Added an interactive stage toolbar above the canvas with toggles for Wall Image visibility (`#toggle-bg-img`), opacity slider (`#bg-opacity-slider`), individual spray sample selector (`#stage-preview-select`), and quick inspection buttons (`👁️ Canvas`) directly on each recording card.
@@ -317,184 +712,36 @@
   - Added ROI spatial filtering and temporal differencing in `DecalTracker` to eliminate weapon viewmodel and HUD noise blobs on 1440p gameplay frames.
 - **Dynamic Audio Source Switching & Output Device Change Detection**:
   - Solved loss of gunfire trigger detection when switching Windows playback devices (e.g. speakers to headphones, USB headsets, or external DACs).
-  - Added an interactive **Audio Input** selector (`#audio-source-select`) in [`views/editor.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug) supporting System Audio loopback, Default Microphone, and all enumerated hardware inputs (Stereo Mix, Headset Mics, Line-In).
+  - Added an interactive **Audio Input** selector (`#audio-source-select`) in [`views/editor.pug`](../views/editor.pug) supporting System Audio loopback, Default Microphone, and all enumerated hardware inputs (Stereo Mix, Headset Mics, Line-In).
   - Added a `🔄 Reconnect` button to instantly re-bind or re-request audio without interrupting the running game window video stream.
   - Added `navigator.mediaDevices.ondevicechange` listener that detects Windows playback device switches, auto-resumes suspended `AudioContext` states, detects muted tracks, and displays a 1-click alert banner.
-  - Updated `MediaRecorder` in [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) to record video coupled with the actively selected audio input.
+  - Updated `MediaRecorder` in [`client/editor.ts`](../client/editor.ts) to record video coupled with the actively selected audio input.
 - **Post-Spray Settled Frame Decal Extraction & 5–8m Distance Calibration**:
-  - Overcame in-game viewmodel, muzzle flash, gun smoke, and low-ammo HUD warning (`[G] RELOAD`) occlusion during active firing by introducing settled post-spray frame decal extraction ([`DecalTracker.extract_from_settled_frames`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/tracker.py)).
+  - Overcame in-game viewmodel, muzzle flash, gun smoke, and low-ammo HUD warning (`[G] RELOAD`) occlusion during active firing by introducing settled post-spray frame decal extraction ([`DecalTracker.extract_from_settled_frames`](../processing/recoil_discovery/tracker.py)).
   - Seamlessly extracts all 35/35 shots from settled wall frames once firing ceases and the viewmodel relaxes, accurately capturing the genuine recoil trajectory across all recorded clips.
-  - Forwarded `expected_shots` through session aggregation ([`process_clips_session`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/processing/recoil_discovery/pipeline.py)) and backend API to prevent truncation.
-  - Calibrated capture distance guideline from 10–15m down to **5–8 meters** in [`docs/capture.md`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/capture.md) and [`views/editor.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug), preventing bullet decal degradation from random bloom while keeping the full pattern in FOV.
+  - Forwarded `expected_shots` through session aggregation ([`process_clips_session`](../processing/recoil_discovery/pipeline.py)) and backend API to prevent truncation.
+  - Calibrated capture distance guideline from 10–15m down to **5–8 meters** in [`docs/capture.md`](capture.md) and [`views/editor.pug`](../views/editor.pug), preventing bullet decal degradation from random bloom while keeping the full pattern in FOV.
 - **Auto-Capture Studio Stabilization & Full-Size Inspection**:
   - **Audio Feedback Elimination**: Prevented preview video playback from triggering recursive ghost recordings by muting samples by default and pausing the gunfire listener during playback.
   - **Spray Duration & Silence Threshold**: Increased recording silence threshold from 450ms to 1200ms and added an 0.8s minimum duration filter, preventing premature cutoff and 1-shot micro-recordings.
   - **Resilient Discovery JSON Parsing**: Standardized Python pipeline analysis logs to `stderr` and added regex JSON extraction in `app.js` to eliminate `Failed to parse discovery output` errors.
   - **Enlarged Preview & Full-Size Inspection Modal**: Increased card video preview height to 160px and added a `🔍 Enlarge` button opening a full-size modal player to inspect decal clarity and mouse stability.
-- **Recoil Editor Background Image Control**: Added a dedicated `🗑 Clear Image` button under the Legacy Pattern Extraction section in [`views/editor.pug`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/views/editor.pug) and updated [`client/editor.ts`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/editor.ts) to gracefully purge and clean up any persistent Base64 images stored in browser `localStorage` (`editor:imagedata`), preventing ghost images from sticking behind weapon patterns.
+- **Recoil Editor Background Image Control**: Added a dedicated `🗑 Clear Image` button under the Legacy Pattern Extraction section in [`views/editor.pug`](../views/editor.pug) and updated [`client/editor.ts`](../client/editor.ts) to gracefully purge and clean up any persistent Base64 images stored in browser `localStorage` (`editor:imagedata`), preventing ghost images from sticking behind weapon patterns.
 - **Shooting Styles & Semi-Automatic Trigger Mechanics**: Differentiated weapon shooting styles across the entire arsenal. Semi-automatic weapons and shotguns (Peacekeeper, Mastiff, Wingman, P2020, G7 Scout, 30-30 Repeater, Triple Take, Bocek, Charge Rifle, Longbow, Sentinel, Kraber) now require a click for each round. Mouse releases do not abort the trial, refire cooldown is enforced based on weapon RPM, and recoil kicks and smoothly recovers to resting center between pumps/shots.
 - **Burst Fire & Recoil Reset Mechanics**: Upgraded burst weapons (Prowler, Hemlok, Nemesis) to fire authentic multi-round bursts (3-round for Hemlok, 4-round for Nemesis, 5-round for Prowler) with intra-burst cadence and an inter-burst pause where recoil smoothly recenters back to (0, 0). Holding the trigger autofires sequential bursts separated by cooldown and recoil recovery.
-- **Segmented Pattern & Trace Visualizations**: Updated [`drawPattern()`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts) and [`TracePreview`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/game.ts) to display segmented burst clusters with subtle recovery lines, and radial per-shot kick vectors for single-fire weapons, eliminating confusing continuous lines across recovery pauses.
+- **Segmented Pattern & Trace Visualizations**: Updated [`drawPattern()`](../client/game.ts) and [`TracePreview`](../client/game.ts) to display segmented burst clusters with subtle recovery lines, and radial per-shot kick vectors for single-fire weapons, eliminating confusing continuous lines across recovery pauses.
 - **Interactive Fire Mode Selector (`#fire-mode-select`)**: Added dedicated fire mode buttons (`Auto`, `Burst`, `Single`) and keyboard shortcut `[B]` (Apex standard toggle fire mode key). Select-fire weapons like Prowler (Burst / Auto) and Hemlok (Burst / Single) can switch modes on the fly, updating sound, pattern visualization, and recoil dynamics in real time across English, Russian, and Simplified Chinese views.
 - **Dynamic Magazine Tooltips (Ammo Per Mag Display)**: All magazine selectors and the fixed capacity badge now display real-time ammo counts directly in tooltips across all languages (e.g., `Level 3 (27 rounds)`, `Level 3 (23 rounds [-4])` when Corrupted Stock is equipped, `Standard Capacity (5 shells)` for Peacekeeper, and `Standard Capacity (4 shells [-1])` with Corrupted Stock).
-- **Shotgun & Semi-Auto Audio System**: Fixed runaway machine-gun audio for shotguns and semi-automatic rifles. Synthesized dedicated, high-impact 44.1 kHz audio samples ([`shotgun_shot.wav`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/assets/audio/shotgun_shot.wav) and [`single_shot.wav`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/assets/audio/single_shot.wav)) and implemented synchronized per-shot playback in the firing engine. Peacekeeper now fires exactly 5 punchy shotgun blasts (or 4 with Corrupted Stock) matching its exact 5-shell capacity.
-- **Complete 31-Weapon Arsenal on Web UI**: Expanded the weapon grid from 14 weapons to all 31 active weapons across all Apex weapon classes (Assault Rifles, SMGs, LMGs, Marksman, Snipers, Shotguns, and Pistols/Akimbos) with official vector SVG iconography, smooth scrollable sidebar navigation, and full 5-tier spec progressions in [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json) across English, Russian, and Simplified Chinese views.
+- **Shotgun & Semi-Auto Audio System**: Fixed runaway machine-gun audio for shotguns and semi-automatic rifles. Synthesized dedicated, high-impact 44.1 kHz audio samples ([`shotgun_shot.wav`](../assets/audio/shotgun_shot.wav) and [`single_shot.wav`](../assets/audio/single_shot.wav)) and implemented synchronized per-shot playback in the firing engine. Peacekeeper now fires exactly 5 punchy shotgun blasts (or 4 with Corrupted Stock) matching its exact 5-shell capacity.
+- **Complete 31-Weapon Arsenal on Web UI**: Expanded the weapon grid from 14 weapons to all 31 active weapons across all Apex weapon classes (Assault Rifles, SMGs, LMGs, Marksman, Snipers, Shotguns, and Pistols/Akimbos) with official vector SVG iconography, smooth scrollable sidebar navigation, and full 5-tier spec progressions in [`client/specs.json`](../client/specs.json) across English, Russian, and Simplified Chinese views.
 - **Corrupted Stock Attachment**: Added the new Corrupted Stock attachment toggle (`.mod-corrupted_stock`) featuring a glowing mythic red outline next to the magazine selector. Reduces magazine capacity by **4 rounds** across the board for stock-equipped weapons, and by **1 shell** for single-shell shotguns (Peacekeeper, Mastiff, EVA-8, Mozambique). Automatically hidden for non-stock weapons (Wingman, RE-45, P2020, Akimbos, Bocek, Kraber). Fully wired into spray pattern preview, tracer, and live shooting trainer.
 - **New Weapon Additions (Nemesis & Hemlok)**: Integrated Nemesis Burst AR (Energy 4-round burst, 582 RPM peak ramp, 20..36 rounds) and Hemlok Burst AR (Heavy 3-round burst, 384 RPM, 21..30 rounds) with dedicated weapon selector icons across English, Russian, and Simplified Chinese views.
-- **Ground Loot & Corrupted (L4) Spec Sync**: Restored full 5-tier ground loot magazine progressions in [`client/specs.json`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/client/specs.json) (R-99: 18..33, R-301: 21..37, Flatline: 19..35, Volt: 20..32, Alternator: 18..32, Havoc: 18..35, CAR: 20..36, Spitfire: 35..50), extrapolating late-spray coordinate arrays up to max mag capacity.
+- **Ground Loot & Corrupted (L4) Spec Sync**: Restored full 5-tier ground loot magazine progressions in [`client/specs.json`](../client/specs.json) (R-99: 18..33, R-301: 21..37, Flatline: 19..35, Volt: 20..32, Alternator: 18..32, Havoc: 18..35, CAR: 20..36, Spitfire: 35..50), extrapolating late-spray coordinate arrays up to max mag capacity.
 - **Navigation & Mythic Glow**: Added direct top navigation link to Recoil Studio (`/editor`) on all language views and added a luminous mythic glow to the Corrupted Magazine (`.mag-4`) selector.
-- **Live Ground Loot & Tier 4 (Corrupted) Wiki Dataset**: Scraped and parsed all 29 dedicated weapon subpages from wiki.gg. Clarified ground loot vs rotational Care Package status (R-99, Devotion, Alternator retain standard ground loot identities). Extracted all Tier 4 / Corrupted (Mythic Red) magazine capacities (HAVOC: 35, Flatline: 35, R-301: 37, Nemesis: 36, Alternator: 32, R-99: 33, Volt: 32, C.A.R.: 36, Wingman: 10, P2020: 15 / Akimbo: 30) and published comprehensive stats reference to [`docs/weapons-wiki-stats.md`](file:///c:/Users/micro.VADER/Documents/Projects/apex/recoil/docs/weapons-wiki-stats.md).
+- **Live Ground Loot & Tier 4 (Corrupted) Wiki Dataset**: Scraped and parsed all 29 dedicated weapon subpages from wiki.gg. Clarified ground loot vs rotational Care Package status (R-99, Devotion, Alternator retain standard ground loot identities). Extracted all Tier 4 / Corrupted (Mythic Red) magazine capacities (HAVOC: 35, Flatline: 35, R-301: 37, Nemesis: 36, Alternator: 32, R-99: 33, Volt: 32, C.A.R.: 36, Wingman: 10, P2020: 15 / Akimbo: 30) and published comprehensive stats reference to [`docs/weapons-wiki-stats.md`](weapons-wiki-stats.md).
 - **Corrupted Magazine (Tier 4 / Red Magazine)**: Full support across all magazine selectors, weapon specs, editor UI, and English, Russian, and Chinese translations.
 - **In-Game Auto-Capture Studio (`/editor`)**: Hands-free window capture studio for Apex Legends. Features an acoustic gunfire sensor to auto-trigger spray recording, embedded sample video player, 1-click sample discard, slot re-recording, and batch analysis.
 - **Web UI Weapon Manager (`/editor`)**: Visual editor dashboard to quickly tune weapon RPM, multiplier, and magazine tiers with direct API saving and automated `.bak` backups.
 - **Automated Video Discovery Engine**: Python pipeline in `processing/recoil_discovery` that automatically discovers rate of fire (RPM), shot count, and chronological bullet decals from video clips without manual lookup.
 - **Weapon RPM Calibration**: Fully calibrated in-game firing rates across all weapons in `client/specs.json` (Volt: 720 RPM, Devotion TC: 900 RPM peak, Prowler: 800 RPM burst, RE-45: 780 RPM, Rampage: 300 RPM, CAR: 930 RPM).
 - **Server Port Fallback**: Express server automatically falls back to port 3001 if port 3000 is in use by other background dev services.
-
-# v240915
-
-- Added splash screen about current state of the project;
-
-- Updated recoils of Flatline and R99.
-
-# v240907
-
-First update since 2021!
-
-- Added donation button for supporters;
-
-- R301 recoils are updated (many others are still out of date!);
-
-- using a YYMMDD as a version number now;
-
-# v19
-
-- C.A.R. recoils;
-
-- updated crosshair to be easily distinguishable from hit markers;
-
-- added scale: it's useful if your sensitivity is too high and pattern is very small. You can also set is proportional to 4:3 (e.g. 1.3 x 1).
-
-# v18
-
-Now shooting is interrupted when you release the mouse button. Score is computed for the bullets already shot and not recorded.
-
-# v17
-
-Simplified Chinese translation. Thank you, @SkywalkerJi!
-
-# v16
-
-Updates to L-STAR mag size after [evolution collection event](https://www.ea.com/en-gb/games/apex-legends/news/evolution-collection-event).
-
-# v15
-
-Recoils and weapons updates for the Season 10.
-
-- Prowler is removed as it only has burst mode.
-
-- Added mag levels for L-Star.
-
-- Added special fixed mag for drop weapons (Spitfire and Alternator).
-
-- Added Rampage and ad toggle for it's "Revved Up" mod.
-
-# v14
-
-- "Invert Y" setting.
-
-# v13
-
-- Russian locale.
-
-- Fix: tooltips not being fully visible.
-
-# v12 small updates
-
-- Fixed a bug when moving target disappeared after switching back to the app from other tab.
-
-- Added a note and AHK script on how to lower window sens if in-game sensitivity is very low.
-
-- Added scrolling to the control panel if windows height is too small.
-
-# v11 Moving target and UI
-
-- Added "moving target" mode, stats are tracked separately for it. Speed is not taken in account as there are many variables to consider beside that.
-
-- Updated UI controls to make mode selection easier.
-
-- Added hints to many controls.
-
-# v10 Firing area and spitfire mag size
-
-- Added a dotted region that shows a good starting position for a spray. If region is too small user will see a warning.
-
-- Updated mag size and audio for Spitfire with a purple mag.
-
-- Now versions are just sequential numbers as I realized that the game is useful already and it's not clear what should be "v1.0".
-
-# v0.9 Reworked simulation
-
-- Added a new "stationary target" option. If unchecked then crosshair will be pinned to the initial position, the target and hit markers will move. That experience should feel closer to the game. Thank you [u/Fartikus](https://www.reddit.com/user/Fartikus) for the suggestion!
-
-- Removed the "show pacer" option as "target" fulfills its purpose naturally. Statistic records with "hints" on and "pacer" off are dropped.
-
-# v0.8 L-STAR patterns
-
-- added L-STAR patterns. That completes the list!
-
-# v0.7 scores graph
-
-- Graph of best / median scores by day.
-
-- Minor layout fixes.
-
-# v0.6 updated spitfire and havoc patterns
-
-- Updated spitfire and havoc patterns after the season 9 patch has landed. Difference in mean recoils is quite small. See https://www.reddit.com/r/apexlegends/comments/n50ps9/oc_changes_in_spitfire_and_havoc_recoils_in/.
-
-# v0.5 all weapons
-
-- All weapons are here! Havoc and Devotion have a Turbocharger. It does not affect their recoils, only makes them brrr faster.
-
-- Rearranged weapons to match in-game order (AR, SMG, LMG, Pistols).
-
-- Small style and performance improvements.
-
-# v0.4 stats updates
-
-- Fixed few issues with statistics storage.
-
-- Added counter of "today tries" to the interface.
-
-- Added Alternator (not verified in-game yet but should be very close).
-
-# v0.3 slow-mode
-
-- Added a "slow-mode": o. Statistics are not recorded for "slow-mode".
-
-- Minor visual improvements and simple page for devices with width less than 900px.
-
-# v0.2 Accurate pattern scale, scoring, performance, and more
-
-[v.01 announce on reddit](https://www.reddit.com/r/apexlegends/comments/mosk0l/i_have_created_an_app_to_practice_recoils) got some attention to the app and users pointed out multiple improvement points.
-
-- Improved the method to collect recoil patterns found that previous patterns were bigger by around 15%. I have also found, by trying to accurately compensate with different scopes and FOV from 70 to 110, that recoil is absolute and does not scale with ADS or FOV. So there is not need to introduce ADS and FOV settings. Confirmed that new patterns are *identical with the game*.
-
-- Reworked scoring [old formula](https://www.desmos.com/calculator/ptb2ipcscr), [new formula](https://www.desmos.com/calculator/j7vjbzvuly). Now they are more forgiving for small errors.
-
-- Removed attachments level selection. The reason is twofold: 1) It's generally recommended to practice with no attachments. 2) The difference between trails is mostly in vertical scale, not form ([r99 diff](./res/r99_diff.png), [flatline diff](./res/faltline_diff.png)). In-game better attachments decrease randomness; training patterns are averages so randomness is removed. Keeping that in mind, the effort to record and support different types of attachments seems redundant. Typically it takes me around 1h to collect and process ~10 trails for one weapon config. Oh yes, it also means that **new weapon types will be added soon**er than I initially planned!
-
-- Improved performance and added FPS display.
-
-- Removed the "Real trace" option that was used to pick the "raw" pattern. Mean one is much more useful for training.
-
-- Added a custom "red dot" cursor. Disabled right mouse click on the area.
-
-- Added weapon titles.
-
-- Added FAQ page, including controller settings.
-
-# v0.1 Initial version
-
-First version with r99, r301, Flatline, and Volt x 4 possible attachment levels.

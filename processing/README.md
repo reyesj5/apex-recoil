@@ -1,4 +1,4 @@
-# Apex Recoil Discovery Engine
+# Spraydown Discovery Engine
 
 Automated computer vision and acoustic signal processing engine for discovering, measuring, and aggregating weapon recoil patterns in [Apex Legends](https://www.ea.com/games/apex-legends).
 
@@ -16,11 +16,29 @@ processing/
 │   ├── aggregator.py       # Multi-spray median-delta integration, proportional accumulation & outlier detection
 │   ├── spec_manager.py     # Schema verification, patch diff reporting & matplotlib visualization
 │   ├── pipeline.py         # End-to-end orchestrator for video clips, images, and sessions
+│   ├── db.py               # SQLite store shared with server/db.ts: lossless versioned specs, specs.json sync
+│   ├── shadow_parity.py    # Dual-run shadow parity verification (specs.json vs SQLite)
 │   └── cli.py              # Unified CLI interface
-├── tests/                  # 27 automated unit tests (pytest)
-├── requirements.txt        # Python dependency manifest
-└── Pipfile                 # Pipenv environment definition
+├── tests/                  # 43 automated unit tests (pytest)
+├── requirements.in         # The pipeline's requirements
+└── requirements.txt        # Their lock: every package pinned with its hashes, made by uv (Dependencies)
 ```
+
+---
+
+## Dependencies
+
+Install the pipeline's packages from their lock, from `processing/`:
+```bash
+pip install -r requirements.txt
+```
+
+`requirements.txt` pins every package with its hashes, for Linux, Windows and macOS on Python 3.12, so the same packages install everywhere, and pip checks each one it downloads against them. It is made from `requirements.in`, the requirements as written. To change one, edit `requirements.in`, make the lock again with [uv](https://docs.astral.sh/uv/), run the checks (the tests, `verify` and shadow parity) and commit both files together:
+```bash
+uv pip compile requirements.in --universal --generate-hashes --python-version 3.12 -o requirements.txt
+```
+
+CI installs with `--require-hashes`, and audits the lock for known vulnerabilities on each change and every Monday (`.github/workflows/audit.yml`).
 
 ---
 
@@ -84,11 +102,24 @@ Regenerates `arduino_mouse/src/recoil.inc` from `client/specs.json`:
 python -m recoil_discovery.cli export-arduino
 ```
 
+### 7. Dual-Run Shadow Parity Verification
+Compares SQLite active specifications (`data/recoil.db`) against `client/specs.json` across all 31 weapons: 0.000000 coordinate drift, identical fields (`mods`, `ping_points`, `raw_1x_*`, absent multipliers, ...) and identical weapon order. By default it first imports edits made to `specs.json` outside the database, exactly as the web server does before every read and write:
+```bash
+python -m recoil_discovery.shadow_parity            # sync, then verify
+python -m recoil_discovery.shadow_parity --no-sync  # only report drift
+```
+
+`DatabaseManager` ([recoil_discovery/db.py](recoil_discovery/db.py)) uses the same schema as the Node.js service. `save_weapon_spec()` merges the given fields into the current spec, stores a new version and re-exports `specs.json`, rewriting only the changed weapon. `SpecManager.save_specs()` still writes `specs.json` directly; those edits are imported into the database on the next sync. Set `RECOIL_DB_PATH` / `RECOIL_SPECS_PATH` to use other locations.
+
 ---
 
 ## Running Tests
 
-All mathematical conversions, signal detection, decal tracking, and pipeline aggregation are covered by unit tests:
+All mathematical conversions, signal detection, decal tracking, database operations, and shadow parity are covered by unit tests:
 ```bash
+# Run full pytest suite (43 tests; database tests use temp files, never data/recoil.db)
 python -m pytest tests
+
+# Run standalone shadow parity verification
+python -m recoil_discovery.shadow_parity
 ```

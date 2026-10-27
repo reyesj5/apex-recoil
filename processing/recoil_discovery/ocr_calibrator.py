@@ -98,6 +98,6 @@ class AngleCalibrator:
     ) -> float:
         """
         Calculate in-game distance between two anchor points using pitch/yaw.
-        Equivalent to points(a, b, c, d) in processing/recoils.ipynb.
+        Equivalent to points(a, b, c, d) in the original project's recoils.ipynb notebook.
         """
         return round(angular_pixel_distance(pitch_a, yaw_a, pitch_b, yaw_b), 2)

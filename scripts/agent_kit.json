@@ -1,0 +1,44 @@
+{
+  "about": "Written by `python scripts/agent_kit.py install` and `sync`, never by hand: what the agent kit added to this project, so a later install takes back only its own; where the kit is, for `python scripts/agent_kit.py outdated`; and the fingerprint of what the agent files last said alike, so `sync` can tell its own copy from an edit.",
+  "repository": "github.com/SphyrLabs/llm-workflow",
+  "folder": "agent-kit",
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(gh run list*)",
+      "Bash(gh run view*)",
+      "Bash(gh run watch*)",
+      "Bash(gh pr checks*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr status*)",
+      "Bash(gh workflow list*)",
+      "Bash(gh workflow view*)",
+      "Bash(gh auth status*)",
+      "PowerShell(gh run list*)",
+      "PowerShell(gh run view*)",
+      "PowerShell(gh run watch*)",
+      "PowerShell(gh pr checks*)",
+      "PowerShell(gh pr view*)",
+      "PowerShell(gh pr list*)",
+      "PowerShell(gh pr status*)",
+      "PowerShell(gh workflow list*)",
+      "PowerShell(gh workflow view*)",
+      "PowerShell(gh auth status*)"
+    ],
+    "deny": [
+      "Bash(gh pr create*)",
+      "Bash(gh pr new*)",
+      "PowerShell(gh pr create*)",
+      "PowerShell(gh pr new*)"
+    ]
+  },
+  "gitignore": [
+    "*.graphify-bak",
+    ".claude/logs/",
+    ".claude/settings.local.json",
+    ".claude/worktrees/",
+    "**/graphify/SKILL.md.bak"
+  ],
+  "synced": "9b7e1149c7db"
+}

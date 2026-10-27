@@ -9,7 +9,7 @@ import math
 import base64
 from collections import deque
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Callable
 import copy
 import cv2
 import numpy as np
@@ -57,18 +57,26 @@ class RecoilPipeline:
             raise FileNotFoundError(f"Cannot open video file: {video_path}")
 
         fps = cap.get(cv2.CAP_PROP_FPS) or 60.0
-        frames_gray = []
         brightness_deltas = []
         prev_gray = None
-        recent_bgr_frames = deque(maxlen=25)
+        # Only the tail of the clip is needed: settled-frame extraction looks back at most 20
+        # frames (DecalTracker.extract_from_settled_frames offsets), and offset -20 is only
+        # usable when more than 20 frames are kept.
+        recent_bgr_frames = deque(maxlen=21)
+        recent_gray_frames = deque(maxlen=21)
+        baseline_gray = None
 
+        frame_idx = 0
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frames_gray.append(gray)
             recent_bgr_frames.append(frame)
+            recent_gray_frames.append(gray)
+
+            if frame_idx == 3:
+                baseline_gray = gray.copy()
 
             if prev_gray is not None:
                 # Frame delta as a proxy for muzzle flash / screen kick
@@ -77,8 +85,14 @@ class RecoilPipeline:
             else:
                 brightness_deltas.append(0.0)
             prev_gray = gray
+            frame_idx += 1
 
         cap.release()
+
+        # Frame 3 is only a usable baseline in clips longer than 5 frames (same rule as the
+        # pre-streaming decoder: frames_gray[3] if len(frames_gray) > 5 else None)
+        if frame_idx <= 5:
+            baseline_gray = None
 
         # 1. Automatically detect shot frames and RPM from video transients
         detected_shots, measured_rpm, shot_frames, time_points_ms = auto_measure_shots_and_rpm(
@@ -138,10 +152,10 @@ class RecoilPipeline:
                     print(f"[+] Wall Screenshot Analysis: Extracted {len(raw_x)} decals from {Path(wall_image_path).name}", file=sys.stderr)
 
         # Fallback to settled frames at the end of the video if wall screenshot was not provided or had no decals
-        if not raw_x and frames_gray:
-            baseline_gray = frames_gray[3] if len(frames_gray) > 5 else None
+        if not raw_x and recent_gray_frames:
+            settled_frames_list = list(recent_gray_frames)
             res = self.tracker.extract_from_settled_frames(
-                frames_gray,
+                settled_frames_list,
                 target_points,
                 baseline_frame=baseline_gray,
                 return_metadata=True
@@ -151,11 +165,32 @@ class RecoilPipeline:
 
             # Fallback to temporal video frame differencing if settled extraction did not find decals
             if not raw_x or (target_points and len(raw_x) < target_points * 0.5):
-                alt_x, alt_y = self.tracker.extract_from_video_frames(frames_gray, shot_frames)
-                if len(alt_x) > len(raw_x):
-                    raw_x, raw_y = alt_x, alt_y
-                    meta["frame_points"] = []
-                    meta["origin"] = [0.0, 0.0]
+                # Seek video to read only the specific shot frames required for fallback differencing
+                target_frame_set = set(shot_frames)
+                target_frame_set.add(0)
+                sparse_frames = {}
+                cap_retry = cv2.VideoCapture(str(video_path))
+                if cap_retry.isOpened():
+                    f_i = 0
+                    while True:
+                        ret_f, frm = cap_retry.read()
+                        if not ret_f:
+                            break
+                        if f_i in target_frame_set:
+                            sparse_frames[f_i] = cv2.cvtColor(frm, cv2.COLOR_BGR2GRAY)
+                            if len(sparse_frames) == len(target_frame_set):
+                                break
+                        f_i += 1
+                    cap_retry.release()
+
+                if 0 in sparse_frames:
+                    max_idx = max(shot_frames) if shot_frames else 0
+                    indexed_grays = [sparse_frames.get(i, sparse_frames[0]) for i in range(max_idx + 1)]
+                    alt_x, alt_y = self.tracker.extract_from_video_frames(indexed_grays, shot_frames)
+                    if len(alt_x) > len(raw_x):
+                        raw_x, raw_y = alt_x, alt_y
+                        meta["frame_points"] = []
+                        meta["origin"] = [0.0, 0.0]
 
             if recent_bgr_frames:
                 recent_list = list(recent_bgr_frames)
@@ -223,7 +258,7 @@ class RecoilPipeline:
             # Perspective projection: focal length scales with 1 / tan(fov / 2).
             # At 104 FOV, decals on screen are ~22% smaller, so each pixel represents more mouse deflection counts.
             z = zoom if (zoom and zoom > 0) else 1.0
-            ref_h = orig_h if settled_bgr is not None else (frames_gray[0].shape[0] if frames_gray else 1080)
+            ref_h = orig_h if settled_bgr is not None else (recent_gray_frames[0].shape[0] if recent_gray_frames else 1080)
             fov_rad = math.radians(fov / 2.0)
             fov_factor = 1.0 / math.tan(fov_rad) if math.tan(fov_rad) > 0 else 1.0
             px_to_mouse = ((3.36 / z) * (1080.0 / ref_h) / fov_factor) if ref_h > 0 else ((3.36 / z) / fov_factor)
@@ -412,7 +447,8 @@ class RecoilPipeline:
         fov: float = 104.0,
         hdr: str = "auto",
         merge_strategy: str = "overwrite",
-        existing_sample_count: Optional[int] = None
+        existing_sample_count: Optional[int] = None,
+        progress_callback: Optional[Callable[[str, float, Dict[str, Any]], None]] = None
     ) -> Dict[str, Any]:
         """
         Process a list of recorded spray video clips, extract individual recoil curves,
@@ -421,10 +457,21 @@ class RecoilPipeline:
         if not clip_paths:
             raise ValueError("No video clips provided")
 
+        if progress_callback:
+            progress_callback("preparing_clips", 5.0, {"total_clips": len(clip_paths)})
+
         trials = []
         measured_rpms = []
+        total_clips = len(clip_paths)
 
-        for p in clip_paths:
+        for i, p in enumerate(clip_paths):
+            if progress_callback:
+                progress_callback(
+                    f"processing_clip_{i + 1}_of_{total_clips}",
+                    10.0 + (i / total_clips) * 75.0,
+                    {"clip_index": i + 1, "total_clips": total_clips, "file": p.name}
+                )
+
             wall_img_path = p.with_name(f"{p.stem}_wall.jpg")
             if not wall_img_path.exists():
                 wall_img_path = p.with_name(f"{p.stem}_wall.png")
@@ -442,6 +489,9 @@ class RecoilPipeline:
             trials.append(trial)
             if trial.get("rpm"):
                 measured_rpms.append(trial["rpm"])
+
+        if progress_callback:
+            progress_callback("aggregating", 88.0, {"trials": len(trials)})
 
         effective_rpm = rpm if (rpm and rpm > 0) else (float(np.median(measured_rpms)) if measured_rpms else 600.0)
 
@@ -462,6 +512,9 @@ class RecoilPipeline:
             existing_spec=existing_spec,
             existing_sample_count=actual_existing_count
         )
+
+        if progress_callback:
+            progress_callback("completed", 100.0, {"trials": len(trials)})
 
         best_trial = trials[0] if trials else {}
         for t in trials:
@@ -511,14 +564,30 @@ class RecoilPipeline:
         fov: float = 104.0,
         hdr: str = "auto",
         merge_strategy: str = "overwrite",
-        existing_sample_count: Optional[int] = None
+        existing_sample_count: Optional[int] = None,
+        progress_callback: Optional[Callable[[str, float, Dict[str, Any]], None]] = None
     ) -> Dict[str, Any]:
         """
         Process a list of wall screenshot images, extract individual decal patterns,
         and aggregate into a unified multi-spray spec.
         """
+        if not image_paths:
+            raise ValueError("No screenshot images provided")
+
+        if progress_callback:
+            progress_callback("preparing_images", 5.0, {"total_images": len(image_paths)})
+
         trials = []
-        for p in image_paths:
+        total_images = len(image_paths)
+
+        for i, p in enumerate(image_paths):
+            if progress_callback:
+                progress_callback(
+                    f"processing_image_{i + 1}_of_{total_images}",
+                    10.0 + (i / total_images) * 75.0,
+                    {"image_index": i + 1, "total_images": total_images, "file": p.name}
+                )
+
             trial = self.process_static_image(
                 image_path=p,
                 weapon_name=weapon_name,
@@ -529,6 +598,9 @@ class RecoilPipeline:
                 hdr=hdr
             )
             trials.append(trial)
+
+        if progress_callback:
+            progress_callback("aggregating", 88.0, {"trials": len(trials)})
 
         existing_spec = self.spec_manager.get_weapon_spec(weapon_name)
         actual_existing_count = 1
@@ -547,6 +619,9 @@ class RecoilPipeline:
             existing_spec=existing_spec,
             existing_sample_count=actual_existing_count
         )
+
+        if progress_callback:
+            progress_callback("completed", 100.0, {"trials": len(trials)})
 
         best_trial = trials[0] if trials else {}
         for t in trials:

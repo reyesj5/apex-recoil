@@ -1,6 +1,6 @@
-# Apex Legends Recoil Trainer & Discovery Toolkit
+# Spraydown: Recoil Trainer & Discovery Toolkit for Apex Legends
 
-Live site: [https://apexlegendsrecoils.net](https://apexlegendsrecoils.net)
+Site: [spraydown.click](https://spraydown.click) (`siteUrl` in [site.json](./site.json); to deploy it, [docs/playbooks.md](docs/playbooks.md))
 
 An interactive recoil pattern visualization, muscle memory trainer, and automated discovery toolkit for [Apex Legends](https://www.ea.com/games/apex-legends).
 
@@ -9,7 +9,10 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
 ## Key Features
 
 1. **Interactive Recoil Trainer (`/`)**:
-   - Practice full spray recoil control against animated targets with live scoring and hit rate analytics.
+   - Practice full spray recoil control against animated targets with live scoring, a result card after every run and today's trend.
+   - **Patterns (`/patterns`)**: every weapon's recoil pattern in one library at one scale, with the spray played shot by shot; phones get a pattern viewer.
+   - **Progress (`/progress`)**: best and median scores by day and by weapon, recent runs and CSV export, kept in the browser.
+   - The privacy policy, FAQ and changelog as pages (`/privacy`, `/faq`, `/changelog`), prerendered pages in every language, and Google Analytics only with consent.
    - Complete **31-weapon arsenal** covering all weapon classes (Assault Rifles, SMGs, LMGs, Marksman, Snipers, Shotguns, and Pistols/Akimbos).
    - **Realistic Shooting Styles & Trigger Mechanics**:
      - **Semi-Automatic & Shotguns**: Click-per-shot mechanics for Peacekeeper, Mastiff, Wingman, P2020, G7 Scout, 30-30, Triple Take, Bocek, Charge Rifle, Longbow, Sentinel, Kraber with refire cooldown and smooth recoil recentering.
@@ -22,75 +25,151 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
    - Multi-language support: English, Russian (`/ru`), and Simplified Chinese (`/zh-CN`).
    - Sensitivity matching: exact Source Engine sensitivity and ADS multiplier scaling.
 
-2. **Web UI Weapon Manager & Editor (`/editor`)**:
-   - Visual management dashboard to quickly update weapon parameters when balance patches drop.
-   - Fine-tune RPM, per-tier magazine sizes (0 through 4), and sensitivity multipliers.
-   - Live canvas preview of recoil curves with smooth pan/zoom, zoom-invariant bullet markers, and multi-step Undo/Redo (`Ctrl+Z` / `Ctrl+Y`).
-   - **Spec Safety Verification Checkpoint**: Pre-save audit checking for shot count truncation, average deflection drift, outlier spikes ($>25\text{px}$), and directional inversions before modifying `specs.json`.
-   - **Dual Comparison Overlay & Real-Time Discrepancy HUD**: Concurrently view saved baseline (Cyan dashed) and candidate spec (Orange solid) with colored delta vector lines and live consistency stats (toggle with `O` key).
-   - **Incremental Proportional Spec Accumulation**: Blend new captures proportionally ($1/(N+1)$ weight) to reduce variance over time, or execute complete overwrites post-patch.
-   - **💾 Save to specs.json**: Commits changes directly to `client/specs.json` with automatic `.bak` backups.
-   - Import/export JSON drawer for direct data exchange.
-
-3. **Hands-Free In-Game Auto-Capture Studio (`/editor`)**:
-   - Eliminates manual OBS/Shadowplay recording and video file chopping.
-   - Connects directly to the running **Apex Legends** game window via browser screen capture.
-   - **Acoustic Gunfire Sensor**: Real-time decibel monitor automatically triggers recording when you pull the trigger in the Firing Range, and automatically stops when your magazine empties. Sensor mutes during playback with a 1.5s echo-safety cooldown to prevent feedback loops.
-   - **Decoupled Architecture**: High-cadence video captures audio/RPM, while post-reload ADS high-res screenshot captures clean bullet decals.
-   - **Sample Management**:
-     - Embedded side-by-side player: spray video (cadence/audio) and wall screenshot preview.
-     - **📷 Re-snap Wall**: 3-second countdown with audible beeps gives you time to tab into Apex and hold ADS before snapping.
-     - **💾 Save Image**: Download high-resolution wall screenshots for your library.
-     - **🗑 Discard**: 1-click sample discard to maintain high batch quality.
-   - **Interactive Canvas Navigation**: Full panning (right-click drag, middle-click drag, spacebar drag, pan tool toggle) and smooth mouse-wheel zoom centered on cursor.
-   - **🖼️ Offline / Redo Analysis Drawer**: Analyze saved wall screenshots directly to calibrate patterns without being in-game.
-   - **⚡ 1-Click Discovery**: Uploads clips to the backend pipeline, extracts bullet decals with Black Top-Hat filtering, measures RPM, and overlays the trajectory on the canvas.
+2. **The Studio (`/editor`)**, for the specs' maintainers:
+   - Pick a weapon and edit its fire rate, multiplier and magazine sizes (Base to Corrupted); each magazine keeps its sound and the shot times keep their timing, so a save changes only what was edited.
+   - The pattern on a canvas (react-konva) with select, pan, align, correct and fit tools, wheel zoom, and undo and redo (`Ctrl+Z` / `Ctrl+Y`), on a wall screenshot at its measured scale or in the spec's own units.
+   - **Save checkpoint**: before a changed pattern replaces the saved spec, the shot count, the average and largest stray, and warnings for a shortened or inverted pattern.
+   - **Comparison** (`O`): the saved spec (dashed) against the candidate (volt), a line for each shot that strays, and the figures in a corner.
+   - **Blend or replace**: new captures blend into the spec weighted by its sample count, or start a new baseline after a balance patch.
+   - Every save is a new version in the spec database and in `client/specs.json`, listed under History; a discovery JSON can be pasted in (Import).
+   - **Live capture**: connects to the **Apex Legends** window through the browser's screen sharing; an acoustic gunfire sensor records each spray from the first shot, and the wall is captured once you have reloaded and aimed back at the decals (or with Space). The sensor stays muted while a sample plays.
+   - **Samples**: each recorded spray with its clip and wall, to show on the canvas, capture again after a 3-second countdown, download, listen to, enlarge or discard.
+   - **Screenshots**: wall screenshots from disk or the server's library, analyzed together; **Sessions** brings saved sessions and imported clips back; **Manual** finds decals with a threshold, as the original editor did.
+   - **One-click discovery**: uploads the clips or screenshots to the pipeline (Black Top-Hat filtering of the decals, measured RPM), follows the job's progress, and shows the result on the first spray's frame.
 
 4. **Automated Computer Vision Engine (`processing/recoil_discovery`)**:
    - Python-based pipeline for zero-guesswork recoil discovery.
    - **Dynamic Target Board Isolation & Morphological Black Top-Hat Filtering**: isolates bullet decals on the white target board while completely rejecting dark frame pillars, vertical seams, and weapon sights.
    - Automatic acoustic and visual rate of fire (RPM) measurement ($\text{RPM} = 60000 / \text{median}(\Delta t_{\text{ms}})$).
    - Multi-spray median-delta integration and convergence scoring ($rc\_score$).
-   - Comprehensive test suite with 27 automated unit tests.
+   - SQLite persistence layer with versioned, lossless specs (kept in sync with `client/specs.json`), audit history, and full-document shadow parity verification.
+   - Optional scaled mode: Redis/BullMQ job queue with standalone workers, and S3-compatible capture storage with direct browser uploads.
+   - Comprehensive test suite with 43 Python unit tests, 68 Node.js tests (14 of them need Redis/S3, see below), Vitest unit and component tests and 59 Playwright end-to-end scenarios in Chrome, including axe accessibility checks, and Lighthouse in CI.
+
+---
+
+## Stack
+
+- **Pages**: React 19 with Tailwind CSS 4 and shadcn/ui (Radix primitives), built by Vite 8. The trainer's pages are prerendered in each language and hydrated in the browser; the range draws with Konva and plays its sounds with Howler, and the Studio's canvas is react-konva.
+- **Server**: Express 5 in TypeScript, which Node runs without a build step ([server/](./server/)), with the API's zod schemas shared with the browser ([shared/](./shared/)). Weapon specs live in SQLite, kept in sync with `client/specs.json`; analyses run in the server's process or on Redis/BullMQ workers; captures are kept on disk or in S3-compatible storage.
+- **Discovery**: Python with OpenCV ([processing/](./processing/)), started by the server for each analysis.
+- **Checks**: Vitest and Testing Library for the client, `node:test` for the server, Playwright with axe for the pages and pytest for the pipeline; TypeScript, ESLint and Prettier, and Lighthouse on the trainer's pages in CI.
+
+---
+
+## Directory Structure
+
+```
+client/                the pages: React 19, Tailwind 4 and shadcn/ui
+  components/          shadcn/ui components (ui/) and the app's own
+  engine/              the trainer's engine, without a DOM
+  trainer/             the trainer, its Patterns and Progress pages, and the documents as pages
+  studio/              the Studio at /editor; its logic, without a DOM, in model/
+  lib/                 storage, the API's hooks, translations, analytics, the site's values
+  styles/              tokens.json (the design tokens) and app.css, the one stylesheet
+  specs.json           the weapon specs, exported from data/recoil.db
+server/                the Express server in TypeScript: the app, its routes, the jobs, storage
+shared/                the API's zod schemas, used by the browser and the server
+processing/            the Python discovery pipeline (recoil_discovery/), its tests and its lock (requirements.txt)
+e2e/                   the Playwright scenarios and the server that runs them on throwaway data
+test/                  the server's tests (node:test)
+scripts/               the static build, the conventions and release checks, the design export, agent_kit.py
+docs/                  the plan (roadmap.md), the corrections, the architecture, the notes, the guides,
+                       the documents the pages show, and the design's snapshot (design/)
+brand/                 the logo and its sources
+assets/                the game's images and sounds (not under Apache-2.0)
+etc/                   the favicons, copied into the static site
+arduino_mouse/         a separate PlatformIO project, which reads the patterns export-arduino writes
+.claude/, .agents/, .codex/, .gemini/
+                       each assistant's hooks, rules and graphify's skill; AGENTS.md holds the rules
+                       for every assistant (CLAUDE.md and GEMINI.md say the same)
+site.json              the owner's values: the name, links and IDs (placeholders until given)
+data/                  the SQLite spec store (gitignored)
+dist/, dist-ssr/       the build (gitignored), and static/ the static site (gitignored)
+scratch/               throwaway work (gitignored)
+```
+
+[docs/architecture.md](./docs/architecture.md) says how the parts fit together, folder by folder.
 
 ---
 
 ## Running Locally
 
 ### 1. Prerequisites
-* **Node.js** (v18+ recommended) & **npm** / **pnpm**
-* **Python 3.10+** (for the automated discovery engine)
+* **Node.js** 22.22+ or 24.15+, 24 LTS recommended (`engines` in `package.json`; the test tools need these versions). Node runs the server's TypeScript as it is, without a build step
+* **pnpm** 12 ([installation](https://pnpm.io/installation)). pnpm 11 and newer switch to the version pinned in `package.json` (`devEngines`) on their own; npm is not supported and stops with `EBADDEVENGINES`.
+* **Python 3.12** (for the automated discovery engine; its lock is made for 3.12, which CI runs)
+* **Google Chrome** (for the end-to-end tests)
 
 ### 2. Frontend & Web Server
 From the repository root:
 ```bash
-# Install dependencies
-pnpm install  # or: npm install
+# Install dependencies (pnpm-workspace.yaml lists the native builds allowed to run: esbuild, sqlite3)
+pnpm install
 
-# Build assets
+# Start the development server: Vite serves the client sources with hot reload
+# (styles update in place, code changes reload the page, server changes restart it), on this computer only
+pnpm dev
+
+# Build assets (Vite 8 production build into dist/: the pages' entries such as trainer.js and studio.js, and app.css; and the pages' prerender into dist-ssr/); pnpm start serves them
+pnpm build
+
+# Run Node test suites (72 tests across database, queue, storage, request parsing, API, the server and its settings, the pages' prerender and the built bundles; build first)
+pnpm test
+
+# Unit and component tests (Vitest)
+pnpm test:unit
+
+# End-to-end scenarios in Chrome against the built app, on throwaway data (Playwright; build first)
+pnpm test:e2e
+
+# Typecheck (browser, tools and server configs), lint (ESLint, then the UI's conventions: one stylesheet,
+# no hex colors) and check formatting (pnpm format rewrites files)
 pnpm tsc
-npx gulp public
+pnpm lint
+pnpm format:check
 
-# Start development server
-npm run dev
+# Known vulnerabilities in pnpm-lock.yaml (CI audits it and the pipeline's lock on each change and every Monday)
+pnpm audit
 ```
 
 Open your browser to:
 * Recoil Trainer: **`http://localhost:3000/`**
-* Recoil Editor & Auto-Capture Studio: **`http://localhost:3000/editor`**
+* The Studio (specs, capture and discovery): **`http://localhost:3000/editor`**
 
 > **Note on Port Collisions:** If port 3000 is already in use by another local process, the server automatically retries and binds to **`http://localhost:3001`**.
+
+> **This computer only:** the server listens on 127.0.0.1 and refuses requests addressed to any other host, since it has no sign-in yet; the static site (below) is what goes on the web.
+
+> **Data & configuration:** weapon specs are versioned in `data/recoil.db` (SQLite) and exported to `client/specs.json`, which the trainer bundle imports. Editing `specs.json` directly (or through the Python CLI) is fine: the server imports those edits as new versions before its next read or write. Settings come from environment variables or a `.env` file; see [.env.example](./.env.example).
+
+#### Optional: scaled mode (Redis job queue + S3 storage)
+By default analysis jobs run inside the server process and captures are stored in `processing/captures`. To let jobs survive restarts, run them on separate workers, or keep captures in object storage:
+```bash
+docker compose up -d          # Redis + an S3-compatible server (SeaweedFS), see compose.yaml
+cp .env.example .env          # then uncomment REDIS_URL and/or the STORAGE_PROVIDER=s3 block
+pnpm dev                      # the server runs one embedded worker
+pnpm worker                   # optional: more workers (other machines need S3 storage)
+
+# Run every Node suite, including the Redis, S3 and end-to-end tests (86 tests)
+pnpm test:services
+```
+With S3 storage the Studio uploads recordings straight to the bucket; the bucket must allow `PUT` from the app's origin (CORS). `S3_AUTO_CREATE_BUCKET=true` creates the bucket and that rule for development.
 
 ### 3. Python Recoil Discovery Pipeline
 From the `processing/` directory:
 ```bash
 cd processing
 
-# Install dependencies
+# Install dependencies from their lock: every package pinned with its hashes
+# (processing/README.md, Dependencies, says how to change one)
 pip install -r requirements.txt
 
-# Run automated test suite
+# Run automated test suite (43 tests)
 python -m pytest tests
+
+# Run shadow parity suite (SQLite vs specs.json, every field; --no-sync to only report drift)
+python -m recoil_discovery.shadow_parity
 
 # Run discovery CLI commands
 python -m recoil_discovery.cli verify
@@ -110,17 +189,17 @@ When recording sprays in the Apex Legends Firing Range for discovery:
 
 Detailed documentation is available in [docs/capture.md](./docs/capture.md).
 
-Detailed documentation is available in [docs/capture.md](./docs/capture.md).
-
 ---
 
 ## Static Production Deployment
 
 Deployment is fully static:
 ```bash
-npm run static
+pnpm static
 ```
-Copy the contents of `./static` to your web server directory (e.g. Nginx / Apache / S3).
+This builds the Vite bundles, copies `etc/` and `assets/`, and writes the pages into `./static`: the prerendered trainer, Patterns and Progress pages in each language and the privacy policy, FAQ and changelog, a folder per page (`static/ru/patterns/index.html`), plus `index.html`, `index-ru.html` and `index-zh-CN.html` for the trainer, `404.html` and `editor.html` (the Studio). Copy its contents to your web server directory (e.g. Nginx / Apache / S3). The Studio's capture and spec-saving features need the Node server and are not available on a static host. Compression and caching headers for Nginx are in [docs/playbooks.md](./docs/playbooks.md).
+
+For a release, `pnpm release` first checks that the owner's values have replaced every placeholder (in `site.json`, `NOTICE`, the copyright headers and the pages' documents; see the [ownership register](./docs/ownership-register.md)), then runs `pnpm build` and `pnpm static`. CI runs it for a version tag (`v*`).
 
 ---
 
@@ -129,16 +208,23 @@ Copy the contents of `./static` to your web server directory (e.g. Nginx / Apach
 Contributions, balance patch updates, and recoil submissions are welcome!
 * [Contributing Guidelines](./docs/contributing.md)
 * [Implementation Plan & Roadmap](./docs/roadmap.md)
-* [Live Weapons Wiki & Patch Reference](./docs/weapons-wiki-stats.md)
+* [Architectural Migration Plan](./docs/migration-plan.md)
+* [Weapons Wiki Reference (the wiki's stats on 2026-09-26)](./docs/weapons-wiki-stats.md)
 * [AI Agent Guidelines](./AGENTS.md)
 * [Release Notes](./docs/release-notes.md)
 * [Recoil Discovery Guide](./docs/capture.md)
+* [Privacy Policy](./docs/privacy-policy.md)
+* [UI Migration Plan](./docs/ui-migration-plan.md), its [notes](./docs/ui-notes.md) (the conventions to keep and the pitfalls already paid for) and the [UI Redesign](./docs/ui-redesign.md)
+* [Architecture](./docs/architecture.md): how the parts fit together, and the code folder by folder
+* [Corrections](./docs/corrections.md): what turned out to be true where the plan said otherwise
+* [Ownership Register](./docs/ownership-register.md): placeholders for the owner's names, links and IDs
+* [Brand](./brand/README.md): the logo, its variants and how to regenerate them
 
 ---
 
 ## License & Disclaimers
 
-Source code is licensed under [Apache 2.0](./LICENSE).
+Source code is licensed under [Apache 2.0](./LICENSE). The project is based on [apex-recoil](https://github.com/metaflow/apex-recoil) by Mikhail Goncharov, also licensed under Apache 2.0 (see [NOTICE](./NOTICE)); files that contain its code keep the original copyright header and say that they were modified.
 
 *This project is not affiliated with or sponsored by Electronic Arts Inc., Respawn Entertainment, or Google.*
 

@@ -200,3 +200,98 @@ def test_pipeline_overwrite_json_serializable():
 
 
 
+
+
+# --- process_video_clip: frame-streaming decoder ---------------------------------------
+
+import cv2
+import numpy as np
+from recoil_discovery.shot_detector import auto_measure_shots_and_rpm
+
+SHOT_FRAMES = (10, 16, 22, 28, 34, 40)
+
+
+def _write_spray_video(path, n_frames=60, occlude_from=None, size=(320, 240)):
+    """Synthetic wall spray: white target board, one dark decal per shot, muzzle flash on shot frames."""
+    w, h = size
+    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"MJPG"), 60.0, (w, h))
+    points = [(160 + 6 * i, 160 - 14 * i) for i in range(len(SHOT_FRAMES))]
+    for f in range(n_frames):
+        img = np.full((h, w, 3), 70, np.uint8)
+        cv2.rectangle(img, (40, 20), (280, 220), (235, 235, 235), -1)
+        for k, s in enumerate(SHOT_FRAMES):
+            if f >= s:
+                cv2.circle(img, points[k], 3, (25, 25, 25), -1)
+        if occlude_from is not None and f >= occlude_from:
+            # Viewmodel / reload HUD covering the wall at the end of the clip
+            cv2.rectangle(img, (30, 10), (290, 230), (90, 90, 90), -1)
+        if f in SHOT_FRAMES:
+            img = cv2.add(img, np.full_like(img, 60))
+        writer.write(img)
+    writer.release()
+
+
+def _reference_raw_points(pipeline, video_path):
+    """The pre-streaming decoder: keep every gray frame in memory, then extract."""
+    cap = cv2.VideoCapture(str(video_path))
+    fps = cap.get(cv2.CAP_PROP_FPS) or 60.0
+    frames_gray, deltas, prev = [], [], None
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frames_gray.append(gray)
+        deltas.append(float(np.mean(cv2.absdiff(gray, prev))) if prev is not None else 0.0)
+        prev = gray
+    cap.release()
+
+    _, _, shot_frames, _ = auto_measure_shots_and_rpm(deltas, fps=fps)
+    target_points = len(shot_frames)
+    baseline = frames_gray[3] if len(frames_gray) > 5 else None
+    raw_x, raw_y, _ = pipeline.tracker.extract_from_settled_frames(
+        frames_gray, target_points, baseline_frame=baseline, return_metadata=True
+    )
+    if not raw_x or (target_points and len(raw_x) < target_points * 0.5):
+        alt_x, alt_y = pipeline.tracker.extract_from_video_frames(frames_gray, shot_frames)
+        if len(alt_x) > len(raw_x):
+            raw_x, raw_y = alt_x, alt_y
+    return raw_x, raw_y
+
+
+def test_process_video_clip_streaming_matches_full_decode(tmp_path):
+    video = tmp_path / "spray.avi"
+    _write_spray_video(video)
+    pipeline = RecoilPipeline()
+
+    result = pipeline.process_video_clip(video, "r301")
+    ref_x, ref_y = _reference_raw_points(pipeline, video)
+
+    assert result["raw_x"] == [0.0, 6.0, 12.0, 18.0, 24.0, 30.0]
+    assert result["raw_y"] == [0.0, -14.0, -28.0, -42.0, -56.0, -70.0]
+    assert (result["raw_x"], result["raw_y"]) == (ref_x, ref_y)
+    assert result["rpm"] == pytest.approx(600.0)
+
+
+def test_process_video_clip_differencing_fallback_matches_full_decode(tmp_path):
+    video = tmp_path / "occluded_spray.avi"
+    _write_spray_video(video, occlude_from=45)
+    pipeline = RecoilPipeline()
+
+    result = pipeline.process_video_clip(video, "r301")
+    ref_x, ref_y = _reference_raw_points(pipeline, video)
+
+    # The occluder appearing is itself a frame transient, so it may count as an extra shot
+    assert len(result["raw_x"]) >= len(SHOT_FRAMES)
+    assert result["frame_points"] == []  # came from temporal differencing, not settled frames
+    assert (result["raw_x"], result["raw_y"]) == (ref_x, ref_y)
+
+
+def test_process_video_clip_without_decodable_frames(tmp_path):
+    video = tmp_path / "empty.avi"
+    writer = cv2.VideoWriter(str(video), cv2.VideoWriter_fourcc(*"MJPG"), 60.0, (64, 48))
+    writer.release()
+
+    result = RecoilPipeline().process_video_clip(video, "r301")
+    assert result["x"] == [] and result["y"] == []
+    assert result["frame_image"] == ""

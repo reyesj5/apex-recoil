@@ -1,0 +1,40 @@
+<!-- @dsCard group="Selection" height=330 subtitle="Loadout, phone and Studio inspector" -->
+<div class="sd-preview">
+  <div class="sd-stack" style="max-width: 308px; gap: 8px;">
+    <div class="sd-panel__head"><span class="label" style="font-family: var(--font-sans);">Magazine</span><span class="sd-panel__aside" id="mag-summary">28 rounds</span></div>
+    <div role="radiogroup" aria-label="Magazine" class="sd-tiers" id="tiers">
+      <button type="button" class="sd-tier" role="radio" aria-checked="false" aria-label="Base magazine, 21 rounds"><span class="sd-tier__bar"></span><span class="sd-tier__size">21</span><span class="sd-tier__name">Base</span></button>
+      <button type="button" class="sd-tier sd-tier--1" role="radio" aria-checked="false" aria-label="Level 1 magazine, 23 rounds"><span class="sd-tier__bar"></span><span class="sd-tier__size">23</span><span class="sd-tier__name">Lv 1</span></button>
+      <button type="button" class="sd-tier sd-tier--2" role="radio" aria-checked="true" aria-label="Level 2 magazine, 28 rounds"><span class="sd-tier__bar"></span><span class="sd-tier__size">28</span><span class="sd-tier__name">Lv 2</span></button>
+      <button type="button" class="sd-tier sd-tier--3" role="radio" aria-checked="false" aria-label="Level 3 magazine, 31 rounds"><span class="sd-tier__bar"></span><span class="sd-tier__size">31</span><span class="sd-tier__name">Lv 3</span></button>
+      <button type="button" class="sd-tier sd-tier--corrupted" role="radio" aria-checked="false" aria-label="Corrupted magazine, 37 rounds"><span class="sd-tier__bar"></span><span class="sd-tier__size">37</span><span class="sd-tier__name">Corrupted</span></button>
+    </div>
+  </div>
+  <div role="radiogroup" aria-label="Magazine on a phone" class="sd-tiers" style="max-width: 330px;">
+    <button type="button" class="sd-tier sd-tier--touch" role="radio" aria-checked="false" aria-label="Base magazine, 21 rounds"><span class="sd-tier__bar"></span><span class="sd-tier__size">21</span></button>
+    <button type="button" class="sd-tier sd-tier--1 sd-tier--touch" role="radio" aria-checked="false" aria-label="Level 1 magazine, 23 rounds"><span class="sd-tier__bar"></span><span class="sd-tier__size">23</span></button>
+    <button type="button" class="sd-tier sd-tier--2 sd-tier--touch" role="radio" aria-checked="true" aria-label="Level 2 magazine, 28 rounds"><span class="sd-tier__bar"></span><span class="sd-tier__size">28</span></button>
+    <button type="button" class="sd-tier sd-tier--3 sd-tier--touch" role="radio" aria-checked="false" aria-label="Level 3 magazine, 31 rounds"><span class="sd-tier__bar"></span><span class="sd-tier__size">31</span></button>
+    <button type="button" class="sd-tier sd-tier--corrupted sd-tier--touch" role="radio" aria-checked="false" aria-label="Corrupted magazine, 37 rounds"><span class="sd-tier__bar"></span><span class="sd-tier__size">37</span></button>
+  </div>
+  <div class="sd-stack" style="max-width: 288px; gap: 8px; font-size: 13px;">
+    <span class="label" style="font-family: var(--font-sans);">Magazine sizes</span>
+    <div class="sd-tiers">
+      <label class="sd-tier-edit"><span class="sd-tier__bar"></span><input type="number" value="18" aria-label="Base magazine size">Base</label>
+      <label class="sd-tier-edit sd-tier--1"><span class="sd-tier__bar"></span><input type="number" value="21" aria-label="Level 1 magazine size">Lv 1</label>
+      <label class="sd-tier-edit sd-tier--2"><span class="sd-tier__bar"></span><input type="number" value="24" aria-label="Level 2 magazine size">Lv 2</label>
+      <label class="sd-tier-edit sd-tier--3"><span class="sd-tier__bar"></span><input type="number" value="27" aria-label="Level 3 magazine size">Lv 3</label>
+      <label class="sd-tier-edit sd-tier--corrupted"><span class="sd-tier__bar"></span><input type="number" value="33" aria-label="Corrupted magazine size">Corrupted</label>
+    </div>
+  </div>
+</div>
+<script>
+document.querySelectorAll('[role="radiogroup"]').forEach(function (group) {
+  group.addEventListener('click', function (event) {
+    var option = event.target.closest('button');
+    if (!option || !group.contains(option)) return;
+    group.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-checked', String(b === option)); });
+    if (group.id === 'tiers') document.getElementById('mag-summary').textContent = option.querySelector('.sd-tier__size').textContent + ' rounds';
+  });
+});
+</script>

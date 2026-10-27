@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trainer, settings, help and weapon search</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050607}
+*{box-sizing:border-box}
+button,select,input{font:inherit;color:inherit}
+a{color:#C5F23A}a:hover{color:#DDF98A}
+:focus-visible{outline:2px solid #C5F23A;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1560px; height: 900px; display: flex; align-items: flex-start; gap: 32px; padding: 40px; background: #050607; color: #ECEFF3; font-family: Inter, system-ui, sans-serif; font-size: 14px;">
+
+  <section role="dialog" aria-labelledby="settings-title" style="position: relative; width: 448px; display: flex; flex-direction: column; gap: 20px; padding: 24px; border-radius: 14px; border: 1px solid #343B46; background: #171B21; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);">
+    <button type="button" aria-label="Close" style="position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; border: 0; background: transparent; color: #A7B0BC; display: flex; align-items: center; justify-content: center;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <h2 id="settings-title" style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 18px; font-weight: 700; line-height: 1;">Settings</h2>
+      <p style="margin: 0; font-size: 14px; color: #848E9B;">Changes apply at once and stay in this browser.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h3 style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #848E9B;">Mouse</h3>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500;">Sensitivity
+          <input type="text" value="5" style="height: 40px; padding: 0 12px; border-radius: 9px; border: 1px solid #646D79; background: #0D1014; font-family: 'JetBrains Mono', monospace; font-size: 14px;">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500;">ADS multiplier
+          <input type="text" value="1" style="height: 40px; padding: 0 12px; border-radius: 9px; border: 1px solid #646D79; background: #0D1014; font-family: 'JetBrains Mono', monospace; font-size: 14px;">
+        </label>
+      </div>
+      <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #A7B0BC;">Your mouse sensitivity in the game. Your aiming multiplier from the game; runs use sensitivity × ADS. Keep 1.0 if your sensitivity already includes it.</p>
+      <label style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600;">Invert Y
+        <span role="switch" aria-checked="false" style="width: 36px; height: 20px; padding: 2px; border-radius: 999px; background: #343B46; display: flex;"><span style="width: 16px; height: 16px; border-radius: 50%; background: #A7B0BC;"></span></span>
+      </label>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h3 style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #848E9B;">Practice</h3>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <span id="recoil-moves" style="font-size: 13px; font-weight: 500;">Recoil moves</span>
+        <div role="group" aria-labelledby="recoil-moves" style="display: flex; padding: 3px; gap: 2px; background: #0D1014; border: 1px solid #262C35; border-radius: 9px;">
+          <button type="button" aria-pressed="true" style="height: 28px; padding: 0 12px; border-radius: 6px; border: 0; background: #262C35; box-shadow: inset 0 0 0 1px #646D79; color: #ECEFF3; font-size: 12px; font-weight: 600;">Your aim</button>
+          <button type="button" aria-pressed="false" style="height: 28px; padding: 0 12px; border-radius: 6px; border: 0; background: transparent; color: #A7B0BC; font-size: 12px; font-weight: 600;">The target</button>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #A7B0BC;">Moving the target is closer to how the game feels.</p>
+      <sc-for list="{{practiceSliders}}" as="s" hint-placeholder-count="2">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 500;"><span>{{s.label}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">{{s.value}}</span></div>
+          <div role="slider" aria-label="{{s.label}}" aria-valuenow="{{s.now}}" style="position: relative; height: 16px; display: flex; align-items: center;">
+            <span style="position: absolute; left: 0; right: 0; height: 4px; border-radius: 2px; background: #262C35;"></span>
+            <span style="{{s.fill}}"></span>
+            <span style="{{s.thumb}}"></span>
+          </div>
+        </div>
+      </sc-for>
+      <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #A7B0BC;">Slow the spray down while you learn a pattern. Only runs at full speed are saved.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h3 style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #848E9B;">Display</h3>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500;">Scale X
+          <input type="text" value="1" style="height: 40px; padding: 0 12px; border-radius: 9px; border: 1px solid #646D79; background: #0D1014; font-family: 'JetBrains Mono', monospace; font-size: 14px;">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500;">Scale Y
+          <input type="text" value="1" style="height: 40px; padding: 0 12px; border-radius: 9px; border: 1px solid #646D79; background: #0D1014; font-family: 'JetBrains Mono', monospace; font-size: 14px;">
+        </label>
+      </div>
+      <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #A7B0BC;">Stretches what the range draws; scores stay the same.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h3 style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #848E9B;">Sound</h3>
+      <label style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600;">Play sounds
+        <span role="switch" aria-checked="true" style="width: 36px; height: 20px; padding: 2px; border-radius: 999px; background: #C5F23A; display: flex; justify-content: flex-end;"><span style="width: 16px; height: 16px; border-radius: 50%; background: #0A0C0F;"></span></span>
+      </label>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 500;"><span>Volume</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">20</span></div>
+        <div role="slider" aria-label="Volume" aria-valuenow="20" style="position: relative; height: 16px; display: flex; align-items: center;">
+          <span style="position: absolute; left: 0; right: 0; height: 4px; border-radius: 2px; background: #262C35;"></span>
+          <span style="position: absolute; left: 0; width: 20%; height: 4px; border-radius: 2px; background: #C5F23A;"></span>
+          <span style="position: absolute; left: calc(20% - 8px); width: 16px; height: 16px; border-radius: 50%; border: 2px solid #C5F23A; background: #0A0C0F;"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section role="dialog" aria-labelledby="help-title" style="position: relative; width: 448px; display: flex; flex-direction: column; gap: 20px; padding: 24px; border-radius: 14px; border: 1px solid #343B46; background: #171B21; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);">
+    <button type="button" aria-label="Close" style="position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; border: 0; background: transparent; color: #A7B0BC; display: flex; align-items: center; justify-content: center;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <h2 id="help-title" style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 18px; font-weight: 700; line-height: 1;">How to practice</h2>
+      <p style="margin: 0; font-size: 14px; color: #848E9B;">Set up once, then spray, read the result and go again.</p>
+    </div>
+    <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.45; color: #ECEFF3;">
+      <li>Turn off “Enhance pointer precision” in your mouse settings.</li>
+      <li>Enter your sensitivity and ADS multiplier in Settings.</li>
+      <li>Pick a weapon and a magazine.</li>
+      <li>Press in the range and pull against the recoil until the magazine is empty.</li>
+      <li>The closer your shots stay on the target, the higher the score, up to 100.</li>
+    </ol>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <h3 style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #848E9B;">Keyboard shortcuts</h3>
+      <dl style="margin: 0; display: flex; flex-direction: column; gap: 8px;">
+        <sc-for list="{{keys}}" as="k" hint-placeholder-count="6">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <dt style="font-size: 15px; font-weight: 500;">{{k.action}}</dt>
+            <dd style="margin: 0;"><kbd style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; line-height: 1.3; padding: 2px 6px; border-radius: 5px; border: 1px solid #343B46; color: #A7B0BC;">{{k.key}}</kbd></dd>
+          </div>
+        </sc-for>
+      </dl>
+    </div>
+  </section>
+
+  <section role="dialog" aria-label="Search weapons" style="width: 512px; overflow: hidden; border-radius: 14px; border: 1px solid #343B46; background: #171B21; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);">
+    <div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 12px; border-bottom: 1px solid #262C35;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ECEFF3" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <label for="weapon-query" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;">Search weapons</label>
+      <input id="weapon-query" type="search" placeholder="Search weapons" style="flex: 1; height: 46px; border: 0; background: transparent; font-size: 14px; outline: none;">
+    </div>
+    <div role="listbox" aria-label="Weapons" style="height: 284px; overflow: hidden;">
+      <sc-for list="{{search}}" as="g" hint-placeholder-count="2">
+        <div role="group" aria-label="{{g.group}}" style="{{g.style}}">
+          <div style="padding: 6px 8px; font-size: 12px; line-height: 16px; font-weight: 500; color: #848E9B;">{{g.group}}</div>
+          <sc-for list="{{g.items}}" as="w" hint-placeholder-count="5">
+            <div role="option" aria-selected="{{w.selected}}" style="{{w.style}}">
+              <span>{{w.name}}</span>
+              <span style="font-size: 12px; color: #848E9B;">{{w.rpm}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1560,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const slider = (label, value, now, percent) => ({
+      label: label, value: value, now: now,
+      fill: 'position: absolute; left: 0; width: ' + percent + '%; height: 4px; border-radius: 2px; background: #C5F23A;',
+      thumb: 'position: absolute; left: calc(' + percent + '% - 8px); width: 16px; height: 16px; border-radius: 50%; border: 2px solid #C5F23A; background: #0A0C0F;'
+    });
+    // The search lists every class in the app's order and scrolls past 300 px, so the next group's
+    // heading sits at the fold
+    const item = 'display: flex; align-items: center; justify-content: space-between; padding: 12px 8px; border-radius: 6px; font-size: 14px; line-height: 20px; font-weight: 500; ';
+    const group = (name, list, first) => ({
+      group: name,
+      style: first ? 'padding: 4px 8px;' : 'padding: 0 8px 4px;',
+      items: list.map((w, i) => ({ name: w[0], rpm: w[1] + ' RPM', selected: String(first && i === 0), style: item + (first && i === 0 ? 'background: #1F242C;' : '') }))
+    });
+    return {
+      practiceSliders: [slider('Moving target speed', '100', 100, 18), slider('Firing speed', '1×', 1, 100)],
+      keys: [['Switch fire mode', 'B'], ['Follow path', 'A'], ['Still target', 'S'], ['Moving target', 'D'], ['Search weapons', 'Ctrl K'], ['Switch result style', 'Middle click']]
+        .map((k) => ({ action: k[0], key: k[1] })),
+      search: [
+        group('Assault rifle', [['Flatline', 600], ['R-301', 810], ['HAVOC', 672], ['Hemlok', 384], ['Nemesis', 582]], true),
+        group('SMG', [['Alternator', 600]], false)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

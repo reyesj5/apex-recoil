@@ -4,6 +4,7 @@ Handles reading, validating, comparing, and updating weapon specifications
 in client/specs.json and client/raw_recoils.json.
 """
 
+import os
 import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
@@ -29,10 +30,12 @@ class SpecManager:
         return self._cached_specs
 
     def save_specs(self, specs: List[Dict[str, Any]]) -> None:
-        """Write weapon specifications back to client/specs.json formatted cleanly."""
+        """Write weapon specifications back to client/specs.json formatted cleanly and atomically."""
         self._cached_specs = specs
-        with open(self.specs_path, 'w', encoding='utf-8') as f:
+        tmp_path = self.specs_path.with_name(f"{self.specs_path.name}.tmp.{os.getpid()}")
+        with open(tmp_path, 'w', encoding='utf-8') as f:
             json.dump(specs, f, indent=4)
+        tmp_path.replace(self.specs_path)
 
     def get_weapon_spec(self, weapon_name: str) -> Optional[Dict[str, Any]]:
         """Retrieve spec for a specific weapon name with alias normalization."""
