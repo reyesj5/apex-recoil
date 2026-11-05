@@ -147,3 +147,8 @@ Thumbs.db
 .claude/skills/prompt/
 .agents/rules/agent-kit.md
 .agents/skills/prompt/
+.agents/
+.claude/
+.codex/
+.gemini/
+.graphifyignore
