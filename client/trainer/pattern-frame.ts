@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTrainerSettings } from '@/lib/storage/trainer';
-import { weapons } from './catalog';
+import { offeredWeapons } from './catalog';
 import { useSetupSettings, weaponSetup } from './loadout';
 import { patternDrawing, sharedFrame, type Frame } from './range/pattern-preview';
 
@@ -16,7 +16,7 @@ export function usePatternFrame(): Frame {
   return useMemo(
     () =>
       sharedFrame(
-        weapons.map((w) => {
+        offeredWeapons().map((w) => {
           const { weapon, capacity, mode } = weaponSetup(w, settings);
           return patternDrawing(weapon, capacity, mode, { sens, invertY }).frame;
         }),

@@ -2,16 +2,32 @@ import { test as base, expect, type Page } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { knownMagazines } from '../client/engine/weapons';
 
 export { expect };
 
 export const root = path.join(import.meta.dirname, '..');
-export const specs: { name: string; rpm: number; mags: { size: number }[]; x: number[] }[] = JSON.parse(
-  fs.readFileSync(path.join(root, 'client', 'specs.json'), 'utf8'),
-);
+export const specs: {
+  name: string;
+  rpm: number;
+  mags: { size: number }[];
+  x: number[];
+  known_shots?: number;
+  checked_patch?: string | null;
+}[] = JSON.parse(fs.readFileSync(path.join(root, 'client', 'specs.json'), 'utf8'));
+export const patch: { current: string } = JSON.parse(fs.readFileSync(path.join(root, 'client', 'patch.json'), 'utf8'));
+/**
+ * What the scenarios' pages offer (client/trainer/catalog.ts, on the preview e2e/server.mjs turns on): the
+ * specs with a magazine their real shots fill, with those magazines
+ */
+export const shownSpecs = specs
+  .map((s) => ({ ...s, mags: knownMagazines(s.mags, s.x.length, s.known_shots) }))
+  .filter((s) => s.mags.length > 0);
 export const site: { name: string } = JSON.parse(fs.readFileSync(path.join(root, 'site.json'), 'utf8'));
 // The second e2e server, with analytics turned on (playwright.config.ts)
 export const ANALYTICS_URL = 'http://127.0.0.1:3211';
+// The third, with the pages as production serves them: only what is checked against the current patch
+export const CHECKED_ONLY_URL = 'http://127.0.0.1:3212';
 
 const isApp = (url: string) => /^http:\/\/127\.0\.0\.1:321\d\//.test(url);
 

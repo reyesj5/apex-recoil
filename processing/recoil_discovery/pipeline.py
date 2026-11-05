@@ -21,7 +21,7 @@ from .shot_detector import (
 from .tracker import DecalTracker, tone_map_hdr_image
 from .math_utils import scale_to_game_distances, angular_pixel_distance
 from .aggregator import RecoilAggregator
-from .spec_manager import SpecManager
+from .spec_manager import SpecManager, has_unknown_shots
 
 
 class RecoilPipeline:
@@ -412,7 +412,14 @@ class RecoilPipeline:
             "sample_count": len(trials)
         }
 
-        if merge_strategy == "accumulate" and existing_spec and existing_spec.get("x") and len(mx) >= len(existing_spec["x"]) * 0.6:
+        # Never blend into shots that aren't real (docs/corrections.md, C8): the recording starts fresh
+        if (
+            merge_strategy == "accumulate"
+            and existing_spec
+            and existing_spec.get("x")
+            and not has_unknown_shots(existing_spec)
+            and len(mx) >= len(existing_spec["x"]) * 0.6
+        ):
             merged_spec = RecoilAggregator.weighted_merge_recoil(
                 existing_spec=existing_spec,
                 new_spec=batch_spec,

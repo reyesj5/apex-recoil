@@ -65,6 +65,45 @@ async function withHistory(page: Page) {
 const tile = (page: Page, label: string) =>
   page.locator('dl > div').filter({ has: page.getByText(label, { exact: true }) });
 
+test('keeps the runs of a weapon or a magazine hidden since', async ({ page }) => {
+  // docs/corrections.md, C8: hiding a pattern takes nothing out of a player's history
+  const at = new Date('2026-10-23T15:00:00').getTime();
+  const run = { practice: 'path', fire: 'single', score: 70 };
+  await page.clock.setFixedTime(now);
+  await page.addInitScript(
+    ([stats, log]) => {
+      localStorage.setItem('game::stats', stats);
+      localStorage.setItem('game::runs', log);
+    },
+    [
+      JSON.stringify([
+        {
+          v: 3,
+          setup: { weapon: 'wingman', mag: 1, hint: true, moving: false },
+          bestAllTime: 70,
+          today: 20261023,
+          todayResults: [70],
+          dayResults: [],
+        },
+      ]),
+      JSON.stringify([
+        { ...run, t: at, weapon: 'wingman', mag: 1, size: 6 },
+        { ...run, t: at + 1000, weapon: 'r99', mag: 4, size: 33, fire: 'auto' },
+      ]),
+    ],
+  );
+  await page.goto('/progress');
+
+  const byWeapon = page.getByRole('region', { name: 'By weapon' }).getByRole('listitem').first();
+  await expect(byWeapon).toContainText('Wingman');
+  await expect(byWeapon.locator('img')).toHaveAttribute('src', /wingman\.svg$/);
+  const recent = page.getByRole('region', { name: 'Recent runs' }).getByRole('row');
+  await expect(recent.nth(1)).toContainText('R-99');
+  await expect(recent.nth(1)).toContainText('Corrupted · 33');
+  await expect(recent.nth(2)).toContainText('Wingman');
+  await expect(recent.nth(2)).toContainText('Lv 1 · 6');
+});
+
 test('says what will appear before any run is saved', async ({ page }) => {
   await page.goto('/progress');
   await expect(page).toHaveTitle(`${site.name} · Progress`);

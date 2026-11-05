@@ -12,7 +12,11 @@ How the system fits together, as it is now: what each part does, how the parts t
 
 ## The weapon specs
 
-`data/recoil.db` (SQLite, written by `server/db.ts` and `processing/recoil_discovery/db.py` with one schema) keeps every version of every spec, losslessly (`spec_json`), with its audit history. `client/specs.json` holds the active ones in their order, and is what the trainer's bundle, the Python pipeline and the Arduino export read. A save through the API (`POST /api/specs`) writes a new version and rewrites only the changed weapons' entries in the file, leaving the others byte for byte, with the previous file kept as `client/specs.json.bak`. Edits made to `client/specs.json` outside the API (the Python CLI, a git pull, a hand edit) are imported as new versions before the API's next read or write, so a save never reverts them. `python -m recoil_discovery.shadow_parity` compares the two field by field, and `python -m recoil_discovery.cli export-arduino` writes `arduino_mouse/src/recoil.inc` from the file.
+`data/recoil.db` (SQLite, written by `server/db.ts` and `processing/recoil_discovery/db.py` with one schema) keeps every version of every spec, losslessly (`spec_json`), with its audit history. `client/specs.json` holds the active ones in their order, and is what the trainer's bundle and the Python pipeline read. A save through the API (`POST /api/specs`) writes a new version and rewrites only the changed weapons' entries in the file, leaving the others byte for byte, with the previous file kept as `client/specs.json.bak`. Edits made to `client/specs.json` outside the API (the Python CLI, a git pull, a hand edit) are imported as new versions before the API's next read or write, so a save never reverts them. `python -m recoil_discovery.shadow_parity` compares the two field by field.
+
+A spec's `known_shots` says how many of its first shots are real; without it, all of them are. A new measurement sets the count to the pattern's length rather than removing it, since a save keeps the fields it isn't sent, and never blends into shots that aren't real ([corrections](corrections.md), C8).
+
+A spec's `checked_patch` names the game patch its numbers were checked against, and `client/patch.json` the current one. `client/trainer/catalog.ts` gives the pages only what is checked against the current patch, and of that only what the real shots fill (`knownPart` in `client/engine/weapons.ts`), so a new patch hides every weapon until it's checked against that one, and with none to offer the pages say so (`client/trainer/no-weapons.tsx`). The Studio keeps every spec, and marks a check; a save that changes the numbers takes the check back (`withCheckReviewed` in `client/studio/model/spec.ts`), as a new measurement does in the Python, with `null`, since a save keeps what it isn't sent. `shared/spec-marks.cases.json` holds the TypeScript and the Python to one set of cases for both fields. `python -m recoil_discovery.cli patch --game <the game's folder>` compares the current patch with an installed game. `site.e2eShowUnchecked`, which only `e2e/server.mjs` sets, shows the real patterns that aren't checked, so the end-to-end scenarios and Lighthouse have weapons to work on; the third e2e server runs without it, as production does (`e2e/checked.spec.ts`).
 
 ## Analyses
 
@@ -68,7 +72,7 @@ client/engine/recorded-runs.fixture.json  12 runs recorded from the previous tra
 client/trainer/                  the trainer: trainer-app.tsx (layout, keys, consent, dialogs on demand), top-bar,
                                  loadout-panel, range-panel (options, pattern, chip, result card), session-panel,
                                  legal-footer, dialogs.tsx (settings, help, weapon search; own chunk), phone-viewer;
-                                 catalog.ts (weapons, classes, art, tiers), loadout.ts (the loadout as shown and run,
+                                 catalog.ts (the weapons the pages offer, classes, art, tiers), no-weapons.tsx (the pages with none), loadout.ts (the loadout as shown and run,
                                  the changes a player makes, weaponSetup for any weapon), history.ts (game::stats),
                                  session.ts, names.ts (names in the page's language), weapon-meta.tsx ("Assault rifle ·
                                  810 RPM"), fields.tsx, hooks.ts, links.ts, consent.tsx (the consent prompt and
@@ -79,7 +83,7 @@ client/trainer/range/            renderer.ts (Konva: runs, drawing and the mouse
                                  (mounts the renderer, loaded after the page), pattern-preview.tsx (the path as SVG,
                                  in a frame of its own or a shared one), colors.ts (tokens)
 client/trainer/patterns/         patterns-app.tsx (the Patterns page and the selected pattern's panel),
-                                 pattern-library.tsx (every weapon's pattern as a card, filtered by class)
+                                 pattern-library.tsx (each offered weapon's pattern as a card, filtered by class)
 client/trainer/progress/         progress-app.tsx (the Progress page), score-chart.tsx (Recharts, its own chunk),
                                  progress-data.ts (days per setup to days, weapons, the summary and CSV; tested)
 client/trainer/docs/doc-app.tsx  the documents of docs/ as pages (privacy policy, FAQ, changelog; prose on the
@@ -98,6 +102,8 @@ shared/api.ts                    the API's shapes (zod): the browser checks ever
 shared/requests.ts               what the server accepts, read as leniently as the API always did: form fields as
                                  text, a setting it can't use as the discovery CLI's default, a spec update with
                                  only a name and a pattern
+shared/spec-marks.cases.json     one set of cases for known_shots and checked_patch, read by the TypeScript and
+                                 the Python tests
 server/app.ts                    createApp(): static files, /captures, the API's routers, the pages and the error
                                  handler, around the database, storage, job queue and site values it is given
 server/main.ts                   the HTTP server (pnpm start, pnpm dev with --dev): .env, the settings' check, the port

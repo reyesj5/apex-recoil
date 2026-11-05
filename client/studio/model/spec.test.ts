@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import specs from '@/specs.json';
+import { weaponSpec } from '@/lib/api';
+import { currentPatch } from '@/lib/game-patch';
+import specMarksCases from '../../../shared/spec-marks.cases.json';
 import {
+  canBeChecked,
   cleanWeaponName,
   expectedShots,
   findSpec,
   fitTimePoints,
+  hasUnknownShots,
+  hiddenFromTrainer,
   idealTimePoints,
   importDiscoveryJson,
   newWeaponSpec,
@@ -14,6 +20,7 @@ import {
   shotsOf,
   unitShot,
   withMagazineSize,
+  withCheckReviewed,
   withRpm,
   withShots,
   type Spec,
@@ -21,6 +28,109 @@ import {
 
 const all = specs as Spec[];
 const spec = (name: string) => structuredClone(all.find((s) => s.name === name)!);
+
+/** A pattern's real shots (docs/corrections.md, C8) */
+describe('known shots', () => {
+  const made = (fields: object) => ({ ...newWeaponSpec('test'), ...fields }) as Spec;
+  const pattern = (shots: number) => ({
+    x: Array.from({ length: shots }, (_, i) => i),
+    y: Array.from({ length: shots }, (_, i) => -i),
+    time_points: Array.from({ length: shots }, (_, i) => i * 100),
+  });
+
+  for (const { name, spec: fields, valid, unknown } of specMarksCases.cases) {
+    it(`reads the shared case: ${name}`, () => {
+      const candidate = { ...made({}), ...fields, y: fields.x, time_points: fields.x };
+      expect(weaponSpec.safeParse(candidate).success).toBe(valid);
+      if (valid) expect(hasUnknownShots(candidate as Spec)).toBe(unknown);
+    });
+  }
+
+  it('says what the trainer leaves out, and nothing when it shows everything', () => {
+    const mags = [18, 27, 33].map((size) => ({ size, audio: 'a' }));
+    const checked = { ...pattern(33), mags, checked_patch: currentPatch };
+    expect(hiddenFromTrainer(made(checked))).toBeNull();
+    expect(hiddenFromTrainer(made({ ...checked, known_shots: 33 }))).toBeNull();
+    expect(hiddenFromTrainer(made({ ...checked, known_shots: 30 }))).toMatch(/magazines over 27 rounds/);
+    expect(hiddenFromTrainer(made({ ...checked, known_shots: 0 }))).toMatch(/no magazine has all its shots/);
+    // A new weapon's single shot fills no magazine, count or no count
+    expect(hiddenFromTrainer({ ...newWeaponSpec('test'), checked_patch: currentPatch })).toMatch(/no magazine/);
+  });
+
+  it('says when it has not been checked against the current patch', () => {
+    const hidden = new RegExp(`^Hidden from the trainer: not checked against patch ${currentPatch}`);
+    for (const checked_patch of [undefined, null, 'an older patch']) {
+      expect(hiddenFromTrainer(made({ ...pattern(2), checked_patch }))).toMatch(hidden);
+    }
+  });
+
+  it('lets a check vouch only for a spec with a magazine its real shots fill', () => {
+    const mags = [{ size: 2, audio: 'a' }];
+    expect(canBeChecked(made({ ...pattern(2), mags }))).toBe(true);
+    expect(canBeChecked(made({ ...pattern(2), mags, known_shots: 1 }))).toBe(false);
+    expect(canBeChecked(newWeaponSpec('test'))).toBe(false);
+  });
+
+  describe('a check on saving', () => {
+    const saved = made({ ...pattern(3), checked_patch: currentPatch });
+
+    it('stays while the numbers are the ones it saw', () => {
+      expect(withCheckReviewed(saved, { ...saved }).checked_patch).toBe(currentPatch);
+      expect(withCheckReviewed(saved, { ...saved, sample_count: 5 }).checked_patch).toBe(currentPatch);
+    });
+
+    it.each([
+      ['the pattern', { x: [0, 1, 9] }],
+      ['the fire rate', { rpm: 999 }],
+      ['the multiplier', { multiplier: 0.5 }],
+      ['the magazines', { mags: [{ size: 3, audio: 'a' }] }],
+      ['the shot times', { time_points: [0, 1, 2] }],
+      ['the shots known', { known_shots: 1 }],
+    ])('goes when %s changes, as null, since a save keeps what it is not sent', (_, change) => {
+      expect(withCheckReviewed(saved, { ...saved, ...change }).checked_patch).toBeNull();
+    });
+
+    it('stays when it was ticked for the new numbers', () => {
+      const unchecked = made({ ...pattern(3), checked_patch: null });
+      const ticked = { ...unchecked, x: [0, 1, 9], checked_patch: currentPatch };
+      expect(withCheckReviewed(unchecked, ticked).checked_patch).toBe(currentPatch);
+    });
+
+    it('leaves a new weapon, and one never checked, as they are', () => {
+      expect(withCheckReviewed(undefined, saved)).toBe(saved);
+      const never = made(pattern(3));
+      expect(withCheckReviewed(never, { ...never, rpm: 1 }).checked_patch).toBeUndefined();
+    });
+  });
+
+  it('keeps the count within the pattern when shots are removed, and adds none for shots added', () => {
+    const counted = made({ ...pattern(5), known_shots: 3 });
+    const shots = shotsOf(counted);
+    expect(withShots(counted, shots.slice(0, 2)).known_shots).toBe(2);
+    expect(withShots(counted, shots.slice(0, 4)).known_shots).toBe(3);
+    expect(withShots(counted, [...shots, { x: 9, y: 9 }]).known_shots).toBe(3);
+    expect(withShots(made(pattern(5)), shots.slice(0, 2)).known_shots).toBeUndefined();
+  });
+
+  it('takes a pasted measurement as real all the way through, with a count the server keeps', () => {
+    const measured = JSON.stringify({ x: [0, 1, 2, 3], y: [0, -1, -2, -3] });
+    const hidden = importDiscoveryJson(made({ ...pattern(2), known_shots: 0 }), measured);
+    expect('spec' in hidden && hidden.spec.known_shots).toBe(4);
+    const plain = importDiscoveryJson(made(pattern(2)), measured);
+    expect('spec' in plain && plain.spec.known_shots).toBeUndefined();
+    // Only a new pattern is a measurement: a new fire rate says nothing about the shots
+    const retimed = importDiscoveryJson(made({ ...pattern(2), known_shots: 0 }), JSON.stringify({ rpm: 700 }));
+    expect('spec' in retimed && retimed.spec.known_shots).toBe(0);
+  });
+
+  it('counts as an unsaved change', () => {
+    expect(sameSpec(made(pattern(2)), made({ ...pattern(2), known_shots: 0 }))).toBe(false);
+    expect(sameSpec(made({ ...pattern(2), known_shots: 1 }), made({ ...pattern(2), known_shots: 1 }))).toBe(true);
+    expect(sameSpec(made(pattern(2)), made({ ...pattern(2), checked_patch: 'v1' }))).toBe(false);
+    // A check taken back is the same as none
+    expect(sameSpec(made(pattern(2)), made({ ...pattern(2), checked_patch: null }))).toBe(true);
+  });
+});
 
 describe('specs', () => {
   it('finds the Havoc under either name', () => {
@@ -124,6 +234,7 @@ describe('specs', () => {
 
   it('applies a pasted discovery JSON', () => {
     const r301 = spec('r301');
+    delete r301.known_shots;
     const pattern = { x: [0, 1, 2], y: [0, -10, -20], raw_1x_x: [0, 1.37, 2.74], raw_1x_y: [0, -13.7, -27.4] };
     const fromSpec = importDiscoveryJson(r301, JSON.stringify(pattern));
     expect(fromSpec).toEqual({

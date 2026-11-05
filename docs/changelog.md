@@ -10,7 +10,7 @@ Spraydown's first release: the trainer rebuilt with a new look, and two new page
 
 - **A new trainer.** Your loadout, the practice range and today's session side by side. Practice options float over the range, and your mouse settings sit in one place.
 - **A result after every run.** Your score, how it compares with today's median, and a replay of your spray.
-- **Patterns.** Every weapon's recoil pattern in one library, at one scale, with the spray played shot by shot.
+- **Patterns.** Recoil patterns in one library, at one scale, with the spray played shot by shot.
 - **Progress.** Your best and median scores by day and by weapon, your recent runs, and a CSV export.
 - **Phones.** A pattern viewer instead of a page you can't use, with a link to send to your computer.
 - **Your data stays.** Settings and score history from the previous trainer carry over, and they still live only in your browser.

@@ -37,6 +37,16 @@ describe('site', () => {
     expect(readSite({ ...empty, gaMeasurementId: 'G-TEST', privacyUrl: '/privacy' }).gaMeasurementId).toBe('G-TEST');
   });
 
+  it('shows unchecked patterns only when the end-to-end server asks', () => {
+    expect(readSite({ ...empty, e2eShowUnchecked: true }).e2eShowUnchecked).toBe(true);
+    expect('e2eShowUnchecked' in readSite(empty)).toBe(false);
+    expect('e2eShowUnchecked' in readSite({ ...empty, e2eShowUnchecked: false })).toBe(false);
+  });
+
+  it('never turns that on in site.json, what production and the static site run with', () => {
+    expect(data).not.toHaveProperty('e2eShowUnchecked');
+  });
+
   it('recognizes placeholders', () => {
     expect(isPlaceholder('[OWNER NAME]')).toBe(true);
     expect(isPlaceholder('Spraydown')).toBe(false);

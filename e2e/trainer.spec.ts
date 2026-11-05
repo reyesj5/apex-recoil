@@ -2,7 +2,8 @@ import { AxeBuilder } from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ANALYTICS_URL, expect, root, site, specs, storage, test } from './fixtures';
+import { weaponEntry } from '../client/trainer/weapon-list';
+import { ANALYTICS_URL, expect, root, shownSpecs, site, specs, storage, test } from './fixtures';
 
 // The trainer at /, /ru and /zh-CN (docs/ui-migration-plan.md, Phase 2): the previous trainer's
 // scenarios, asserting on the same data (stored settings and scores); the runs recorded from the
@@ -28,13 +29,13 @@ const consentBanner = (page: Page) => page.getByRole('dialog', { name: 'Analytic
 const consent = async (page: Page) =>
   (JSON.parse((await storage(page, 'consent:analytics'))['consent:analytics'] ?? '{}') as { choice?: string }).choice;
 
-test('lists every weapon and selects one', async ({ page }) => {
+test('lists the weapons and selects one', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(`${site.name} · Recoil trainer for Apex Legends`);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   // The stylesheet reached the page (a missing one would be served the trainer's HTML)
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(10, 12, 15)');
-  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(specs.length);
+  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(shownSpecs.length);
   await expect(weapon(page, 'R-99')).toHaveAttribute('aria-checked', 'true');
   const session = page.getByRole('complementary', { name: 'Session' });
   await expect(session.getByText('Your first run today shows up here.')).toBeVisible();
@@ -46,6 +47,32 @@ test('lists every weapon and selects one', async ({ page }) => {
   expect(await violations(page), 'accessibility violations').toEqual([]);
 });
 
+test('offers only the weapons and magazines with real shots', async ({ page }) => {
+  // docs/corrections.md, C8. A stored weapon that's hidden gives way to the R-99, and a stored magazine
+  // to the largest one shown
+  const hidden = specs.find((s) => !shownSpecs.some((shown) => shown.name === s.name));
+  await page.addInitScript((stored) => {
+    localStorage.setItem('game::weapon', stored);
+    localStorage.setItem('game::mag', '4');
+  }, hidden?.name ?? 'no-such-weapon');
+  await page.goto('/');
+
+  const tiles = weaponGrid(page).getByRole('radio');
+  await expect(tiles).toHaveCount(shownSpecs.length);
+  expect((await tiles.evaluateAll((all) => all.map((t) => t.getAttribute('data-weapon')))).sort()).toEqual(
+    shownSpecs.map((s) => s.name).sort(),
+  );
+  await expect(weapon(page, 'R-99')).toHaveAttribute('aria-checked', 'true');
+  const mags = magazines(page).getByRole('radio');
+  await expect(mags).toHaveCount(shownSpecs.find((s) => s.name === 'r99')!.mags.length);
+  await expect(mags.last()).toHaveAttribute('aria-checked', 'true');
+
+  // A class with no weapon to offer isn't a filter, beside All
+  const classes = new Set(shownSpecs.map((s) => weaponEntry(s.name).weaponClass));
+  await expect(page.getByRole('radiogroup', { name: 'Weapon class' }).getByRole('radio')).toHaveCount(classes.size + 1);
+  expect(await violations(page), 'accessibility violations').toEqual([]);
+});
+
 test('filters weapons by search and class', async ({ page }) => {
   await page.goto('/');
   const shown = weaponGrid(page).getByRole('radio');
@@ -53,7 +80,7 @@ test('filters weapons by search and class', async ({ page }) => {
   await expect(shown).toHaveCount(1);
   await expect(shown).toHaveAttribute('data-weapon', 'r99');
   await page.getByRole('searchbox', { name: 'Filter weapons' }).fill('');
-  await expect(shown).toHaveCount(specs.length);
+  await expect(shown).toHaveCount(shownSpecs.length);
 
   const classes = page.getByRole('radiogroup', { name: 'Weapon class' });
   await classes.getByRole('radio', { name: /^SMG/ }).click();
@@ -66,7 +93,7 @@ test('filters weapons by search and class', async ({ page }) => {
     'car',
   ]);
   await classes.getByRole('radio', { name: /^All/ }).click();
-  await expect(shown).toHaveCount(specs.length);
+  await expect(shown).toHaveCount(shownSpecs.length);
 });
 
 test('switches fire modes, magazines and attachments', async ({ page }) => {
@@ -82,13 +109,14 @@ test('switches fire modes, magazines and attachments', async ({ page }) => {
   await page.locator('body').press('b');
   await expect(fireModes(page).getByRole('radio', { name: 'Auto' })).toHaveAttribute('aria-checked', 'true');
 
-  // The Hemlok has no full auto, so it falls back to its bursts
-  await weapon(page, 'Hemlok').click();
-  await expect(fireModes(page).getByRole('radio', { name: 'Burst' })).toHaveAttribute('aria-checked', 'true');
-  await expect(fireModes(page).getByRole('radio', { name: 'Auto' })).toHaveCount(0);
+  // The R-301 has no bursts, so the Prowler's burst falls back to its full auto
+  await fireModes(page).getByRole('radio', { name: 'Burst' }).click();
+  await weapon(page, 'R-301').click();
+  await expect(fireModes(page).getByRole('radio', { name: 'Auto' })).toHaveAttribute('aria-checked', 'true');
+  await expect(fireModes(page).getByRole('radio', { name: 'Burst' })).toHaveCount(0);
 
   // Magazines show the R-301's capacities; the corrupted stock takes 4 rounds off each
-  const r301 = specs.find((s) => s.name === 'r301')!;
+  const r301 = shownSpecs.find((s) => s.name === 'r301')!;
   await weapon(page, 'R-301').click();
   await expect(magazines(page).getByRole('radio')).toHaveCount(r301.mags.length);
   const level2 = magazines(page).getByRole('radio', { name: /^Level 2 magazine/ });
@@ -186,7 +214,7 @@ test('scores a full spray and keeps the result', async ({ page }) => {
 
 test('meets WCAG 2.1 A and AA with every overlay open', async ({ page }) => {
   await page.goto('/');
-  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(specs.length);
+  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(shownSpecs.length);
   const cases = [
     { open: () => page.getByRole('button', { name: 'Settings' }).click(), role: 'dialog', name: 'Settings' },
     { open: () => page.getByRole('button', { name: 'Help' }).click(), role: 'dialog', name: 'How to practice' },
@@ -219,7 +247,7 @@ test('serves the Russian and Chinese pages', async ({ page }) => {
   await expect(page).toHaveTitle(`${site.name} · Тренажёр отдачи для Apex Legends`);
   await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
   await expect(page.getByRole('radiogroup', { name: 'Оружие', exact: true }).getByRole('radio')).toHaveCount(
-    specs.length,
+    shownSpecs.length,
   );
   await expect(page.getByRole('complementary', { name: 'Сессия' })).toContainText('Попытки');
   expect(await violations(page), 'accessibility violations in Russian').toEqual([]);
@@ -228,7 +256,7 @@ test('serves the Russian and Chinese pages', async ({ page }) => {
   await expect(page).toHaveTitle(`${site.name} · Apex Legends 压枪训练`);
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   await expect(page.getByRole('radiogroup', { name: '武器', exact: true }).getByRole('radio')).toHaveCount(
-    specs.length,
+    shownSpecs.length,
   );
   await expect(page.getByRole('complementary', { name: '本次练习' })).toContainText('尝试次数');
 
@@ -249,7 +277,7 @@ test.describe('on a phone', () => {
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
     }
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1, name: 'Recoil patterns for every weapon' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Recoil patterns' })).toBeVisible();
     const weapons = page.getByRole('radiogroup', { name: 'Weapon' });
     await weapons.getByRole('radio', { name: 'R-301' }).click();
     await expect(page.getByRole('region', { name: 'R-301 pattern' })).toBeVisible();
@@ -280,14 +308,8 @@ test.describe('without JavaScript', () => {
 
   test('shows the prerendered page in each language', async ({ page }) => {
     for (const [path, lang, title, description, grid] of [
-      [
-        '/',
-        'en',
-        'Recoil trainer for Apex Legends',
-        /^Practice the spray pattern of every Apex Legends weapon/,
-        'Weapon',
-      ],
-      ['/ru', 'ru', 'Тренажёр отдачи для Apex Legends', /^Отрабатывайте отдачу каждого оружия Apex Legends/, 'Оружие'],
+      ['/', 'en', 'Recoil trainer for Apex Legends', /^Practice the spray patterns of Apex Legends weapons/, 'Weapon'],
+      ['/ru', 'ru', 'Тренажёр отдачи для Apex Legends', /^Отрабатывайте отдачу оружия Apex Legends/, 'Оружие'],
       ['/zh-CN', 'zh-CN', 'Apex Legends 压枪训练', /^在浏览器中练习 Apex Legends/, '武器'],
     ] as const) {
       await page.goto(path);
@@ -297,7 +319,7 @@ test.describe('without JavaScript', () => {
       // The pages are live: search engines may index them
       await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
       await expect(page.getByRole('radiogroup', { name: grid, exact: true }).getByRole('radio')).toHaveCount(
-        specs.length,
+        shownSpecs.length,
       );
     }
     await page.goto('/');
@@ -313,7 +335,7 @@ test('stays off without a measurement ID', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (req) => requests.push(req.url()));
   await page.goto('/');
-  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(specs.length);
+  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(shownSpecs.length);
   expect(requests.filter((url) => google.test(url))).toEqual([]);
   await expect(consentBanner(page)).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Cookie settings' })).toHaveCount(0);
@@ -337,7 +359,7 @@ test('loads the Google tag only after consent', async ({ page }) => {
   await expect(banner).toBeHidden();
   expect(await consent(page)).toBe('denied');
   await page.reload();
-  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(specs.length);
+  await expect(weaponGrid(page).getByRole('radio')).toHaveCount(shownSpecs.length);
   await expect(banner).toBeHidden();
 
   // Cookie settings asks again; accepting loads the tag with the configured measurement ID
@@ -375,8 +397,12 @@ const recorded: { runs: RecordedRun[] } = JSON.parse(
   fs.readFileSync(path.join(root, 'client', 'engine', 'recorded-runs.fixture.json'), 'utf8'),
 );
 
+// A hidden weapon can't be replayed through the pages until it's back; run.test.ts still replays
+// its runs through the engine
+const replayable = recorded.runs.filter((run) => shownSpecs.some((s) => s.name === run.settings['game::weapon']));
+
 test.describe('replays the runs recorded from the previous trainer', () => {
-  for (const run of recorded.runs) {
+  for (const run of replayable) {
     test(run.name, async ({ page }) => {
       await page.clock.install({ time: new Date('2026-10-23T12:00:00Z') });
       await page.addInitScript((settings) => {

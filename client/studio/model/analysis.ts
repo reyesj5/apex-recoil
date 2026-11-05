@@ -132,6 +132,8 @@ export function applyAnalysis(
     delete next.raw_1x_x;
     delete next.raw_1x_y;
   }
+  // A measured spray is real all the way through; the server keeps a field it isn't sent, so it's set
+  if (next.known_shots !== undefined) next.known_shots = next.x.length;
 
   const expected = expectedShots(next.mags);
   const session: Session = {

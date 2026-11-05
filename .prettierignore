@@ -38,8 +38,7 @@ client/raw_recoils.json
 .gemini/settings.json
 scripts/agent_kit.json
 
-# Other projects, editor settings and hand-written YAML
-arduino_mouse/
+# Editor settings and hand-written YAML
 .vscode/
 .github/
 compose.yaml

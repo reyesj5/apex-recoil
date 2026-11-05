@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Recoil trainer for Apex Legends",
-    "description": "Practice the spray pattern of every Apex Legends weapon in your browser, with each magazine and fire mode. See where every round lands and track your progress."
+    "description": "Practice the spray patterns of Apex Legends weapons in your browser, with each magazine and fire mode. See where every round lands and track your progress."
   },
   "weapons": {
     "category": {
@@ -237,8 +237,12 @@
     "reject": "Reject",
     "accept": "Accept"
   },
+  "noWeapons": {
+    "title": "No weapons to show yet",
+    "text": "A weapon appears here once its recoil pattern has been checked against the current game patch, so what you practice matches the game. Check back soon."
+  },
   "phone": {
-    "title": "Recoil patterns for every weapon",
+    "title": "Recoil patterns",
     "intro": "Practicing needs a mouse and a larger screen. Here you can study each pattern before you train.",
     "weapon": "Weapon",
     "computer": "Train on a computer.",
@@ -249,7 +253,7 @@
   },
   "patterns": {
     "title": "Recoil patterns",
-    "description": "The recoil pattern of every Apex Legends weapon, for each magazine and fire mode. Watch each spray shot by shot, then practice it in your browser.",
+    "description": "The recoil patterns of Apex Legends weapons, for each magazine and fire mode. Watch each spray shot by shot, then practice it in your browser.",
     "intro": "Each weapon's spray, drawn as the path your aim follows to keep the shots on the start point. Pick a weapon to study it, then practice with it.",
     "library": "Pattern library",
     "section": "{{weapon}} pattern",

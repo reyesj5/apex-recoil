@@ -8,9 +8,18 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSpecHistory } from '@/lib/api';
+import { currentPatch, isCheckedNow } from '@/lib/game-patch';
 import { useEditorSettings } from '@/lib/storage/editor';
-import { NumberField, SectionLabel, SelectField } from './fields';
-import { shotInterval, tierNames, withMagazineSize, withRpm, type Spec } from './model/spec';
+import { Notice, NumberField, SectionLabel, SelectField } from './fields';
+import {
+  canBeChecked,
+  hiddenFromTrainer,
+  shotInterval,
+  tierNames,
+  withMagazineSize,
+  withRpm,
+  type Spec,
+} from './model/spec';
 import { plural } from './names';
 import {
   editSpec,
@@ -49,9 +58,23 @@ function SpecSection({ spec }: { spec: Spec }) {
   const id = useId();
   const name = spec.name;
   const samples = spec.sample_count || 1;
+  const hidden = hiddenFromTrainer(spec);
+  const checkId = `${id}-checked`;
   return (
     <section aria-labelledby={id} className="flex flex-col gap-2.5">
       <SectionLabel id={id}>Spec</SectionLabel>
+      {hidden && <Notice tone="warning">{hidden}</Notice>}
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id={checkId}
+          checked={isCheckedNow(spec)}
+          disabled={!canBeChecked(spec)}
+          onCheckedChange={(on) => editSpec(name, (s) => ({ ...s, checked_patch: on === true ? currentPatch : null }))}
+        />
+        <Label htmlFor={checkId} className="type-label text-text">
+          Checked against patch {currentPatch}
+        </Label>
+      </div>
       <div className="grid grid-cols-2 gap-2.5">
         <NumberField
           label="Fire rate"

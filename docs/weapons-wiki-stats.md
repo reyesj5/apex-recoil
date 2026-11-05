@@ -155,7 +155,7 @@ Comparing the recoil specifications in `client/specs.json` against the wiki's gr
 
 1. **Coordinate Extension for Tier 4 Magazines:**
    - Recoil patterns in `client/specs.json` store coordinate arrays `x`, `y`, and `time_points` indexed by shot count.
-   - When expanding magazine sizes to include Corrupted L4 (e.g. R-99 to 33, R-301 to 37, Flatline to 35), coordinate vectors must be populated for those additional shots (e.g. shots 31..33 for R-99) using `recoil_discovery` capture or pattern stabilization to satisfy schema verification (`len_x >= max_mag`).
+   - When expanding magazine sizes to include Corrupted L4 (e.g. R-99 to 33, R-301 to 37, Flatline to 35), coordinate vectors must be populated for those additional shots (e.g. shots 31..33 for R-99) from a recording or the game's data, never from generated numbers, to satisfy schema verification (`len_x >= max_mag`). Until then `known_shots` marks the shots that aren't real, and the pages hide the magazine ([corrections](corrections.md), C8).
 2. **Care Package vs Ground Loot Dual-Specs:**
    - If both crate and ground loot variations are needed, weapons can offer a mode toggle or separate spec IDs (e.g. `r99_crate` vs `r99`).
 3. **Akimbo Weapon Recoil:**

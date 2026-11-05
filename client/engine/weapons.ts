@@ -226,6 +226,38 @@ export function withMods(weapon: Weapon, mods: Iterable<string>): Weapon {
   return w;
 }
 
+/**
+ * The magazines a pattern's real shots fill. A pattern can hold shots that aren't real
+ * (docs/corrections.md, C8): `knownShots` says how many of its first shots are, all of them without one,
+ * and a magazine larger than the pattern isn't filled whatever the count says.
+ */
+export function knownMagazines<M extends { size: number }>(mags: readonly M[], shots: number, knownShots = shots): M[] {
+  const known = Math.min(knownShots, shots);
+  return mags.filter((m) => m.size <= known);
+}
+
+/** The weapon cut to its real shots and the magazines they fill; with none filled, no magazine is left */
+export function knownPart(weapon: Weapon, knownShots = weapon.x.length): Weapon {
+  const shots = weapon.x.length;
+  const known = Math.min(knownShots, shots);
+  const mods: Weapon['mods'] = {};
+  for (const [name, mod] of Object.entries(weapon.mods)) {
+    mods[name] = {
+      ...mod,
+      ...(mod.mags ? { mags: knownMagazines(mod.mags, shots, known) } : {}),
+      ...(mod.time_points ? { time_points: mod.time_points.slice(0, known) } : {}),
+    };
+  }
+  return {
+    ...weapon,
+    mags: knownMagazines(weapon.mags, shots, known),
+    time_points: weapon.time_points.slice(0, known),
+    x: weapon.x.slice(0, known),
+    y: weapon.y.slice(0, known),
+    mods,
+  };
+}
+
 /** The stored magazine index, limited to the magazines the weapon has */
 export function magIndex(weapon: Weapon, stored: number): number {
   return Math.min(stored, weapon.mags.length - 1);

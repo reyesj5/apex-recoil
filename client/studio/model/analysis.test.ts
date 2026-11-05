@@ -82,6 +82,25 @@ function accumulated(base: Spec) {
   };
 }
 
+/** A spray measured from a recording is real, whatever the spec held before (docs/corrections.md, C8) */
+describe('a measured pattern on a spec with unknown shots', () => {
+  const choice = { weapon: 'r99', mode: 'auto', saveCapture: true, strategy: 'overwrite' as const };
+  const context = (draft: Spec) => ({ choice, saved: draft, draft, sent: 1, zoom: 2, pxPerCount: 1 });
+  const result = (base: Spec) => analysisResult.parse(accumulated(base));
+
+  it('counts every measured shot as real, with a value the server keeps (it merges what it is not sent)', () => {
+    const draft = { ...spec('r99'), known_shots: 0 };
+    const { draft: applied } = applyAnalysis(result(draft), context(draft));
+    expect(applied.known_shots).toBe(applied.x.length);
+  });
+
+  it('adds no count to a spec that has none', () => {
+    const draft = without(spec('spitfire'), 'known_shots');
+    const { draft: applied } = applyAnalysis(result(draft), context(draft));
+    expect(applied.known_shots).toBeUndefined();
+  });
+});
+
 describe('analysis requests', () => {
   it('send the setup and the spec as it stands', () => {
     const r99 = { ...spec('r99'), sample_count: 3 };
@@ -145,7 +164,7 @@ describe('analysis results', () => {
   });
 
   it("put the measured pattern into the weapon's spec and keep the rest", () => {
-    const saved = spec('r99');
+    const saved = without(spec('r99'), 'known_shots');
     const draft = { ...saved, sample_count: 3, mags: saved.mags.slice(0, 4) };
     const result = analysisResult.parse(accumulated(saved));
     const choice = { weapon: 'r99', mode: 'auto', saveCapture: true, strategy: 'accumulate' as const };

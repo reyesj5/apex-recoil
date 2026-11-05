@@ -14,7 +14,6 @@ graphify-out/
 # This project's generated files that are committed (graphify reads .gitignore too, so what is gitignored stays out)
 client/lib/cn-tables.ts
 client/styles/design-tokens.css
-arduino_mouse/src/recoil.inc
 # The design snapshot, exported from the claude.ai artifacts by scripts/export-design.mjs
 docs/design/
 # Copies of AGENTS.md that python scripts/agent_kit.py sync makes

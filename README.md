@@ -10,10 +10,10 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
 
 1. **Interactive Recoil Trainer (`/`)**:
    - Practice full spray recoil control against animated targets with live scoring, a result card after every run and today's trend.
-   - **Patterns (`/patterns`)**: every weapon's recoil pattern in one library at one scale, with the spray played shot by shot; phones get a pattern viewer.
+   - **Patterns (`/patterns`)**: the recoil patterns in one library at one scale, with the spray played shot by shot; phones get a pattern viewer.
    - **Progress (`/progress`)**: best and median scores by day and by weapon, recent runs and CSV export, kept in the browser.
    - The privacy policy, FAQ and changelog as pages (`/privacy`, `/faq`, `/changelog`), prerendered pages in every language, and Google Analytics only with consent.
-   - Complete **31-weapon arsenal** covering all weapon classes (Assault Rifles, SMGs, LMGs, Marksman, Snipers, Shotguns, and Pistols/Akimbos).
+   - **31 weapons** in the specs, covering all weapon classes (Assault Rifles, SMGs, LMGs, Marksman, Snipers, Shotguns, and Pistols/Akimbos). The pages show a weapon only once it's checked against the current game patch, and none is yet: `client/patch.json` names the patch, and a spec's `checked_patch` the one it was checked against. To look at the pages meanwhile, `node e2e/server.mjs` serves them on throwaway data with the real patterns that aren't checked, on http://127.0.0.1:3210 (run `pnpm build` first).
    - **Realistic Shooting Styles & Trigger Mechanics**:
      - **Semi-Automatic & Shotguns**: Click-per-shot mechanics for Peacekeeper, Mastiff, Wingman, P2020, G7 Scout, 30-30, Triple Take, Bocek, Charge Rifle, Longbow, Sentinel, Kraber with refire cooldown and smooth recoil recentering.
      - **Burst Weapons**: Multi-shot bursts (Prowler: 5, Hemlok: 3, Nemesis: 4) with intra-burst cadence and inter-burst recoil reset.
@@ -44,7 +44,7 @@ An interactive recoil pattern visualization, muscle memory trainer, and automate
    - Multi-spray median-delta integration and convergence scoring ($rc\_score$).
    - SQLite persistence layer with versioned, lossless specs (kept in sync with `client/specs.json`), audit history, and full-document shadow parity verification.
    - Optional scaled mode: Redis/BullMQ job queue with standalone workers, and S3-compatible capture storage with direct browser uploads.
-   - Comprehensive test suite with 43 Python unit tests, 68 Node.js tests (14 of them need Redis/S3, see below), Vitest unit and component tests and 59 Playwright end-to-end scenarios in Chrome, including axe accessibility checks, and Lighthouse in CI.
+   - Comprehensive test suite with 69 Python unit tests, 87 Node.js tests (14 of them need Redis/S3, see below), Vitest unit and component tests and 64 Playwright end-to-end scenarios in Chrome, including axe accessibility checks, and Lighthouse in CI.
 
 ---
 
@@ -79,7 +79,6 @@ docs/                  the plan (roadmap.md), the corrections, the architecture,
 brand/                 the logo and its sources
 assets/                the game's images and sounds (not under Apache-2.0)
 etc/                   the favicons, copied into the static site
-arduino_mouse/         a separate PlatformIO project, which reads the patterns export-arduino writes
 .claude/, .agents/, .codex/, .gemini/
                        each assistant's hooks, rules and graphify's skill; AGENTS.md holds the rules
                        for every assistant (CLAUDE.md and GEMINI.md say the same)
@@ -114,7 +113,7 @@ pnpm dev
 # Build assets (Vite 8 production build into dist/: the pages' entries such as trainer.js and studio.js, and app.css; and the pages' prerender into dist-ssr/); pnpm start serves them
 pnpm build
 
-# Run Node test suites (72 tests across database, queue, storage, request parsing, API, the server and its settings, the pages' prerender and the built bundles; build first)
+# Run Node test suites (73 tests across database, queue, storage, request parsing, API, the server and its settings, the pages' prerender and the built bundles; build first)
 pnpm test
 
 # Unit and component tests (Vitest)
@@ -151,7 +150,7 @@ cp .env.example .env          # then uncomment REDIS_URL and/or the STORAGE_PROV
 pnpm dev                      # the server runs one embedded worker
 pnpm worker                   # optional: more workers (other machines need S3 storage)
 
-# Run every Node suite, including the Redis, S3 and end-to-end tests (86 tests)
+# Run every Node suite, including the Redis, S3 and end-to-end tests (87 tests)
 pnpm test:services
 ```
 With S3 storage the Studio uploads recordings straight to the bucket; the bucket must allow `PUT` from the app's origin (CORS). `S3_AUTO_CREATE_BUCKET=true` creates the bucket and that rule for development.
@@ -165,7 +164,7 @@ cd processing
 # (processing/README.md, Dependencies, says how to change one)
 pip install -r requirements.txt
 
-# Run automated test suite (43 tests)
+# Run automated test suite (69 tests)
 python -m pytest tests
 
 # Run shadow parity suite (SQLite vs specs.json, every field; --no-sync to only report drift)

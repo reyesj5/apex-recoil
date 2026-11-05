@@ -2,8 +2,8 @@
  * Database Layer for Weapon Specifications, Audit History & Discovery Sessions.
  * SQLite / ACID-compliant persistence with WAL mode and versioned migrations.
  *
- * client/specs.json remains the artifact consumed by the trainer bundle, the Python
- * pipeline and the Arduino exporter. Every active spec is stored losslessly (`spec_json`)
+ * client/specs.json remains the artifact consumed by the trainer bundle and the Python
+ * pipeline. Every active spec is stored losslessly (`spec_json`)
  * so exports reproduce the file exactly, and edits made to the file outside the API
  * (Python CLI, git pull, hand edits) are imported as new versions before any read or
  * write, so a save through the API can never revert them.

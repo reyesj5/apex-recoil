@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { expect, site, specs, storage, test, writeSyntheticSpray } from './fixtures';
+import { expect, patch, site, specs, storage, test, writeSyntheticSpray } from './fixtures';
 
 // The Studio at /editor, the Recoil Editor rebuilt (docs/ui-migration-plan.md, Phase 3): the Recoil
 // Editor's scenarios, asserting on the same data (shot counts, API requests, stored settings), the
@@ -17,6 +17,7 @@ type SpecJson = {
   y: number[];
   time_points: number[];
   mags: { size: number; audio: string }[];
+  checked_patch?: string | null;
 };
 
 async function violations(page: Page) {
@@ -135,6 +136,42 @@ test('loads every weapon spec', async ({ page }) => {
   await expect(statusBar(page)).toContainText(`Flatline · ${flatline.x.length} shots`);
   await expect(inspector(page).getByLabel('Fire rate')).toHaveValue(String(flatline.rpm));
   expect(await shapes(page, 'shot')).toBe(flatline.x.length);
+});
+
+test('says what the trainer leaves out of a spec, and marks one checked against the patch', async ({ page }) => {
+  // The Studio keeps every weapon, to record and check it (docs/corrections.md, C8)
+  const check = inspector(page).getByRole('checkbox', { name: `Checked against patch ${patch.current}` });
+  const saved = async () => {
+    const response = page.waitForResponse(
+      (res) => res.url().endsWith('/api/specs') && res.request().method() === 'POST',
+    );
+    await page.keyboard.press('Control+s');
+    expect((await (await response).json()).success).toBe(true);
+    return (await currentSpecs(page)).find((s) => s.name === 'alternator')!;
+  };
+
+  // No shot of it is real, so a check has nothing to vouch for
+  await open(page, 'Wingman');
+  await expect(inspector(page).getByText('Hidden from the trainer: not checked')).toBeVisible();
+  await expect(check).toBeDisabled();
+
+  await pickWeapon(page, 'Alternator');
+  await expect(check).not.toBeChecked();
+  await check.click();
+  await expect(check).toBeChecked();
+  await expect(inspector(page).getByText('leaves out magazines over 26 rounds')).toBeVisible();
+  expect((await saved()).checked_patch).toBe(patch.current);
+
+  // New numbers aren't the ones it saw
+  await inspector(page).getByLabel('Fire rate').fill('601');
+  expect((await saved()).checked_patch).toBeNull();
+  await expect(page.getByText('it needs checking again')).toBeVisible();
+  await expect(check).not.toBeChecked();
+
+  // All of this one's shots are real, so a check is all it takes to show it whole
+  await pickWeapon(page, 'Spitfire');
+  await check.click();
+  await expect(inspector(page).getByText(/Hidden from the trainer|leaves out magazines/)).toHaveCount(0);
 });
 
 test('edits shots on the canvas with undo and redo', async ({ page }) => {
@@ -415,6 +452,10 @@ test.describe('discovery with the Python pipeline', () => {
     await page.getByRole('button', { name: 'Analyze the sprays' }).click();
     const confirm = page.getByRole('dialog', { name: 'Analyze the sprays' });
     await expect(confirm).toBeVisible();
+    // A spec with shots that aren't real can't be blended into (docs/corrections.md, C8)
+    await choose(page, 'Weapon', 'Wingman');
+    await expect(confirm.getByRole('radio', { name: 'Blend into the spec' })).toBeDisabled();
+    await expect(confirm.getByRole('radio', { name: 'Start a new baseline' })).toBeChecked();
     await choose(page, 'Weapon', 'R-301');
     await expect(confirm.getByLabel('Keep the files in the captures')).toBeChecked();
     expect(await violations(page)).toEqual([]);

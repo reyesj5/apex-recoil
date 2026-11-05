@@ -15,7 +15,7 @@ on:
 #
 # A pull request runs only the jobs its files can affect (the `changes` job): the web checks and
 # Lighthouse unless it changes processing/ alone, and the pipeline's tests when it changes the
-# pipeline, the specs it reads or the Arduino export it writes. The end-to-end jobs run both parts,
+# pipeline or the specs it reads. The end-to-end jobs run both parts,
 # and the agent files' check reads every doc, so those always run, as everything does on a push to
 # main or a tag. main requires no checks (2026-10-25): if it ever does, require a job that always
 # runs, since a matrix job skipped this way never reports its matrix's names.
@@ -47,7 +47,7 @@ jobs:
         changed=$(git diff --name-only HEAD^1 HEAD)
         echo "$changed"
         if echo "$changed" | grep -qvE '^processing/'; then pages=true; else pages=false; fi
-        if echo "$changed" | grep -qE '^(processing/|arduino_mouse/|client/specs\.json$|\.github/workflows/ci\.yml$)'; then
+        if echo "$changed" | grep -qE '^(processing/|client/specs\.json$|client/patch\.json$|shared/spec-marks\.cases\.json$|\.github/workflows/ci\.yml$)'; then
           pipeline=true
         else
           pipeline=false

@@ -1,6 +1,6 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
-import { expect, site, specs, storage, test } from './fixtures';
+import { expect, shownSpecs, site, specs, storage, test } from './fixtures';
 
 // The Patterns page at /patterns (docs/ui-migration-plan.md, Phase 2.2): every weapon's pattern
 // at one scale, the selected one large with Play spray, its magazines and fire modes, and the way to
@@ -18,14 +18,14 @@ const card = (page: Page, name: string) => library(page).getByRole('radio', { na
 const detail = (page: Page, name: string) => page.getByRole('complementary', { name: `${name} pattern` });
 const rounds = (weapon: string, mag: number) => specs.find((s) => s.name === weapon)!.mags[mag].size;
 
-test('shows every weapon and the selected one large', async ({ page }) => {
+test('shows every weapon it offers and the selected one large', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Patterns' }).click();
   await expect(page).toHaveURL(/\/patterns$/);
   await expect(page).toHaveTitle(`${site.name} · Recoil patterns`);
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(10, 12, 15)');
   await expect(page.getByRole('link', { name: 'Patterns' })).toHaveAttribute('aria-current', 'page');
-  await expect(library(page).getByRole('radio')).toHaveCount(specs.length);
+  await expect(library(page).getByRole('radio')).toHaveCount(shownSpecs.length);
   await expect(card(page, 'R-99')).toHaveAttribute('aria-checked', 'true');
   await expect(
     detail(page, 'R-99').getByRole('img', { name: `R-99 recoil pattern, ${rounds('r99', 0)} rounds` }),
@@ -119,9 +119,9 @@ test.describe('without JavaScript', () => {
 
   test('shows the prerendered page in each language', async ({ page }) => {
     for (const [path, title, description] of [
-      ['/patterns', 'Recoil patterns', /^The recoil pattern of every Apex Legends weapon/],
-      ['/ru/patterns', 'Паттерны отдачи', /^Паттерн отдачи каждого оружия Apex Legends/],
-      ['/zh-CN/patterns', '后坐力弹道', /^Apex Legends 每把武器/],
+      ['/patterns', 'Recoil patterns', /^The recoil patterns of Apex Legends weapons/],
+      ['/ru/patterns', 'Паттерны отдачи', /^Паттерны отдачи оружия Apex Legends/],
+      ['/zh-CN/patterns', '后坐力弹道', /^Apex Legends 武器/],
     ] as const) {
       await page.goto(path);
       await expect(page).toHaveTitle(`${site.name} · ${title}`);
@@ -129,7 +129,7 @@ test.describe('without JavaScript', () => {
       await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
     }
     await page.goto('/patterns');
-    await expect(library(page).getByRole('radio')).toHaveCount(specs.length);
+    await expect(library(page).getByRole('radio')).toHaveCount(shownSpecs.length);
     await expect(detail(page, 'R-99').getByRole('img', { name: /^R-99 recoil pattern/ })).toBeVisible();
   });
 });
@@ -139,7 +139,7 @@ test.describe('on a phone', () => {
 
   test('shows the pattern viewer', async ({ page }) => {
     await page.goto('/patterns');
-    await expect(page.getByRole('heading', { level: 1, name: 'Recoil patterns for every weapon' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Recoil patterns' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'R-99 pattern' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
     expect(await violations(page), 'accessibility violations on a phone').toEqual([]);

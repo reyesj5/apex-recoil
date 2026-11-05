@@ -136,6 +136,8 @@ Instead of manually recording clips with OBS or Shadowplay, chopping files, and 
      * Each new spray incrementally reduces noise and variance without wiping out established ground-truth data.
    * **Start a new baseline (Post-Patch Re-calibration):**
      * Replaces the canonical spec entirely with the candidate curve. Recommended when Respawn publishes a balance update modifying a weapon's recoil pattern.
+   * A spec with shots that aren't real (`known_shots`) always starts a new baseline, since there is nothing real to blend with. The new measurement counts all its shots as real.
+   * **Checked against patch** in the inspector is what shows a weapon on the trainer: tick it once the numbers are right for the current game patch, and save. New numbers take it back, and a new patch hides every weapon until it's ticked for that one (`client/patch.json`; the inspector says what the trainer leaves out, and why).
 9. **Loading Past Sessions & Importing Local Clips:**
    * The **Sessions** section lists the saved sessions (weapon, fire mode, sprays, and the shots, fire rate and convergence once analyzed); **Load** brings a session's clips and wall screenshots into the Live tab's sample cards, on its weapon.
    * You can inspect, re-snap, or click **Analyze the sprays** to re-analyze historical sessions at any time!
@@ -167,8 +169,8 @@ python -m recoil_discovery.cli session --dir ./captures/session_r301_auto_12345/
 # 5. Commit changes directly into specs.json once satisfied
 python -m recoil_discovery.cli batch --dir ./recordings/r301/ --weapon r301 --update
 
-# 6. Export to Arduino mouse hardware table (optional)
-python -m recoil_discovery.cli export-arduino
+# 6. Compare the current patch with an installed game; --apply makes the game's patch the current one
+python -m recoil_discovery.cli patch --game "<the game's folder>"
 ```
 
 ---

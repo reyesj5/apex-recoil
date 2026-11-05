@@ -174,6 +174,36 @@ def test_pipeline_proportional_accumulation():
     assert dumped is not None
 
 
+def test_pipeline_never_blends_into_shots_that_are_not_real():
+    """C8: blending would mix a real recording with the spec's generated shots."""
+    pipeline = RecoilPipeline()
+    existing_spec = {
+        "name": "wingman",
+        "rpm": 168,
+        "multiplier": 0.78,
+        "x": [0.0, 10.0, 20.0],
+        "y": [0.0, -10.0, -20.0],
+        "time_points": [0, 100, 200],
+        "known_shots": 0,
+        "sample_count": 9
+    }
+    new_trials = [{"x": [0.0, 21.0, 31.0], "y": [0.0, -21.0, -31.0]}]
+
+    spec, _ = pipeline.aggregate_and_build_spec(
+        trials=new_trials,
+        weapon_name="wingman",
+        rpm=168.0,
+        multiplier=1.0,
+        merge_strategy="accumulate",
+        existing_spec=existing_spec,
+        existing_sample_count=9
+    )
+
+    assert spec["merge_strategy"] == "overwrite"
+    assert spec["x"] == [0.0, 21.0, 31.0]
+    assert spec["sample_count"] == 1
+
+
 def test_pipeline_overwrite_json_serializable():
     pipeline = RecoilPipeline()
     new_trials = [

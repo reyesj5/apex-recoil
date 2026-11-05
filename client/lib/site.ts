@@ -29,9 +29,14 @@ export interface Site extends Partial<Record<SiteLink, string>> {
   gaMeasurementId?: string;
   /** The project this one is based on, credited in the footer */
   upstream: { name: string; author: string; url: string; license: string };
+  /**
+   * Shows real patterns that aren't checked against the current patch, so the end-to-end scenarios can
+   * run on them. Only e2e/server.mjs sets it; a test fails if site.json does (site.test.ts).
+   */
+  e2eShowUnchecked?: boolean;
 }
 
-export type SiteJson = typeof data;
+export type SiteJson = typeof data & { e2eShowUnchecked?: boolean };
 
 /** site.json with the register's rules applied */
 export function readSite(json: SiteJson): Site {
@@ -39,6 +44,7 @@ export function readSite(json: SiteJson): Site {
   if (json.contactEmail) site.contactEmail = json.contactEmail;
   for (const key of linkKeys) if (json[key]) site[key] = json[key];
   if (json.gaMeasurementId && json.privacyUrl) site.gaMeasurementId = json.gaMeasurementId;
+  if (json.e2eShowUnchecked === true) site.e2eShowUnchecked = true;
   return site;
 }
 

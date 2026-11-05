@@ -1,21 +1,50 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import specs from '@/specs.json';
+import { isCheckedNow } from '@/lib/game-patch';
+import { setSite, type SiteJson } from '@/lib/site';
 import { readValues } from '@/lib/storage';
 import { trainerFields, useTrainerSettings } from '@/lib/storage/trainer';
-import { ammoUnit, classCounts, findWeapon, magazineTiers, weapons } from './catalog';
+import { knownPart, type Weapon } from '@/engine/weapons';
+import { ammoUnit, classCounts, findWeapon, magazineTiers, offeredWeapons, shownClasses } from './catalog';
 import { readHistory, sameSetup, summarize, today, withResult } from './history';
 import { actions, practiceOf } from './loadout';
+import { weaponPosition } from './weapon-list';
 
 describe('catalog', () => {
-  it('has every spec once, each with its class and art', () => {
-    expect(weapons.map((w) => w.id).sort()).toEqual(specs.map((s) => s.name).sort());
+  // catalog.test.ts holds these rules to specs made for them; here, to the specs as they are, on the
+  // preview the end-to-end scenarios use, which has weapons to work on while nothing is checked
+  const preview = (e2eShowUnchecked: boolean) => setSite({ e2eShowUnchecked } as SiteJson);
+  beforeAll(() => preview(true));
+  afterAll(() => preview(false));
+
+  const real = (specs as unknown as (Weapon & { known_shots?: number; checked_patch?: string })[]).filter(
+    (s) => knownPart(s, s.known_shots).mags.length > 0,
+  );
+  const names = (list: { name: string }[]) => list.map((s) => s.name).sort();
+
+  it('has each spec with a magazine its real shots fill, once, with its class and art', () => {
+    const weapons = offeredWeapons();
+    expect(weapons.map((w) => w.id).sort()).toEqual(names(real));
     expect(weapons.filter((w) => !w.weaponClass || !w.art).map((w) => w.id)).toEqual([]);
-    expect(classCounts()).toEqual({ all: 31, ar: 5, smg: 5, lmg: 4, marksman: 4, sniper: 4, shotgun: 5, pistol: 4 });
+    const counts = classCounts();
+    expect(counts.all).toBe(weapons.length);
+    expect(shownClasses().reduce((sum, c) => sum + counts[c], 0)).toBe(weapons.length);
+  });
+
+  it('offers only what is checked against the current patch, without the preview', () => {
+    preview(false);
+    expect(
+      offeredWeapons()
+        .map((w) => w.id)
+        .sort(),
+    ).toEqual(names(real.filter(isCheckedNow)));
+    preview(true);
   });
 
   it('lists weapons by class, as the game does', () => {
-    expect(weapons.slice(0, 5).map((w) => w.id)).toEqual(['flatline', 'r301', 'havoc_tc', 'hemlok', 'nemesis']);
-    expect(weapons.at(-1)?.id).toBe('wingman');
+    const order = offeredWeapons().map((w) => weaponPosition(w.id));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(offeredWeapons()[0].id).toBe('flatline');
   });
 
   it('falls back to the R-99 for a weapon it does not know', () => {

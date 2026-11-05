@@ -14,7 +14,7 @@ import { dateToNumber } from '@/engine/stats';
 import type { Locale } from '@/lib/i18n';
 import { site } from '@/lib/site';
 import { useTrainerSettings } from '@/lib/storage/trainer';
-import { findWeapon, magazineTiers } from '../catalog';
+import { magazineTiers, savedWeapon } from '../catalog';
 import { ConsentPrompt, useAnalyticsStart } from '../consent';
 import { readHistory, today } from '../history';
 import { useMediaQuery, useStoredSettings } from '../hooks';
@@ -84,7 +84,7 @@ function ProgressPage({ locale }: { locale: Locale }) {
   const formatDay = (d: number) => dayFormat.format(dayToDate(d));
 
   const csvRow = (d: SetupDay) => {
-    const tiers = magazineTiers(findWeapon(d.setup.weapon).spec.mags.length);
+    const tiers = magazineTiers(savedWeapon(d.setup.weapon).spec.mags.length);
     return [
       isoDate(d.day),
       names.weapon(d.setup.weapon),
@@ -312,7 +312,7 @@ function WeaponRow({
 }) {
   const { t } = useTranslation();
   const names = useNames();
-  const art = findWeapon(weapon).art;
+  const art = savedWeapon(weapon).art;
   return (
     <li className="flex items-center gap-3">
       {art ? (
@@ -366,7 +366,7 @@ function RecentRuns({ runs, day, formatDay }: { runs: LoggedRun[]; day: number; 
       </TableHeader>
       <TableBody>
         {runs.map((run) => {
-          const tiers = magazineTiers(findWeapon(run.weapon).spec.mags.length);
+          const tiers = magazineTiers(savedWeapon(run.weapon).spec.mags.length);
           const tier = tiers[Math.min(run.mag, tiers.length - 1)];
           return (
             <TableRow key={run.t}>

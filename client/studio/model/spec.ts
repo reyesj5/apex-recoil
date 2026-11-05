@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { knownMagazines } from '@/engine/weapons';
+import { currentPatch, isCheckedNow } from '@/lib/game-patch';
 import { magazine, type Magazine, type WeaponSpec } from '@/lib/api';
 
 // Weapon specs as the Studio edits them: the pattern shot by shot, the magazines, the shot times.
@@ -41,6 +43,40 @@ export function findSpec<S extends { name: string }>(specs: readonly S[], name: 
 export const multiplierOf = (spec: Pick<Pattern, 'multiplier'>) => spec.multiplier || 1;
 
 export const shotCount = (spec: Pick<Pattern, 'x' | 'y'>) => Math.min(spec.x.length, spec.y.length);
+
+/**
+ * The spec holds shots that aren't real (docs/corrections.md, C8), so a new recording starts fresh:
+ * blending into them would mix it with made-up numbers
+ */
+export const hasUnknownShots = (spec: Pick<Spec, 'x' | 'known_shots'>) =>
+  spec.known_shots !== undefined && spec.known_shots < spec.x.length;
+
+/** What the trainer leaves out of this spec, in words; null when it shows all of it */
+export function hiddenFromTrainer(spec: Pick<Spec, 'x' | 'mags' | 'known_shots' | 'checked_patch'>): string | null {
+  if (!isCheckedNow(spec)) return `Hidden from the trainer: not checked against patch ${currentPatch}.`;
+  const shown = knownMagazines(spec.mags, spec.x.length, spec.known_shots);
+  if (shown.length === spec.mags.length) return null;
+  if (shown.length === 0) return 'Hidden from the trainer: no magazine has all its shots known yet.';
+  return `The trainer leaves out magazines over ${shown.at(-1)!.size} rounds: their last shots aren't known yet.`;
+}
+
+/** Whether a check can vouch for this spec: it needs a magazine whose shots are all real */
+export const canBeChecked = (spec: Pick<Spec, 'x' | 'mags' | 'known_shots'>) =>
+  knownMagazines(spec.mags, spec.x.length, spec.known_shots).length > 0;
+
+/** What a check vouches for: everything that decides what a player practices */
+const checkedNumbers = ({ rpm, multiplier, mags, mods, x, y, time_points, known_shots }: Spec) =>
+  JSON.stringify([rpm, multiplier, mags, mods, x, y, time_points, known_shots]);
+
+/**
+ * The spec as it should be saved: numbers that changed since a check are no longer the ones it saw, so
+ * the check goes (explicitly, since a save keeps what it isn't sent). A check ticked in this same draft
+ * is about the new numbers, and stays.
+ */
+export function withCheckReviewed(saved: Spec | undefined, draft: Spec): Spec {
+  if (!saved || !draft.checked_patch || saved.checked_patch !== draft.checked_patch) return draft;
+  return checkedNumbers(saved) === checkedNumbers(draft) ? draft : { ...draft, checked_patch: null };
+}
 
 /** Shot `i` in mouse counts at 1x: the analysis' raw values where the spec has them, else the pattern over the multiplier */
 export function unitShot(spec: Pattern, i: number): Pt {
@@ -102,6 +138,8 @@ export function withShots(spec: Spec, shots: Shot[]): Spec {
     next.raw_1x_x = shots.map((s) => s.raw?.x ?? round2(s.x / mult));
     next.raw_1x_y = shots.map((s) => s.raw?.y ?? round2(s.y / mult));
   }
+  // A shot added by hand isn't a known one; removing shots only keeps the count within the pattern
+  if (spec.known_shots !== undefined) next.known_shots = Math.min(spec.known_shots, shots.length);
   return next;
 }
 
@@ -200,6 +238,8 @@ export function importDiscoveryJson(spec: Spec, text: string): { spec: Spec } | 
       delete next.raw_1x_x;
       delete next.raw_1x_y;
     }
+    // A measurement is real all the way through; the server keeps a field it isn't sent, so it's set
+    if (next.known_shots !== undefined) next.known_shots = x.length;
   }
   if (time_points) next = { ...next, time_points };
   if (mags) next = { ...next, mags };
@@ -209,8 +249,34 @@ export function importDiscoveryJson(spec: Spec, text: string): { spec: Spec } | 
 
 /** What the server stores for a spec, to tell whether a draft has unsaved changes */
 function savedFields(spec: Spec) {
-  const { name, rpm, multiplier, mags, x, y, time_points, raw_1x_x, raw_1x_y, sample_count } = spec;
-  return JSON.stringify([name, rpm, multiplier, mags, x, y, time_points, raw_1x_x, raw_1x_y, sample_count ?? 1]);
+  const {
+    name,
+    rpm,
+    multiplier,
+    mags,
+    x,
+    y,
+    time_points,
+    raw_1x_x,
+    raw_1x_y,
+    sample_count,
+    known_shots,
+    checked_patch,
+  } = spec;
+  return JSON.stringify([
+    name,
+    rpm,
+    multiplier,
+    mags,
+    x,
+    y,
+    time_points,
+    raw_1x_x,
+    raw_1x_y,
+    sample_count ?? 1,
+    known_shots,
+    checked_patch,
+  ]);
 }
 
 export const sameSpec = (a: Spec, b: Spec) => savedFields(a) === savedFields(b);

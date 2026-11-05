@@ -1,0 +1,38 @@
+{
+  "_readme": "One set of cases for what a spec says about its numbers, known_shots and checked_patch, read by both implementations: shared/api.ts, shared/requests.ts and client/studio/model/spec.ts (their tests are test/requests.test.ts and client/studio/model/spec.test.ts), and processing/recoil_discovery/spec_manager.py (processing/tests/test_spec_manager.py). valid: whether a spec with these fields can be saved. unknown: whether the spec has shots that aren't real, so a new recording starts fresh instead of blending into them.",
+  "cases": [
+    { "name": "no count: every shot is real", "spec": { "x": [0, 1, 2] }, "valid": true, "unknown": false },
+    { "name": "no shot is real", "spec": { "x": [0, 1, 2], "known_shots": 0 }, "valid": true, "unknown": true },
+    {
+      "name": "the last shot isn't real",
+      "spec": { "x": [0, 1, 2], "known_shots": 2 },
+      "valid": true,
+      "unknown": true
+    },
+    {
+      "name": "every shot is real, counted",
+      "spec": { "x": [0, 1, 2], "known_shots": 3 },
+      "valid": true,
+      "unknown": false
+    },
+    { "name": "more than there are", "spec": { "x": [0, 1, 2], "known_shots": 4 }, "valid": false },
+    { "name": "negative", "spec": { "x": [0, 1, 2], "known_shots": -1 }, "valid": false },
+    { "name": "not a whole number", "spec": { "x": [0, 1, 2], "known_shots": 1.5 }, "valid": false },
+    { "name": "not a number", "spec": { "x": [0, 1, 2], "known_shots": "2" }, "valid": false },
+    { "name": "null isn't absent", "spec": { "x": [0, 1, 2], "known_shots": null }, "valid": false },
+    {
+      "name": "checked against a patch",
+      "spec": { "x": [0, 1, 2], "checked_patch": "v3.0.4.24" },
+      "valid": true,
+      "unknown": false
+    },
+    {
+      "name": "a check taken back",
+      "spec": { "x": [0, 1, 2], "checked_patch": null },
+      "valid": true,
+      "unknown": false
+    },
+    { "name": "a check naming no patch", "spec": { "x": [0, 1, 2], "checked_patch": "" }, "valid": false },
+    { "name": "a check that isn't a patch's name", "spec": { "x": [0, 1, 2], "checked_patch": 31 }, "valid": false }
+  ]
+}

@@ -8,12 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupCount, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type { FireMode } from '@/engine/weapons';
-import { classCounts, weaponClasses, weapons, type WeaponClass } from './catalog';
+import { classCounts, offeredWeapons, shownClasses, type WeaponClass } from './catalog';
 import { actions, useLoadout } from './loadout';
 import { useNames } from './names';
 import { WeaponMeta } from './weapon-meta';
-
-const counts = classCounts();
 
 /** The loadout panel: the selected weapon, the weapon grid with its filters, the magazine and fire mode */
 export function LoadoutPanel({ className }: { className?: string }) {
@@ -24,6 +22,8 @@ export function LoadoutPanel({ className }: { className?: string }) {
   const [weaponClass, setWeaponClass] = useState<WeaponClass | 'all'>('all');
   const ids = { fireMode: useId(), stock: useId() };
   const q = query.trim().toLowerCase();
+  const weapons = offeredWeapons();
+  const counts = classCounts();
   const shown = weapons.filter(
     (w) =>
       (weaponClass === 'all' || w.weaponClass === weaponClass) &&
@@ -63,7 +63,7 @@ export function LoadoutPanel({ className }: { className?: string }) {
         value={weaponClass}
         onValueChange={(v) => v && setWeaponClass(v as WeaponClass | 'all')}
       >
-        {(['all', ...weaponClasses] as const).map((c) => (
+        {(['all', ...shownClasses()] as const).map((c) => (
           <ToggleGroupItem key={c} value={c}>
             {names.weaponClass(c)} <ToggleGroupCount>{counts[c]}</ToggleGroupCount>
           </ToggleGroupItem>

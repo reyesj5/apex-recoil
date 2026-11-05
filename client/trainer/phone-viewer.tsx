@@ -9,7 +9,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { localeNames, locales, type Locale } from '@/lib/i18n';
 import { site } from '@/lib/site';
 import { useTrainerSettings } from '@/lib/storage/trainer';
-import { weapons } from './catalog';
+import { offeredWeapons } from './catalog';
 import { LegalFooter } from './legal-footer';
 import { patternsHref, trainerHref, trainerUrl } from './links';
 import { actions, useLoadout } from './loadout';
@@ -88,7 +88,7 @@ export function PhoneViewer({
           value={entry.id}
           onValueChange={(id) => id && actions.selectWeapon(id)}
         >
-          {weapons.map((w) => (
+          {offeredWeapons().map((w) => (
             <ToggleGroupItem key={w.id} value={w.id}>
               {names.weapon(w.id)}
             </ToggleGroupItem>

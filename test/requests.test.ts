@@ -3,6 +3,8 @@
 // CLI's defaults, as the API always did
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { buildCliArgs, sessionMetadata } from '../server/analysis-params.ts';
 import { saveSpecBody, sessionRequest, specUpdate, staticImageRequest, uploadPlanBody } from '../shared/requests.ts';
 
@@ -113,6 +115,16 @@ test('plans uploads leniently: the purpose, the files and the tags', () => {
   assert.equal(plan.files[2]?.name, undefined);
   assert.ok(Number.isNaN(plan.files[2]?.size));
   assert.deepEqual(uploadPlanBody.parse({}).files, []);
+});
+
+test('a spec update refuses marks the spec cannot have (C8)', () => {
+  const { cases } = JSON.parse(
+    fs.readFileSync(path.join(import.meta.dirname, '..', 'shared', 'spec-marks.cases.json'), 'utf8'),
+  ) as { cases: { name: string; spec: { x: number[] }; valid: boolean }[] };
+  for (const { name, spec, valid } of cases) {
+    const update = { name: 'r99', ...spec, y: spec.x, time_points: spec.x };
+    assert.equal(specUpdate.safeParse(update).success, valid, name);
+  }
 });
 
 test('a spec update needs a name and a pattern of numbers, all of one length', () => {

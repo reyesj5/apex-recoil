@@ -39,9 +39,23 @@ export const weaponSpec = z
     raw_1x_y: z.array(z.number()).optional(),
     /** How many sprays the pattern is the median of */
     sample_count: z.number().optional(),
+    /**
+     * How many of the pattern's first shots are real; without it, all of them. The pages hide what needs
+     * the others (knownPart in client/engine/weapons.ts; docs/corrections.md, C8). A new measurement sets
+     * it to the pattern's length rather than removing it, since a save keeps what it isn't sent.
+     */
+    known_shots: z.number().int().min(0).optional(),
+    /**
+     * The game patch this spec's numbers were checked against; null when a check was taken back. The pages
+     * show a weapon only when it's the current one (client/patch.json).
+     */
+    checked_patch: z.string().min(1).nullable().optional(),
   })
   .refine((spec) => spec.x.length === spec.y.length && spec.x.length === spec.time_points.length, {
     message: 'x, y and time_points must have the same length',
+  })
+  .refine((spec) => (spec.known_shots ?? 0) <= spec.x.length, {
+    message: 'known_shots cannot be more than the shots in the pattern',
   });
 
 export const specList = z.array(weaponSpec);

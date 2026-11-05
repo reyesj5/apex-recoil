@@ -1,0 +1,4 @@
+{
+  "_readme": "The game patch patterns are checked against, as gameversion.txt in the game's folder names it. A weapon shows only when its spec's checked_patch is this one, so a new patch hides every weapon until it is checked against that patch. python -m recoil_discovery.cli patch compares this with an installed game, and --apply updates it.",
+  "current": "v3.0.4.24"
+}

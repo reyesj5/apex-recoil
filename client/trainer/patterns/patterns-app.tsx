@@ -11,12 +11,14 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import type { FireMode } from '@/engine/weapons';
 import type { Locale } from '@/lib/i18n';
 import { useTrainerSettings } from '@/lib/storage/trainer';
+import { offeredWeapons } from '../catalog';
 import { ConsentPrompt, useAnalyticsStart } from '../consent';
 import { useMediaQuery, useStoredSettings } from '../hooks';
 import { LegalFooter } from '../legal-footer';
 import { trainerHref } from '../links';
 import { actions, useLoadout } from '../loadout';
 import { useNames } from '../names';
+import { NoWeapons } from '../no-weapons';
 import { PhoneViewer } from '../phone-viewer';
 import { usePatternFrame } from '../pattern-frame';
 import { usePlaySpray } from '../play-spray';
@@ -34,7 +36,7 @@ export function PatternsApp({ i18n, locale }: { i18n: i18n; locale: Locale }) {
   return (
     <I18nextProvider i18n={i18n}>
       <TooltipProvider>
-        <PatternsPage locale={locale} />
+        {offeredWeapons().length > 0 ? <PatternsPage locale={locale} /> : <NoWeapons locale={locale} page="patterns" />}
       </TooltipProvider>
     </I18nextProvider>
   );

@@ -19,7 +19,7 @@ processing/
 │   ├── db.py               # SQLite store shared with server/db.ts: lossless versioned specs, specs.json sync
 │   ├── shadow_parity.py    # Dual-run shadow parity verification (specs.json vs SQLite)
 │   └── cli.py              # Unified CLI interface
-├── tests/                  # 43 automated unit tests (pytest)
+├── tests/                  # 69 automated unit tests (pytest)
 ├── requirements.in         # The pipeline's requirements
 └── requirements.txt        # Their lock: every package pinned with its hashes, made by uv (Dependencies)
 ```
@@ -59,7 +59,7 @@ In `client/specs.json`, recoil patterns are represented in mouse displacement un
 Run commands from the `processing/` directory:
 
 ### 1. Verify Schema Integrity
-Verifies array lengths, mag size bounds, and consistency in `client/specs.json`:
+Verifies array lengths, mag size bounds, `known_shots` (how many of a pattern's first shots are real, the *Known* column), `checked_patch` (the game patch its numbers were checked against, the *Checked* column) and consistency in `client/specs.json`:
 ```bash
 python -m recoil_discovery.cli verify
 ```
@@ -96,10 +96,11 @@ Compares a newly generated spec JSON against current game specs:
 python -m recoil_discovery.cli diff --input new_spec.json --plot
 ```
 
-### 6. Export to Arduino Mouse
-Regenerates `arduino_mouse/src/recoil.inc` from `client/specs.json`:
+### 6. Compare the Current Patch with the Game
+Compares `client/patch.json` with the `gameversion.txt` of an installed game, reading nothing else there, and says how many weapons are checked against it. With `--apply` the game's patch becomes the current one, and the pages hide every weapon until it's checked against that one:
 ```bash
-python -m recoil_discovery.cli export-arduino
+python -m recoil_discovery.cli patch --game "<the game's folder>"
+python -m recoil_discovery.cli patch --game "<the game's folder>" --apply
 ```
 
 ### 7. Dual-Run Shadow Parity Verification
@@ -117,7 +118,7 @@ python -m recoil_discovery.shadow_parity --no-sync  # only report drift
 
 All mathematical conversions, signal detection, decal tracking, database operations, and shadow parity are covered by unit tests:
 ```bash
-# Run full pytest suite (43 tests; database tests use temp files, never data/recoil.db)
+# Run full pytest suite (69 tests; database tests use temp files, never data/recoil.db)
 python -m pytest tests
 
 # Run standalone shadow parity verification

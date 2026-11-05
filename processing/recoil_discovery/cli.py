@@ -11,8 +11,7 @@ from typing import Optional, Tuple, Dict, Any
 from tabulate import tabulate
 
 from .pipeline import RecoilPipeline
-from .spec_manager import SpecManager
-from .math_utils import extend_array
+from .spec_manager import SpecManager, read_installed_patch, spec_marks_valid
 
 
 def cmd_verify(args):
@@ -32,14 +31,14 @@ def cmd_verify(args):
         mags = s.get("mags", [])
         max_mag = mags[-1]["size"] if mags else 0
 
-        valid = (len_x == len_y == len_t) and (len_x >= max_mag)
+        valid = (len_x == len_y == len_t) and (len_x >= max_mag) and spec_marks_valid(s)
         status = "OK" if valid else "MISMATCH"
         if not valid:
             has_errors = True
 
-        table.append([name, rpm, len_x, len_y, len_t, max_mag, status])
+        table.append([name, rpm, len_x, len_y, len_t, max_mag, s.get("known_shots", "all"), s.get("checked_patch") or "no", status])
 
-    print(tabulate(table, headers=["Weapon", "RPM", "Len X", "Len Y", "Len T", "Max Mag", "Status"], tablefmt="grid"))
+    print(tabulate(table, headers=["Weapon", "RPM", "Len X", "Len Y", "Len T", "Max Mag", "Known", "Checked", "Status"], tablefmt="grid"))
     if has_errors:
         print("\n[!] Warning: Detected dimension mismatches in specs.json!")
         sys.exit(1)
@@ -338,27 +337,28 @@ def cmd_batch(args):
     print(f"[+] Saved aggregated spec to: {out_file}")
 
 
-def cmd_export_arduino(args):
-    """Regenerate arduino_mouse/src/recoil.inc from client/specs.json."""
+def cmd_patch(args):
+    """Compare client/patch.json with the installed game's patch; --apply makes the game's the current one."""
     manager = SpecManager()
     specs = manager.load_specs()
-    out_path = Path(__file__).resolve().parent.parent.parent / "arduino_mouse" / "src" / "recoil.inc"
+    current = manager.current_patch()
+    installed = read_installed_patch(Path(args.game))
+    print(f"Installed game: {installed}")
+    print(f"client/patch.json: {current}")
 
-    MAX_LENGTH = 55
-    rcount = len(specs)
+    def checked_against(patch):
+        return sum(1 for s in specs if s.get("checked_patch") == patch)
 
-    lines = [
-        f"const int RECOILS_LENGTH = {rcount};",
-        'const String names[] = {"' + '","'.join(x["name"] for x in specs) + '"};',
-        "const int sizes[] = {" + ",".join(str(x["mags"][-1]["size"]) for x in specs) + "};",
-        "const PROGMEM float XDATA[] = {" + ",".join(",".join(str(x) for x in extend_array(o["x"][:MAX_LENGTH], MAX_LENGTH, 0)) for o in specs) + "};",
-        "const PROGMEM float YDATA[] = {" + ",".join(",".join(str(x) for x in extend_array(o["y"][:MAX_LENGTH], MAX_LENGTH, 0)) for o in specs) + "};",
-        "const PROGMEM float TDATA[] = {" + ",".join(",".join(str(x) for x in extend_array(o["time_points"][:MAX_LENGTH], MAX_LENGTH, 0)) for o in specs) + "};",
-    ]
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
-    print(f"[+] Successfully generated Arduino table: {out_path} ({rcount} recoils, max length {MAX_LENGTH})")
+    if installed == current:
+        print(f"[+] Up to date. Checked against it: {checked_against(current)} of {len(specs)} weapons.")
+        return
+    if not args.apply:
+        print(f"[!] A new patch. With --apply it becomes the current one, and the pages show only what is checked")
+        print(f"    against it: {checked_against(installed)} of {len(specs)} weapons (now {checked_against(current)}).")
+        sys.exit(1)
+    manager.set_current_patch(installed)
+    print(f"[+] Current patch is now {installed}. The pages show {checked_against(installed)} of {len(specs)} weapons.")
+    print("    Check the others against it in the Studio.")
 
 
 def main():
@@ -416,8 +416,10 @@ def main():
     p_session.add_argument("--strategy", choices=["accumulate", "overwrite"], default="accumulate", help="Spec integration strategy: accumulate (proportional sample weight) or overwrite")
     p_session.add_argument("--existing-samples", type=int, default=None, help="Prior sample count for existing spec (default: read from specs.json or 1)")
 
-    # export-arduino
-    subparsers.add_parser("export-arduino", help="Export client/specs.json to arduino_mouse/src/recoil.inc")
+    # patch
+    p_patch = subparsers.add_parser("patch", help="Compare client/patch.json with an installed game's patch")
+    p_patch.add_argument("--game", "-g", required=True, help="The game's folder (it holds gameversion.txt)")
+    p_patch.add_argument("--apply", action="store_true", help="Make the installed game's patch the current one")
 
     args = parser.parse_args()
 
@@ -431,8 +433,8 @@ def main():
         cmd_batch(args)
     elif args.command == "session":
         cmd_session(args)
-    elif args.command == "export-arduino":
-        cmd_export_arduino(args)
+    elif args.command == "patch":
+        cmd_patch(args)
 
 
 if __name__ == "__main__":

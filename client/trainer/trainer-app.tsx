@@ -3,10 +3,12 @@ import type { i18n } from 'i18next';
 import { I18nextProvider } from 'react-i18next';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { Locale } from '@/lib/i18n';
+import { offeredWeapons } from './catalog';
 import { ConsentPrompt, useAnalyticsStart } from './consent';
 import { useHotkeys, useMediaQuery, useStoredSettings } from './hooks';
 import { LoadoutPanel } from './loadout-panel';
 import { actions } from './loadout';
+import { NoWeapons } from './no-weapons';
 import { PhoneViewer } from './phone-viewer';
 import { RangePanel } from './range-panel';
 import { SessionPanel } from './session-panel';
@@ -21,7 +23,7 @@ export function TrainerApp({ i18n, locale }: { i18n: i18n; locale: Locale }) {
   return (
     <I18nextProvider i18n={i18n}>
       <TooltipProvider>
-        <Trainer locale={locale} />
+        {offeredWeapons().length > 0 ? <Trainer locale={locale} /> : <NoWeapons locale={locale} page="train" />}
       </TooltipProvider>
     </I18nextProvider>
   );

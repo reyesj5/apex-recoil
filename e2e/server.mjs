@@ -5,6 +5,9 @@
 // (default: python).
 //   PORT           port to listen on (default 3210)
 //   E2E_ANALYTICS  1: analytics on with a test measurement ID, for the consent scenarios
+//   E2E_CHECKED_ONLY  1: the pages as production serves them, with only the weapons checked against the
+//                  current patch. Without it they also show the real patterns that aren't checked, so the
+//                  scenarios (and anyone who wants a look while nothing is checked) have weapons to work on
 import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
@@ -39,10 +42,11 @@ const app = await createApp({
   uploadDir: path.join(dataDir, 'uploads'),
   dev: false,
   // The pages render with these values (client/lib/site.ts)
-  site:
-    process.env.E2E_ANALYTICS === '1'
-      ? { ...loadSite(), gaMeasurementId: 'G-E2ETEST000', privacyUrl: '/privacy' }
-      : loadSite(),
+  site: {
+    ...loadSite(),
+    ...(process.env.E2E_CHECKED_ONLY === '1' ? {} : { e2eShowUnchecked: true }),
+    ...(process.env.E2E_ANALYTICS === '1' ? { gaMeasurementId: 'G-E2ETEST000', privacyUrl: '/privacy' } : {}),
+  },
 });
 
 http.createServer(app).listen(port, '127.0.0.1', () => {

@@ -1,17 +1,20 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import site from '../../site.json';
-import specs from '../specs.json';
+import siteJson from '../../site.json';
+import { offeredWeapons } from '../trainer/catalog';
 import { render } from './prerender';
 
 // The prerender runs in Node, without a window, a document or storage: every page renders there in
-// every language, with the site values the server gives it.
+// every language, with the site values the server gives it. Here on the preview, which has weapons to
+// show while nothing is checked; no-weapons.test.tsx renders them with none.
+
+const site = { ...siteJson, e2eShowUnchecked: true };
 
 describe('prerender', () => {
   it('renders the trainer in each language, with the defaults', async () => {
     const en = await render('train', 'en', site);
     expect(en.title).toBe('Spraydown · Recoil trainer for Apex Legends');
-    expect(en.description).toMatch(/^Practice the spray pattern of every Apex Legends weapon/);
+    expect(en.description).toMatch(/^Practice the spray patterns of Apex Legends weapons/);
     expect(en.html).toContain('Click and hold anywhere in the range to spray');
     expect(en.html).toMatch(/aria-checked="true"[^>]*data-weapon="r99"/);
     expect(en.html).toContain('href="/progress"');
@@ -27,13 +30,13 @@ describe('prerender', () => {
     expect(zh.html).toContain('装备');
   });
 
-  it('renders the Patterns page with every weapon at one scale', async () => {
+  it('renders the Patterns page with every weapon it offers at one scale', async () => {
     const page = await render('patterns', 'en', site);
     expect(page.title).toBe('Spraydown · Recoil patterns');
-    expect(page.description).toMatch(/^The recoil pattern of every Apex Legends weapon/);
+    expect(page.description).toMatch(/^The recoil patterns of Apex Legends weapons/);
     // A card per weapon, each drawing its pattern in the same frame
     const cards = [...page.html.matchAll(/data-weapon="[^"]+"[^>]*>.*?<svg[^>]*viewBox="([^"]+)"/g)];
-    expect(cards).toHaveLength(specs.length);
+    expect(cards).toHaveLength(offeredWeapons().length);
     expect(new Set(cards.map((m) => m[1])).size).toBe(1);
     expect(page.html).toContain('href="/patterns"');
     expect((await render('patterns', 'ru', site)).html).toContain('Библиотека паттернов');

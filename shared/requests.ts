@@ -17,8 +17,13 @@ export const specUpdate = z
     x: pattern,
     y: pattern,
     time_points: pattern,
+    /** How many of the first shots are real (api.ts); a count the pattern can't have is refused */
+    known_shots: z.number().int().min(0).optional(),
+    /** The game patch its numbers were checked against, or null when a check was taken back (api.ts) */
+    checked_patch: z.string().min(1).nullable().optional(),
   })
-  .refine((spec) => spec.x.length === spec.y.length && spec.x.length === spec.time_points.length);
+  .refine((spec) => spec.x.length === spec.y.length && spec.x.length === spec.time_points.length)
+  .refine((spec) => (spec.known_shots ?? 0) <= spec.x.length);
 
 /** POST /api/specs with one spec, and what its version records */
 export const saveSpecBody = z.object({

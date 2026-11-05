@@ -17,6 +17,7 @@ import { mouseToPixelScale } from './model/calibration';
 import { sortImports, sprayFileName, wallFor, type Sample } from './model/capture';
 import { discrepancyReport } from './model/discrepancy';
 import { analysisResult } from './model/session';
+import { withCheckReviewed } from './model/spec';
 import { weaponName } from './names';
 import {
   addSamples,
@@ -90,14 +91,17 @@ export async function save() {
   const name = selectedWeapon();
   const draft = specOf(get(), name);
   if (!draft) return;
-  const spec = { ...draft, sample_count: draft.sample_count || 1 };
+  const spec = withCheckReviewed(savedOf(get(), name), { ...draft, sample_count: draft.sample_count || 1 });
+  const checkTaken = !!draft.checked_patch && !spec.checked_patch;
   try {
     const saved = await apiRequest('/api/specs', savedSpec, { method: 'POST', body: { weapon: spec } });
     markSaved(spec);
     void queryClient.invalidateQueries({ queryKey: queryKeys.specs, exact: true });
     void queryClient.invalidateQueries({ queryKey: queryKeys.specHistory(name) });
     toast.success(saved.unchanged ? 'Nothing changed' : 'Spec saved', {
-      description: `${weaponName(name)}, version ${saved.version}`,
+      description: `${weaponName(name)}, version ${saved.version}${
+        checkTaken ? '. Its numbers changed, so it needs checking again.' : ''
+      }`,
     });
   } catch (err) {
     toast.error('The spec was not saved', { description: messageOf(err) });

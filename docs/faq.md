@@ -16,7 +16,7 @@ After you've reduced your mouse speed, multiply the app's sensitivity by the sam
 
 ## How accurate are the patterns?
 
-Patterns were checked by replaying them in-game with several scopes and game options (such as FOV and mouse sensitivity), using a hardware mouse simulator (an Arduino board). Newer patterns can also be measured from recordings with the recoil discovery tools ([capture guide](capture.md)). [REVIEW: describe how patterns are verified today.]
+A weapon appears here only once its pattern has been checked against the current game patch, and a new patch hides it again until it's been checked against that one. Patterns can be measured from recordings with the recoil discovery tools ([capture guide](capture.md)). [REVIEW: describe how patterns are verified today.]
 
 
 

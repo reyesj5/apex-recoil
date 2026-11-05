@@ -4,13 +4,11 @@ import { cn } from 'cn';
 import { ToggleGroup as ToggleGroupPrimitive } from 'radix-ui';
 import { ToggleGroup, ToggleGroupCount, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTrainerSettings } from '@/lib/storage/trainer';
-import { classCounts, weaponClasses, weapons, type WeaponClass } from '../catalog';
+import { classCounts, offeredWeapons, shownClasses, type WeaponClass } from '../catalog';
 import { actions, useLoadout, useSetupSettings, weaponSetup } from '../loadout';
 import { useNames } from '../names';
 import { usePatternFrame } from '../pattern-frame';
 import { PatternPreview } from '../range/pattern-preview';
-
-const counts = classCounts();
 
 /**
  * The pattern library: every weapon's pattern with the stored magazine and fire mode, all at one
@@ -25,7 +23,9 @@ export function PatternLibrary({ className }: { className?: string }) {
   const invertY = useTrainerSettings((s) => s.invertY);
   const frame = usePatternFrame();
   const [weaponClass, setWeaponClass] = useState<WeaponClass | 'all'>('all');
-  const setups = useMemo(() => new Map(weapons.map((w) => [w.id, weaponSetup(w, settings)])), [settings]);
+  const weapons = offeredWeapons();
+  const counts = classCounts();
+  const setups = useMemo(() => new Map(weapons.map((w) => [w.id, weaponSetup(w, settings)])), [settings, weapons]);
   const shown = weapons.filter((w) => weaponClass === 'all' || w.weaponClass === weaponClass);
 
   return (
@@ -45,7 +45,7 @@ export function PatternLibrary({ className }: { className?: string }) {
         value={weaponClass}
         onValueChange={(v) => v && setWeaponClass(v as WeaponClass | 'all')}
       >
-        {(['all', ...weaponClasses] as const).map((c) => (
+        {(['all', ...shownClasses()] as const).map((c) => (
           <ToggleGroupItem key={c} value={c}>
             {names.weaponClass(c)} <ToggleGroupCount>{counts[c]}</ToggleGroupCount>
           </ToggleGroupItem>

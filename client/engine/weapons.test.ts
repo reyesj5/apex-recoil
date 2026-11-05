@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import specs from '../specs.json';
 import {
   formatMods,
+  knownMagazines,
+  knownPart,
   magSize,
   nextFireMode,
   parseMods,
@@ -40,6 +42,71 @@ describe('magazines', () => {
     expect(magSize(weapon('peacekeeper'), 0, true)).toBe(weapon('peacekeeper').mags[0].size - 1);
     expect(weaponUsesStock('wingman')).toBe(false);
     expect(magSize(weapon('wingman'), 0, true)).toBe(weapon('wingman').mags[0].size);
+  });
+});
+
+/** The real part of a pattern (docs/corrections.md, C8) */
+describe('known shots', () => {
+  const sizes = (mags: { size: number }[]) => mags.map((m) => m.size);
+  const full: Weapon = {
+    name: 'test',
+    mags: [
+      { size: 2, audio: 'a' },
+      { size: 3, audio: 'b' },
+      { size: 5, audio: 'c' },
+    ],
+    time_points: [0, 10, 20, 30, 40],
+    x: [0, 1, 2, 3, 4],
+    y: [0, -1, -2, -3, -4],
+    mods: {},
+    ping_points: [],
+  };
+
+  it('lists the magazines the real shots fill', () => {
+    expect(sizes(knownMagazines(full.mags, 5))).toEqual([2, 3, 5]);
+    expect(sizes(knownMagazines(full.mags, 5, 4))).toEqual([2, 3]);
+    expect(sizes(knownMagazines(full.mags, 5, 3))).toEqual([2, 3]);
+    expect(sizes(knownMagazines(full.mags, 5, 0))).toEqual([]);
+  });
+
+  it('takes a pattern shorter than a magazine as not filling it, whatever the count says', () => {
+    expect(sizes(knownMagazines(full.mags, 1))).toEqual([]);
+    expect(sizes(knownMagazines(full.mags, 3, 5))).toEqual([2, 3]);
+  });
+
+  it('leaves a weapon with no count as it is', () => {
+    expect(knownPart(full)).toEqual(full);
+  });
+
+  it('cuts the shots and their times to the real ones, and drops what those do not fill', () => {
+    const part = knownPart(full, 3);
+    expect(sizes(part.mags)).toEqual([2, 3]);
+    expect(part.x).toEqual([0, 1, 2]);
+    expect(part.y).toEqual([0, -1, -2]);
+    expect(part.time_points).toEqual([0, 10, 20]);
+  });
+
+  it('leaves no magazine when no shot is real', () => {
+    const part = knownPart(full, 0);
+    expect(part.mags).toEqual([]);
+    expect(part.x).toEqual([]);
+  });
+
+  it('cuts what an attachment replaces too', () => {
+    const modded: Weapon = {
+      ...full,
+      mods: { fast: { mags: [{ size: 4, audio: 'd' }], time_points: [0, 5, 10, 15, 20], ping_points: [1] } },
+    };
+    const part = knownPart(modded, 3);
+    expect(part.mods.fast.mags).toEqual([]);
+    expect(part.mods.fast.time_points).toEqual([0, 5, 10]);
+    expect(part.mods.fast.ping_points).toEqual([1]);
+  });
+
+  it('does not change the weapon it is given', () => {
+    const before = structuredClone(full);
+    knownPart(full, 1);
+    expect(full).toEqual(before);
   });
 });
 

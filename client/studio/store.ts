@@ -63,6 +63,7 @@ interface PatternState {
   y: number[];
   raw_1x_x?: number[];
   raw_1x_y?: number[];
+  known_shots?: number;
   time_points: number[];
   rpm: number;
   anchors: number[];
@@ -234,6 +235,7 @@ const patternState = (spec: Spec, anchors: number[], offset: Pt): PatternState =
   x: spec.x,
   y: spec.y,
   ...(spec.raw_1x_x && spec.raw_1x_y ? { raw_1x_x: spec.raw_1x_x, raw_1x_y: spec.raw_1x_y } : {}),
+  ...(spec.known_shots !== undefined ? { known_shots: spec.known_shots } : {}),
   time_points: spec.time_points,
   rpm: spec.rpm,
   anchors,

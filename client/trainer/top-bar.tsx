@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { localeNames, locales, type Locale } from '@/lib/i18n';
 import { site } from '@/lib/site';
+import { offeredWeapons } from './catalog';
 import { patternsHref, progressHref, trainerHref } from './links';
 import { openDialog } from './session';
 
@@ -21,12 +22,13 @@ const pages = { train: trainerHref, patterns: patternsHref, progress: progressHr
 
 /**
  * The top bar: logo, navigation and language, and on the trainer the weapon search (Ctrl K), the
- * Studio, help and settings. A document page (the privacy policy, the FAQ) is in English only, so it
+ * Studio, help and settings (with no weapon to offer, only the Studio, where they get checked). A document page (the privacy policy, the FAQ) is in English only, so it
  * has no language select.
  */
 export function TopBar({ locale, page }: { locale: Locale; page: keyof typeof pages | 'doc' }) {
   const { t } = useTranslation();
   const train = page === 'train';
+  const tools = train && offeredWeapons().length > 0;
   return (
     <header className="flex flex-wrap items-center gap-4 border-b border-outline bg-inset px-5 py-3">
       <a href={trainerHref(locale)} className="flex shrink-0 items-center rounded-control">
@@ -43,7 +45,7 @@ export function TopBar({ locale, page }: { locale: Locale; page: keyof typeof pa
           {t('topBar.progress')}
         </NavLink>
       </nav>
-      {train && (
+      {tools && (
         <button
           type="button"
           onClick={() => openDialog('search')}
@@ -75,12 +77,16 @@ export function TopBar({ locale, page }: { locale: Locale; page: keyof typeof pa
             {site.supportUrl && (
               <IconLink href={site.supportUrl} label={t('topBar.support')} icon={HeartIcon} external />
             )}
-            <IconButton label={t('topBar.help')} icon={CircleHelpIcon} onClick={() => openDialog('help')} />
-            <IconButton
-              label={t('topBar.settings')}
-              icon={SlidersHorizontalIcon}
-              onClick={() => openDialog('settings')}
-            />
+            {tools && (
+              <>
+                <IconButton label={t('topBar.help')} icon={CircleHelpIcon} onClick={() => openDialog('help')} />
+                <IconButton
+                  label={t('topBar.settings')}
+                  icon={SlidersHorizontalIcon}
+                  onClick={() => openDialog('settings')}
+                />
+              </>
+            )}
           </>
         )}
       </div>

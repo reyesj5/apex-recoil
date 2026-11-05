@@ -14,7 +14,7 @@ import { Kbd } from '@/components/ui/kbd';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTrainerSettings } from '@/lib/storage/trainer';
-import { weaponClasses, weapons } from './catalog';
+import { offeredWeapons, shownClasses } from './catalog';
 import { Slider } from '@/components/ui/slider';
 import { Hint, NumberField, SwitchField } from './fields';
 import { actions } from './loadout';
@@ -276,9 +276,9 @@ export function WeaponSearch() {
       <CommandInput placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} />
       <CommandList>
         <CommandEmpty>{t('search.empty')}</CommandEmpty>
-        {weaponClasses.map((c) => (
+        {shownClasses().map((c) => (
           <CommandGroup key={c} heading={names.weaponClassLong(c)}>
-            {weapons
+            {offeredWeapons()
               .filter((w) => w.weaponClass === c)
               .map((w) => (
                 <CommandItem

@@ -1,5 +1,19 @@
 # v260922
 
+- **Only What's Checked Shows, and the Arduino Firmware Is Gone (2026-11-04)**:
+  - **Checked against the patch** (owner: "Hide any weapon not checked against the patches"): the pages show a weapon only once it's checked against the current game patch (`client/patch.json`, a spec's `checked_patch`), so no weapon shows until the first check and each new patch hides them all again. The trainer and the Patterns page say so, in each language and on phones, and saved runs stay on the Progress page.
+  - **The Studio** marks a check in the inspector, and a save with new numbers takes it back.
+  - **The pipeline**: `verify` shows the *Checked* column, and `python -m recoil_discovery.cli patch --game <the game's folder>` compares the current patch with an installed game, with `--apply` to move it.
+  - **The tests** run on a preview that shows the real patterns not yet checked (only `e2e/server.mjs` turns it on), with a third e2e server on port 3212 for the pages as production serves them.
+  - **The Arduino firmware** (owner: "Yes, remove the arduino firmware."): `arduino_mouse/`, `export-arduino` and `processing/gen_recoil_inc.py` are gone. It was the original author's test rig; recordings check patterns without sending the game any input.
+
+- **Patterns Are Real or Hidden (2026-11-04)** (owner: "Yes, hide missing patterns."):
+  - **What was wrong** ([corrections](corrections.md), C8): 18 of the 31 patterns were random numbers that were never recorded, and 9 recorded weapons ended in shots that weren't real.
+  - **The pages** show only what is real: 13 weapons, 9 of them without their largest magazines, and no class filter or search group without a weapon. A stored weapon or magazine that's hidden falls back to the R-99 or the largest magazine shown, and saved runs keep their weapon and tier on the Progress page. Their descriptions no longer say "every weapon".
+  - **The specs**: `known_shots` says how many of a spec's first shots are real, and `verify` checks it (the *Known* column). The numbers stay in `client/specs.json`, hidden and not deleted, each change a new version.
+  - **The Studio** keeps all 31 weapons and says what the trainer leaves out of each. A recording on such a spec always starts fresh, in the Studio and the pipeline, since blending would mix it with made-up numbers, and a new measurement shows the weapon once it is saved.
+  - **Next**: M12 replaces them with real patterns from the game's own data, each checked against a recording.
+
 - **The Notebooks and the Wiki Script Removed (2026-10-26)**:
   - **The notebooks** (owner: "i dont use the manual menthod, remove the notebooks"): the original project's `recoils.ipynb` and `convert_to_arduino_mouse.ipynb` are gone, so nothing needs JupyterLab. The Arduino export they made is `python -m recoil_discovery.cli export-arduino`, and the manual method's distance step in [capture.md](capture.md) now runs the pipeline's own `angular_pixel_distance`, which gives the notebook's results.
   - **`processing/generate_wiki_docs.py`** (owner: "okay delete it then"): it could only render the wiki data the deleted scrapers made, which only the development computer had. Its doc, [weapons-wiki-stats.md](weapons-wiki-stats.md), stays as a dated reference: it and the README now say it holds the wiki's stats of 2026-09-26, where they called them live.

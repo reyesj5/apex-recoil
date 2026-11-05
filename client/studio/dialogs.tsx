@@ -20,7 +20,7 @@ import { runAnalysis, save } from './actions';
 import { SelectField } from './fields';
 import type { Strategy } from './model/analysis';
 import { describeWarning, maxStatus, meanStatus, type Report, type Status } from './model/discrepancy';
-import { cleanWeaponName, newWeaponSpec } from './model/spec';
+import { cleanWeaponName, hasUnknownShots, newWeaponSpec } from './model/spec';
 import { fireModeName, plural, weaponName } from './names';
 import {
   addWeapon,
@@ -127,9 +127,13 @@ function AnalysisDialog({ kind, onOpenChange }: { kind: AnalysisKind; onOpenChan
   const [weapon, setWeapon] = useState(selected);
   const [mode, setMode] = useState(currentMode);
   const [saveCapture, setSaveCapture] = useState(kind === 'session');
-  const [strategy, setStrategy] = useState<Strategy>('accumulate');
+  const [picked, setStrategy] = useState<Strategy>('accumulate');
   const names = [...new Set([...(saved ?? []).map((s) => s.name), ...Object.keys(drafts)])];
-  const samples = specOf({ saved, drafts }, weapon)?.sample_count || 1;
+  const spec = specOf({ saved, drafts }, weapon);
+  const samples = spec?.sample_count || 1;
+  // Blending would mix the recording with shots that aren't real, so it starts fresh
+  const startsFresh = !!spec && hasUnknownShots(spec);
+  const strategy = startsFresh ? 'overwrite' : picked;
   const weaponModes = modes(weapon);
 
   return (
@@ -183,7 +187,12 @@ function AnalysisDialog({ kind, onOpenChange }: { kind: AnalysisKind; onOpenChan
             current={strategy}
             onChange={setStrategy}
             title="Blend into the spec"
-            detail={`Weighs the new samples against the spec's ${plural(samples, 'sample')} (${samples} saved + ${count} new). Less noise with every capture.`}
+            disabled={startsFresh}
+            detail={
+              startsFresh
+                ? "This spec has shots that aren't known yet, so there is nothing real to blend with."
+                : `Weighs the new samples against the spec's ${plural(samples, 'sample')} (${samples} saved + ${count} new). Less noise with every capture.`
+            }
           />
           <StrategyOption
             name={`${id}-strategy`}
@@ -221,6 +230,7 @@ function StrategyOption({
   onChange,
   title,
   detail,
+  disabled = false,
 }: {
   name: string;
   value: Strategy;
@@ -228,13 +238,15 @@ function StrategyOption({
   onChange: (value: Strategy) => void;
   title: string;
   detail: string;
+  disabled?: boolean;
 }) {
   const id = useId();
   return (
     <div
       className={cn(
         'flex items-start gap-2.5 rounded-card border p-3 transition-colors',
-        current === value ? 'border-volt bg-volt-wash' : 'border-divider bg-card hover:bg-hover',
+        current === value ? 'border-volt bg-volt-wash' : 'border-divider bg-card',
+        current !== value && !disabled && 'hover:bg-hover',
       )}
     >
       <input
@@ -243,12 +255,13 @@ function StrategyOption({
         name={name}
         value={value}
         checked={current === value}
+        disabled={disabled}
         onChange={() => onChange(value)}
         aria-describedby={`${id}-detail`}
-        className="mt-0.5 cursor-pointer accent-volt"
+        className="mt-0.5 cursor-pointer accent-volt disabled:cursor-not-allowed"
       />
       <div className="flex flex-col gap-0.5">
-        <label htmlFor={id} className="cursor-pointer type-label">
+        <label htmlFor={id} className={cn('type-label', disabled ? 'text-text-muted' : 'cursor-pointer')}>
           {title}
         </label>
         <span id={`${id}-detail`} className="text-xs leading-normal text-text-secondary">

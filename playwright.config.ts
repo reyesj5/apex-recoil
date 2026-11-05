@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // End-to-end scenarios against the built app: pnpm build && pnpm test:e2e. e2e/server.mjs runs the
-// app on throwaway data; the second instance has analytics turned on for the consent scenarios.
+// app on throwaway data; the second instance has analytics turned on for the consent scenarios, and the
+// third shows only what is checked against the current patch, as production does (checked.spec.ts).
 // The tests share each server's data, so they run one at a time.
 export default defineConfig({
   testDir: 'e2e',
@@ -28,6 +29,12 @@ export default defineConfig({
       command: 'node e2e/server.mjs',
       url: 'http://127.0.0.1:3211/api/specs',
       env: { PORT: '3211', E2E_ANALYTICS: '1' },
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'node e2e/server.mjs',
+      url: 'http://127.0.0.1:3212/api/specs',
+      env: { PORT: '3212', E2E_CHECKED_ONLY: '1' },
       reuseExistingServer: !process.env.CI,
     },
   ],
