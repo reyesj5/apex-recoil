@@ -1,22 +1,30 @@
 """Set a project up with the general agent rules and Claude Code's hooks, and keep its agent
 files in step.
 
-    python <kit>/agent_kit.py install <project>   put the rules and hooks in, or bring them up to date
+    python <kit>/agent_kit.py install <project> [--rules-only]   the rules in, and this computer's setup
     python scripts/agent_kit.py sync [--force]    CLAUDE.md and GEMINI.md say what AGENTS.md says
     python scripts/agent_kit.py check [--doc FILE] [--history FILE]
     python scripts/agent_kit.py doctor            what this computer needs: git, Node, gh, graphify on Gemini
     python scripts/agent_kit.py outdated [--record]  whether the kit changed since it was installed
+    python scripts/agent_kit.py untrack [--yes]   stop committing anyone's own assistant setup
+    python scripts/agent_kit.py clean [PATH...]   list scratch/, or delete what is named there
     python <kit>/agent_kit.py words WORD...       a harvest's new lines hold none of its project's words
 
 `install` runs from the kit (a clone of the agent-kit repository), beside RULES.md, PROJECT.md,
-MERGE.md and claude/. In an agent file it changes nothing outside the agent-rules markers, except
-to make a file that has no rules of its own say what the others say. It merges Claude Code's
-settings into .claude/settings.json, keeping everything else there, records what it added in
+MERGE.md, claude/ and skills/, with the prompt library beside the kit's folder (../prompts). In
+an agent file it changes nothing outside the agent-rules markers, except to make a file that has
+no rules of its own say what the others say. The project commits its rules alone: the kit's
+setup for each person's assistants (its Claude Code settings, merged into
+.claude/settings.local.json with everything else there kept, its hooks, and the prompt skill in
+each assistant's skills folder) stays on that computer, and .gitignore keeps it out. It records
+the rows it added there in
 scripts/agent_kit.json, so a later install takes back only its own, and leaves a copy of this
 file in the project's scripts/ for `sync`, `check` and `outdated`, which run from the project's
 root. `outdated` clones the newest kit into a temporary folder and compares by a dry run of
-install: it writes nothing in the project. Merging the project's own rules with the general ones
-takes judgment, so it is MERGE.md's, not this file's. Standard library only.
+install: it writes nothing in the project. `clean` deletes the throwaway work it is told to in
+the project's scratch/, and nothing anywhere else, keeping any git work that is nowhere else.
+Merging the project's own rules with the general ones takes judgment, so it is MERGE.md's, not
+this file's. Standard library only.
 """
 
 import argparse
@@ -31,6 +39,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 
 AGENT_FILES = ("AGENTS.md", "CLAUDE.md", "GEMINI.md")
 #: Sections a tool writes into one assistant's file for that assistant alone. They may differ
@@ -43,20 +52,37 @@ BLOCK = re.compile(r"<!-- BEGIN:agent-rules(?P<attrs>[^>]*)-->\n(?P<body>.*?)\n"
 FOREIGN = re.compile(r"<!-- BEGIN:(?!agent-rules)(?P<name>[\w.-]+)[^>]*-->.*?"
                      r"<!-- END:(?P=name)[^>]*-->", re.S)
 SCRIPT = "scripts/agent_kit.py"
-#: What install added to the project's own files (permissions in .claude/settings.json, rows in
-#: .gitignore), so a later install takes back what the kit no longer has and never what the
-#: project had itself; and the kit's repository, for `outdated`. Committed, and never a path.
+#: What install added to the project's .gitignore, so a later install takes back what the kit no
+#: longer has and never what the project had itself; and the kit's repository, for `outdated`.
+#: Committed, and never a path.
 RECORD = "scripts/agent_kit.json"
-RECORD_ABOUT = ("Written by `python scripts/agent_kit.py install` and `sync`, never by hand: what "
-                "the agent kit added to this project, so a later install takes back only its own; "
-                "where the kit is, for `python scripts/agent_kit.py outdated`; and the fingerprint "
-                "of what the agent files last said alike, so `sync` can tell its own copy from an "
-                "edit.")
+RECORD_ABOUT = ("Written by `python scripts/agent_kit.py install` and `sync`, never by hand: the "
+                "rows the agent kit added to this project's .gitignore, so a later install takes "
+                "back only its own; where the kit is, for `python scripts/agent_kit.py outdated`; "
+                "and the fingerprint of what the agent files last said alike, so `sync` can tell "
+                "its own copy from an edit.")
+#: What install added to this computer's own Claude Code settings, so a later install takes back
+#: only its own. One computer's, as those settings are: never committed.
+LOCAL_RECORD = ".claude/agent-kit.json"
 #: What the last `outdated --record` found, for the reminder at the start of a Claude Code session
 #: (the kit's update-check hook). One computer's own: .claude/logs/ is never committed.
 UPDATE_CHECK = ".claude/logs/agent-kit-update.json"
 #: Claude Code's hooks from the kit. The folder is the kit's alone: every install replaces it.
 CLAUDE_HOOKS = ".claude/hooks/agent-kit"
+#: The prompt skill, which runs a prompt from the team's prompt library in the project, settling
+#: its inputs first. One computer's own, as the hooks are: install writes it where the project's
+#: skills are read, Claude Code's .claude/skills/ and the .agents/skills/ that Codex, Gemini CLI
+#: and Antigravity all read (their docs, 2026-10-31: in a project Codex reads no other, and
+#: Gemini CLI prefers it to .gemini/skills/), and each of those folders is the kit's alone. One
+#: copy each: a second where an assistant reads both would show it twice. Its SKILL.md is the
+#: kit's, with the library's catalog written in at its marker; the library is the prompts/ folder
+#: beside the kit's own in its repository, copied word for word. A skill folder whose SKILL.md
+#: lacks the kit's mark is someone's own skill of that name: install leaves it alone.
+SKILL_SOURCE = "skills/prompt/SKILL.md"
+SKILL_FOLDERS = (".claude/skills/prompt", ".agents/skills/prompt")
+SKILL_MARK = "<!-- agent-kit: prompt skill"
+LIBRARY = "../prompts"
+CATALOG = "<!-- agent-kit: catalog -->"
 #: Antigravity reads its workspace rules from .agents/rules/; this one sends it to AGENTS.md.
 POINTER = ".agents/rules/agent-kit.md"
 POINTER_TEXT = """---
@@ -66,14 +92,22 @@ description: Every rule for agents in this project is in AGENTS.md.
 
 Before starting any task, read `AGENTS.md` at the workspace root in full, and follow it.
 """
-#: Of .claude/, what Claude Code shares with everyone who clones the project is committed, so
-#: every computer has it: the settings, its instructions (graphify's --project install writes
-#: .claude/CLAUDE.md), the hooks, and the skills, subagents and commands. The logs, one
-#: computer's own settings and the worktrees are not.
-CLAUDE_WHOLE = {".claude", ".claude/", "/.claude", "/.claude/"}
-CLAUDE_SHARED = ["!.claude/settings.json", "!.claude/CLAUDE.md", "!.claude/hooks/",
-                 "!.claude/skills/", "!.claude/agents/", "!.claude/commands/"]
-CLAUDE_LOCAL = [".claude/logs/", ".claude/settings.local.json", ".claude/worktrees/"]
+#: Each person's own assistant setup, never committed (owner, 2026-10-28: "we don't need to commit
+#: any local llm setups so that colleagues can run their own setup or sphyr's, but its up to them,
+#: not us"): Claude Code's folder, with the kit's settings and hooks in it, Codex's, Gemini's and
+#: Antigravity's, and graphify's .graphifyignore. A project commits its rules, the three agent
+#: files; each person sets their assistants up, from the kit or their own way.
+LOCAL_SETUP = [".claude/", ".codex/", ".gemini/", ".agents/", ".graphifyignore"]
+#: Other assistants' setup, which the kit never makes but offers to stop committing all the same.
+OTHER_SETUP = [".agent/", ".cursor/", ".windsurf/", ".mcp.json"]
+#: Of LOCAL_SETUP, what the kit itself puts in a folder: kept out of git by name where the project
+#: still tracks something else in that folder, so the kit's files are never committed with it.
+KIT_LOCAL = {".claude/": [".claude/settings.local.json", LOCAL_RECORD, ".claude/hooks/agent-kit/",
+                          ".claude/logs/", ".claude/worktrees/"],
+             ".agents/": [".agents/rules/agent-kit.md"]}
+for _folder in SKILL_FOLDERS:  # and the prompt skill, in each assistant's own folder
+    KIT_LOCAL.setdefault(_folder.split("/")[0] + "/", []).append(_folder + "/")
+del _folder
 #: Above the rows `install` adds at the end of .gitignore, so a reader knows where they came from.
 GITIGNORE_NOTE = "# Set by the agent kit (python scripts/agent_kit.py install)"
 #: Never committed: throwaway agent work, the graph graphify generates, and the backups graphify's
@@ -81,6 +115,9 @@ GITIGNORE_NOTE = "# Set by the agent kit (python scripts/agent_kit.py install)"
 #: beside each skill they replace (`<platform>/skills/graphify/SKILL.md.bak`, or Aider's
 #: `.aider/graphify/SKILL.md.bak`, overwritten by each install).
 GENERATED = ["scratch/", "graphify-out/", "*.graphify-bak", "**/graphify/SKILL.md.bak"]
+#: The folder of throwaway agent work, at the project's root: `clean` deletes nowhere else
+#: (RULES.md, *Cleaning up*).
+SCRATCH = "scratch"
 #: Tools that read the whole tree but not .gitignore, by the config files that say a project uses
 #: them, with what a config holds when it reads .gitignore after all. Each must leave scratch/
 #: alone itself (RULES.md, *scratch/*), or its checks read the kit's clone and other throwaway
@@ -93,11 +130,13 @@ TREE_TOOLS = (
 #: formatters leave as it is: every install replaces the kit's hooks and script word for word, a
 #: formatter that re-wraps the general rules can change what they say (`*x*` becomes `_x_`), and
 #: both write their settings in a layout of their own. A folder stands for the files in it.
-TOOL_WRITTEN = AGENT_FILES + (POINTER, CLAUDE_HOOKS + "/", ".claude/settings.json", RECORD,
+TOOL_WRITTEN = AGENT_FILES + (POINTER, CLAUDE_HOOKS + "/", ".claude/settings.json",
+                              ".claude/settings.local.json", LOCAL_RECORD, RECORD,
                               ".claude/CLAUDE.md", ".claude/skills/graphify/", ".codex/hooks.json",
                               ".codex/skills/graphify/", ".gemini/settings.json",
                               ".gemini/skills/graphify/", ".agents/skills/graphify/",
-                              ".agents/rules/graphify.md", ".agents/workflows/graphify.md")
+                              ".agents/rules/graphify.md", ".agents/workflows/graphify.md"
+                              ) + tuple(folder + "/" for folder in SKILL_FOLDERS)
 #: Linters and formatters that would change some of it unless their config says not to: each with
 #: its own config files, the section that says a shared pyproject.toml configures it, what it
 #: would read, and the word whose mention in its config leaves that alone.
@@ -116,7 +155,8 @@ PRETTIER = (".prettierrc", ".prettierrc.json", ".prettierrc.json5", ".prettierrc
 FORMATTED = (".js", ".mjs", ".cjs", ".jsx", ".ts", ".mts", ".cts", ".tsx", ".json", ".json5",
              ".jsonc", ".md", ".mdx", ".yaml", ".yml", ".css", ".scss", ".less", ".html", ".vue")
 #: The kit's files every project gets or follows, where a harvest looks for its project's words.
-GENERAL_FILES = ("RULES.md", "PROJECT.md", "MERGE.md", "HARVEST.md", "claude/settings.json")
+GENERAL_FILES = ("RULES.md", "PROJECT.md", "MERGE.md", "HARVEST.md", "claude/settings.json",
+                 SKILL_SOURCE)
 #: Settings files whose hook commands graphify writes. A command that runs one computer's graphify
 #: by its path (`C:/Users/<name>/.local/bin/graphify.EXE hook-check`) is made to run plain
 #: `graphify`, found on each computer's PATH.
@@ -192,6 +232,9 @@ HISTORY = re.compile(r"removed|deleted|retired|git history|used to|no longer|\bg
 #: A paragraph that names another system's paths (an artifact's files, another repository's
 #: folders) says so with this, and they are not looked for here.
 ELSEWHERE = re.compile(r"<!--\s*agent-kit:\s*elsewhere\s*-->")
+#: The files a project names the Python packages it installs in.
+MANIFESTS = re.compile(r"(requirements|constraints)[^/]*\.(txt|in|lock)|pyproject\.toml|setup\.(cfg|py)"
+                       r"|Pipfile(\.lock)?|poetry\.lock|uv\.lock|environment\.ya?ml")
 
 
 def read(path):
@@ -383,18 +426,31 @@ class _Run:
             os.remove(path)
 
 
-def install(project, kit, dry=False):
-    """Put the general rules and Claude Code's hooks into the project, or bring them up to
-    date, and return what it did, a line each; in a dry run, what it would do, writing
+def install(project, kit, dry=False, local=True):
+    """Put the general rules into the project and, unless `local` is false, the kit's setup for
+    this computer's assistants (its Claude Code settings and hooks, never committed); or bring
+    them up to date. Returns what it did, a line each; in a dry run, what it would do, writing
     nothing."""
-    return _install(project, kit, _Run(dry)).lines
+    return _install(project, kit, _Run(dry), local).lines
 
 
-def pending(project, kit):
+def pending(project, kit, local=True):
     """What installing `kit` would change in the project, a line each; none when the project has
     everything it would install. Writes nothing."""
-    run = _install(project, kit, _Run(dry=True))
+    run = _install(project, kit, _Run(dry=True), local)
     return [line for line in run.lines if not line.endswith(": unchanged")] if run.changed else []
+
+
+def has_local_setup(project):
+    """Whether this computer has the kit's setup for the project's assistants (its hooks, its
+    settings): what `outdated` then compares too, since it is each person's to take or leave."""
+    if os.path.isdir(os.path.join(project, *CLAUDE_HOOKS.split("/"))):
+        return True
+    try:
+        settings = json.loads(read(os.path.join(project, ".claude", "settings.local.json")) or "{}")
+    except ValueError:
+        return False
+    return any(CLAUDE_HOOKS in command for command in _hook_commands(settings))
 
 
 def _read_record(project):
@@ -406,7 +462,7 @@ def _read_record(project):
     return record if isinstance(record, dict) else {}
 
 
-def _install(project, kit, run):
+def _install(project, kit, run, local=True):
     rules, skeleton = read(os.path.join(kit, "RULES.md")), read(os.path.join(kit, "PROJECT.md"))
     if rules is None or skeleton is None:
         raise SystemExit("install runs from the kit: RULES.md and PROJECT.md go beside "
@@ -464,23 +520,25 @@ def _install(project, kit, run):
     if os.path.exists(here) and not _same_folder(copy, here) and not _same_file(here, copy):
         lines.append(f"{SCRIPT}: {'updated' if os.path.exists(copy) else 'made'}")
         run.copy(here, copy)
-    pointer = os.path.join(project, *POINTER.split("/"))
-    if read(pointer) != POINTER_TEXT:
-        lines.append(f"{POINTER}: {'updated' if os.path.exists(pointer) else 'made'}")
-        run.write(pointer, POINTER_TEXT)
     before = _read_record(project)
-    permissions = _install_claude(project, kit, run, before.get("permissions") or {})
+    if local:  # this computer's own setup: each person's, never committed
+        pointer = os.path.join(project, *POINTER.split("/"))
+        if read(pointer) != POINTER_TEXT:
+            lines.append(f"{POINTER}: {'updated' if os.path.exists(pointer) else 'made'}")
+            run.write(pointer, POINTER_TEXT)
+        _install_claude(project, kit, run)
+        _install_skill(project, kit, run)
+        graphifyignore = os.path.join(project, ".graphifyignore")
+        if read(graphifyignore) is None:
+            run.write(graphifyignore, GRAPHIFYIGNORE)
+            lines.append(".graphifyignore: made")
+    _take_back_shared(project, run, before.get("permissions") or {})
     _portable_graphify(project, run)
     rows = _gitignore(project, run, before.get("gitignore") or [])
     if not run.dry:  # for the merge to fix, as a config is code: no change a dry run would list
         lines += scratch_unignored(project)
-    graphifyignore = os.path.join(project, ".graphifyignore")
-    if read(graphifyignore) is None:
-        run.write(graphifyignore, GRAPHIFYIGNORE)
-        lines.append(".graphifyignore: made")
     repository, folder = _source(kit, project)
-    fields = {"about": RECORD_ABOUT, "repository": repository, "folder": folder,
-              "permissions": permissions, "gitignore": rows}
+    fields = {"about": RECORD_ABOUT, "repository": repository, "folder": folder, "gitignore": rows}
     alike = len({shared_part(new[name]) for name in AGENT_FILES}) == 1
     synced = digest(own_part(new[AGENT_FILES[0]])) if alike else before.get("synced")
     if synced:
@@ -490,8 +548,8 @@ def _install(project, kit, run):
     if read(path) != record:
         lines.append(f"{RECORD}: {'updated' if os.path.exists(path) else 'made'}")
         run.write(path, record)
-    if not run.dry:  # once all of it is there, for the merge to fix too
-        lines += kit_files_unignored(project)
+    if not run.dry:  # once all of it is there, for the merge to fix too, and to offer the owner
+        lines += kit_files_unignored(project) + committed_setup_notes(project)
     found = os.path.join(project, *UPDATE_CHECK.split("/"))
     if not run.dry and os.path.exists(found):  # what the last check found is out of date now
         os.remove(found)
@@ -578,52 +636,246 @@ def _hooks_like_ours(project, names, lines):
                          "both run now. Keep one of each, with the owner's yes (MERGE.md, step 3)")
 
 
-def _install_claude(project, kit, run, added):
-    """Copy the kit's hooks in and merge its settings into .claude/settings.json. Returns the
-    permissions the kit has added there, for the record (`added`, as it was, when it cannot
-    say)."""
+def _install_claude(project, kit, run):
+    """Copy the kit's hooks in and merge its settings into this computer's own Claude Code
+    settings, .claude/settings.local.json, never committed; keep what it added there in its own
+    record (LOCAL_RECORD), so a later install takes back only that."""
     source = os.path.join(kit, "claude")
     template = read(os.path.join(source, "settings.json"))
     if template is None:
-        return added
+        return
+    record_path = os.path.join(project, *LOCAL_RECORD.split("/"))
+    try:
+        record = json.loads(read(record_path) or "{}")
+    except ValueError:
+        record = {}
+    added = record.get("permissions") if isinstance(record, dict) else None
     hooks_from = os.path.join(source, "hooks")
-    hooks_to = os.path.join(project, *CLAUDE_HOOKS.split("/"))
-    wanted, changed = set(), []
-    for dirpath, _, filenames in os.walk(hooks_from):
-        for name in filenames:
-            rel = os.path.relpath(os.path.join(dirpath, name), hooks_from)
-            wanted.add(os.path.normcase(rel))
-            target = os.path.join(hooks_to, rel)
-            if not _same_file(os.path.join(dirpath, name), target):
-                run.copy(os.path.join(dirpath, name), target)
-                changed.append(rel.replace(os.sep, "/"))
-    for dirpath, _, filenames in os.walk(hooks_to):
-        for name in filenames:
-            rel = os.path.relpath(os.path.join(dirpath, name), hooks_to)
-            if os.path.normcase(rel) not in wanted:
-                run.remove(os.path.join(dirpath, name))
-                changed.append(rel.replace(os.sep, "/") + " (gone from the kit)")
+    changed = _mirror(run, os.path.join(project, *CLAUDE_HOOKS.split("/")), _files_in(hooks_from))
     if changed:
         run.lines.append(f"{CLAUDE_HOOKS}/: {', '.join(sorted(changed))}")
 
-    path = os.path.join(project, ".claude", "settings.json")
+    path = os.path.join(project, ".claude", "settings.local.json")
     text = read(path)
     try:
         current = json.loads(text) if text and text.strip() else {}
     except ValueError:
-        run.lines.append(".claude/settings.json is not valid JSON, so it was left alone: add the "
-                         "kit's settings (claude/settings.json in the kit) to it by hand")
-        return added
+        run.lines.append(".claude/settings.local.json is not valid JSON, so it was left alone: add "
+                         "the kit's settings (claude/settings.json in the kit) to it by hand")
+        return
     merged, ours, taken = merge_settings(current, json.loads(template), added)
     portable_hooks(merged)
     if merged != current or text is None:
         run.write(path, json.dumps(merged, indent=2) + "\n")
-        run.lines.append(f".claude/settings.json: {'made' if text is None else 'updated'}"
+        run.lines.append(f".claude/settings.local.json: {'made' if text is None else 'updated'}"
                          + (f", taking back what the kit no longer has: {', '.join(taken)}"
                             if taken else ""))
+    kept = json.dumps({"about": "Written by `python scripts/agent_kit.py install`, never by hand: "
+                                "the permissions the agent kit added to this computer's "
+                                ".claude/settings.local.json, so a later install takes back only "
+                                "its own.", "permissions": ours}, indent=2) + "\n"
+    if read(record_path) != kept:
+        run.write(record_path, kept)
     _hooks_like_ours(project, {name for name in os.listdir(hooks_from) if name.endswith(".mjs")},
                      run.lines)
-    return ours
+
+
+def _files_in(folder):
+    """{path in `folder`, with forward slashes: the file's path} for every file in it."""
+    found = {}
+    for dirpath, _, filenames in os.walk(folder):
+        for name in filenames:
+            path = os.path.join(dirpath, name)
+            found[os.path.relpath(path, folder).replace(os.sep, "/")] = path
+    return found
+
+
+def _mirror(run, target, files, texts=None):
+    """Make the folder `target`, which is the kit's alone, hold what `texts` says ({path in it:
+    the text to write there}) and `files` ({path in it: the file to copy there}), and nothing
+    else: what differs is replaced, and what neither names is removed, with any folder that
+    leaves empty. Texts go first, so a folder's SKILL.md is there before the rest. Returns what
+    changed, a path each, one removed marked so."""
+    wanted, changed = set(), []
+    for rel, text in (texts or {}).items():
+        wanted.add(os.path.normcase(os.path.join(*rel.split("/"))))
+        path = os.path.join(target, *rel.split("/"))
+        if read(path) != text:
+            run.write(path, text)
+            changed.append(rel)
+    for rel, source in files.items():
+        wanted.add(os.path.normcase(os.path.join(*rel.split("/"))))
+        path = os.path.join(target, *rel.split("/"))
+        if not _same_file(source, path):
+            run.copy(source, path)
+            changed.append(rel)
+    for dirpath, _, filenames in os.walk(target):
+        for name in filenames:
+            rel = os.path.relpath(os.path.join(dirpath, name), target)
+            if os.path.normcase(rel) not in wanted:
+                run.remove(os.path.join(dirpath, name))
+                changed.append(rel.replace(os.sep, "/") + " (gone from the kit)")
+    if not run.dry:
+        for dirpath, _, _ in os.walk(target, topdown=False):
+            if not _same_folder(dirpath, target) and not os.listdir(dirpath):
+                os.rmdir(dirpath)
+    return changed
+
+
+#: What the catalog reads from a prompt: its title, its use case (the first sentence of it), and
+#: its variants: each bold label on a line of its own (`**SEO only (rankings dropped):**`), or,
+#: in a section that has none, the section's heading when the section holds a prompt to paste.
+#: The main template, the tips and a checklist are not variants.
+TITLE = re.compile(r"^# (?:Prompt|Template): *(.+?) *$", re.M)
+USE_CASE = re.compile(r"^\*\*Use case:\*\* *(.+?) *$", re.M)
+SENTENCE = re.compile(r".+?[.!?](?=\s+[A-Z(\"'`]|\s*$)")
+VARIANT = re.compile(r"^\*\*([^*]+?):\*\*\s*$")
+NOT_VARIANTS = ("Template", "Tips", "Checklist")
+
+
+def library_prompts(library):
+    """The prompts in the library folder `library`, by their paths in it with forward slashes,
+    in order: its Markdown files, but for its READMEs, which index it. None when there is no
+    such folder."""
+    if not os.path.isdir(library):
+        return None
+    found = []
+    for dirpath, dirnames, filenames in os.walk(library):
+        dirnames[:] = [name for name in dirnames if not name.startswith((".", "__"))]
+        rel = os.path.relpath(dirpath, library).replace(os.sep, "/")
+        found += [name if rel == "." else f"{rel}/{name}" for name in filenames
+                  if name.endswith(".md") and name != "README.md" and not name.startswith(".")]
+    return sorted(found)
+
+
+def prompt_entry(text):
+    """(title, use case, variants) of a prompt's text: its title, the first sentence of its use
+    case, and the labels of its variants, each without its parenthesis; "" or [] for what it
+    lacks. Code blocks are passed over: a template's own headings are not the prompt's."""
+    title, use = TITLE.search(text), USE_CASE.search(text)
+    sentence = SENTENCE.match(use.group(1)) if use else None
+    variants, section, labels, pasted, fenced = [], None, [], False, False
+
+    def close():
+        if section and section not in NOT_VARIANTS:
+            variants.extend(labels or ([section] if pasted else []))
+
+    for line in text.split("\n"):
+        if line.lstrip().startswith("```"):
+            fenced, pasted = not fenced, True
+        elif not fenced and line.startswith("## "):
+            close()
+            section, labels, pasted = re.sub(r"\s*\([^()]*\)$", "", line[3:].strip()), [], False
+        elif not fenced and section:
+            label = VARIANT.match(line.strip())
+            if label:
+                labels.append(re.sub(r"\s*\([^()]*\)$", "", label.group(1)).strip())
+    close()
+    return (title.group(1) if title else "",
+            (sentence.group(0) if sentence else use.group(1)) if use else "", variants)
+
+
+def catalog(library, prompts):
+    """The library's catalog, a Markdown table: each prompt by its name (its path, without .md),
+    with its title, its use case and its variants."""
+    rows = ["| Prompt | Title | Use case | Variants |", "|---|---|---|---|"]
+    for rel in prompts:
+        title, use, variants = prompt_entry(read(os.path.join(library, *rel.split("/"))) or "")
+        cells = (f"`{rel[:-len('.md')]}`", title, use, "; ".join(variants))
+        rows.append("| " + " | ".join(cell.replace("|", "\\|") for cell in cells) + " |")
+    return "\n".join(rows)
+
+
+def skill_text(template, library, prompts):
+    """The prompt skill's SKILL.md: the kit's, with the library's catalog at its marker."""
+    return template.replace(CATALOG, catalog(library, prompts), 1)
+
+
+def _theirs(folder):
+    """Whether a skill folder holds someone's own skill: a SKILL.md without the kit's mark. A
+    folder with no SKILL.md is no skill at all, and the kit's to write (one whose SKILL.md was
+    deleted gets it back)."""
+    text = read(os.path.join(folder, "SKILL.md"))
+    return text is not None and SKILL_MARK not in text
+
+
+def _install_skill(project, kit, run):
+    """Write the prompt skill into each assistant's skills folder (SKILL_FOLDERS): its SKILL.md,
+    with the library's catalog, and the library's prompts word for word; and take out what the
+    library no longer has. A folder that holds someone's own skill of that name is left alone.
+    From a kit with no library beside it (a copy of the kit's folder alone) the skill stays as it
+    is, and an install says so."""
+    template = read(os.path.join(kit, *SKILL_SOURCE.split("/")))
+    if template is None:
+        return
+    library = os.path.normpath(os.path.join(kit, *LIBRARY.split("/")))
+    prompts = library_prompts(library)
+    if not prompts:
+        if not run.dry:
+            run.lines.append(f"the prompt skill: left as it is, since the kit has no prompt "
+                             f"library beside it ({LIBRARY}). Install from a clone of the kit's "
+                             "whole repository (MERGE.md) to bring it in")
+        return
+    files = {f"prompts/{rel}": os.path.join(library, *rel.split("/")) for rel in prompts}
+    texts = {"SKILL.md": skill_text(template, library, prompts)}
+    done = {}
+    for folder in SKILL_FOLDERS:
+        target = os.path.join(project, *folder.split("/"))
+        if _theirs(target):
+            if not run.dry:
+                run.lines.append(f"{folder}/ holds a skill of its own, not the kit's, so it was "
+                                 "left alone: rename that folder, then install again to bring "
+                                 "the kit's prompt skill in for that assistant")
+            continue
+        made = not os.path.isdir(target)
+        changed = sorted(_mirror(run, target, files, texts))
+        if made:
+            what = f"made, with {len(prompts)} prompts"
+        elif changed:
+            what = ", ".join(changed[:6]) + (f" and {len(changed) - 6} more" if len(changed) > 6
+                                             else "")
+        else:
+            continue
+        done.setdefault(what, []).append(folder + "/")
+    for what, folders in done.items():
+        run.lines.append(f"the prompt skill, in {', '.join(folders)}: {what}")
+
+
+def _take_back_shared(project, run, added):
+    """An older kit merged its settings into the project's own .claude/settings.json: take its
+    hooks and the permissions its record names (`added`) back out of it, as they are each
+    person's now, in .claude/settings.local.json. Everything else there stays."""
+    path = os.path.join(project, ".claude", "settings.json")
+    text = read(path)
+    try:
+        settings = json.loads(text) if text and text.strip() else None
+    except ValueError:
+        return
+    if not isinstance(settings, dict):
+        return
+    kept = json.loads(json.dumps(settings))
+    for event, groups in list((kept.get("hooks") or {}).items()):
+        left = [{**group, "hooks": [hook for hook in group.get("hooks", [])
+                                    if CLAUDE_HOOKS not in hook.get("command", "")]}
+                for group in groups if isinstance(group, dict)]
+        left = [group for group in left if group["hooks"]]
+        if left:
+            kept["hooks"][event] = left
+        else:
+            del kept["hooks"][event]
+    for key, rules in (added or {}).items():
+        have = (kept.get("permissions") or {}).get(key)
+        if isinstance(have, list) and any(rule in rules for rule in have):
+            have[:] = [rule for rule in have if rule not in rules]
+            if not have:
+                del kept["permissions"][key]
+    for key in ("hooks", "permissions"):
+        if key in kept and not kept[key] and settings.get(key):
+            del kept[key]
+    if kept != settings:
+        run.write(path, json.dumps(kept, indent=2) + "\n")
+        run.lines.append(".claude/settings.json: the kit's hooks and permissions taken out of it, "
+                         "as they are each person's now (.claude/settings.local.json)")
 
 
 def portable_hooks(settings):
@@ -660,8 +912,8 @@ def portable_hooks(settings):
 
 
 def _portable_graphify(project, run):
-    """graphify's hooks in Codex's and Gemini's settings run plain `graphify` too."""
-    for rel in HOOK_SETTINGS[1:]:
+    """graphify's hooks in Claude Code's, Codex's and Gemini's settings run plain `graphify`."""
+    for rel in HOOK_SETTINGS:
         path = os.path.join(project, *rel.split("/"))
         text = read(path)
         if not text or not text.strip():
@@ -677,34 +929,56 @@ def _portable_graphify(project, run):
                              "path")
 
 
+def _has_row(rows, row):
+    """Whether .gitignore `rows` keep out what `row` does already: the same, with or without its
+    slashes, or the folder's every file (`.claude/*`)."""
+    bare = row.strip("/")
+    return any(other.strip("/") in (bare, bare + "/*") for other in rows)
+
+
+def _tracked_under(project, entries):
+    """The files git tracks under each of `entries` (a folder, ending in "/", or a file), by the
+    entry they fall under; none outside git."""
+    try:
+        listed = _git(project, "ls-files", "-z", "--", *(entry.rstrip("/") for entry in entries))
+    except (OSError, subprocess.CalledProcessError):
+        return {}
+    found = {}
+    for name in filter(None, listed.split("\0")):
+        for entry in entries:
+            if name == entry.rstrip("/") or (entry.endswith("/") and name.startswith(entry)):
+                found.setdefault(entry, []).append(name)
+                break
+    return found
+
+
 def _gitignore(project, run, added=()):
-    """What is generated is ignored (GENERATED); of .claude/, what Claude Code shares is committed
-    and the rest is not. Rows it adds go at the end, under a note saying where they came from.
-    Returns the rows the kit has added, for the record: a later install takes back one the kit
-    no longer wants (`added`, from that record), and never a row the project had itself."""
+    """What is generated is ignored (GENERATED), and so is each person's own assistant setup
+    (LOCAL_SETUP). Where the project still tracks something in one of those, that stays as it is
+    for the owner to decide (`untrack`), and the kit's own files there are kept out by name
+    (KIT_LOCAL). Rows it adds go at the end, under a note saying where they came from. Returns
+    the rows the kit has added, for the record: a later install takes back one the kit no longer
+    wants (`added`, from that record, such as an older kit's `!.claude/...` rows), and never a row
+    the project had itself."""
     path = os.path.join(project, ".gitignore")
     text = read(path) or ""
-    rows = text.rstrip("\n").split("\n") if text.strip() else []
-    done, out, placed = [], [], []
-    for row in rows:
-        if row.strip() in CLAUDE_WHOLE:
-            out += [".claude/*"] + CLAUDE_SHARED
-            placed += [".claude/*"] + CLAUDE_SHARED
-            done.append(f"{row.strip()} became .claude/* with {', '.join(CLAUDE_SHARED)}")
-        else:
-            out.append(row)
-    stripped = [row.strip() for row in out]
-    star = any(row in (".claude/*", "/.claude/*") for row in stripped)
-    needed = CLAUDE_SHARED if star else CLAUDE_LOCAL
-    wanted = set(GENERATED + needed + ([".claude/*"] if star else []))
-    gone = [row for row in added if row not in wanted and row in stripped]
+    out = text.rstrip("\n").split("\n") if text.strip() else []
+    anything = set(GENERATED + LOCAL_SETUP) | {row for rows in KIT_LOCAL.values() for row in rows}
+    anything |= {entry + "*" for entry in LOCAL_SETUP if entry.endswith("/")}
+    done, gone = [], [row for row in added if row not in anything and row in map(str.strip, out)]
     if gone:
         out = [row for row in out if row.strip() not in gone]
-        stripped = [row.strip() for row in out]
         done.append(f"took back {', '.join(gone)}, which the kit no longer has")
-    tail = [folder for folder in GENERATED
-            if not any(row.strip("/") == folder.strip("/") for row in stripped)]
-    tail += [row for row in needed if row not in stripped]
+    stripped = [row.strip() for row in out]
+    tracked = _tracked_under(project, LOCAL_SETUP)
+    reopened = any(row.startswith(("!.claude/", "!/.claude/")) for row in stripped)
+    needed = []
+    for entry in LOCAL_SETUP:
+        if entry in tracked or (entry == ".claude/" and reopened):
+            needed += KIT_LOCAL.get(entry, [])
+        else:
+            needed.append(entry)
+    tail = [row for row in GENERATED + needed if not _has_row(stripped, row)]
     done += tail
     if tail:
         if GITIGNORE_NOTE not in stripped:
@@ -713,8 +987,8 @@ def _gitignore(project, run, added=()):
     if done:
         run.write(path, "\n".join(out) + "\n")
         run.lines.append(f".gitignore: {'; '.join(done)}")
-    kept = [row for row in added if row in wanted and row in stripped]
-    return list(dict.fromkeys(kept + placed + tail))
+    kept = [row for row in added if row in anything and row in stripped]
+    return list(dict.fromkeys(kept + tail))
 
 
 def _lines(text):
@@ -774,16 +1048,38 @@ def files_of(project):
     return found
 
 
-def _ignored(project, paths):
-    """Whether git ignores any of `paths`: a local database or a run's output is on the
-    owner's machine, not in a checkout. They go to git as bytes: through a text-mode pipe,
-    Windows would end each but the last with a carriage return, which git reads as the path's."""
+def _ignored_paths(project, paths):
+    """Which of `paths` git ignores. They go to git as bytes: through a text-mode pipe, Windows
+    would end each but the last with a carriage return, which git reads as the path's."""
     try:
         out = subprocess.run(["git", "-C", project, "check-ignore", "--stdin"],
                              input="\n".join(paths).encode("utf-8"), capture_output=True)
     except OSError:
-        return False
-    return bool(out.stdout.strip())
+        return set()
+    return set(out.stdout.decode("utf-8", "replace").splitlines())
+
+
+def _ignored(project, paths):
+    """Whether git ignores any of `paths`: a local database or a run's output is on the owner's
+    machine, not in a checkout."""
+    return bool(_ignored_paths(project, paths))
+
+
+def _folders(files):
+    """Every folder the project's files are in, at any depth (`src/`, holding only folders, as
+    much as `src/db/`)."""
+    return sorted({"/".join(parts[:depth]) for f in files for parts in [f.split("/")[:-1]]
+                   for depth in range(1, len(parts) + 1)})
+
+
+def _bases(files, project, folders=None):
+    """The folders a doc may name a path from: every folder the project's files are in, but one
+    git ignores the contents of whatever they are called (`backups/*`, kept for a tracked
+    placeholder), where every path would read as ignored, and none as missing."""
+    folders = _folders(files) if folders is None else folders
+    probes = {f"{folder}/agent-kit-probe": folder for folder in folders}
+    kept_out = {probes[probe] for probe in _ignored_paths(project, list(probes)) if probe in probes}
+    return [folder for folder in folders if folder not in kept_out]
 
 
 def references(text):
@@ -815,9 +1111,15 @@ def references(text):
             yield "module", module.rstrip(".")
 
 
-def _path_ok(ref, files, project):
+def _path_ok(ref, files, project, bases=None, folders=None, near=None):
     """A path, or `path::name` with the name still in that file. A doc may name a path from
-    inside one of the project's folders, so any file whose path ends with it will do."""
+    inside one of the project's folders (`bases`), so any file whose path ends with it will do.
+    One no file has may be one git ignores (a local database), asked about from the doc's own
+    folder (`near`), as a link in it would be read, and from the folders that hold the most of
+    the folders it names on its way (`data/backups/` names `src/data/backups/`): asked about
+    from every folder, it read as ignored wherever a folder of that name was kept out (another
+    part's `data/`), and every missing path under it went through. Only a path the project has
+    none of the folders of (a run's output) may be ignored from any of them."""
     ref, _, symbol = ref.partition("::")
     folder = ref.endswith("/")
     ref = ref.strip("/")
@@ -831,17 +1133,59 @@ def _path_ok(ref, files, project):
     # A folder git ignores by a folder rule (`logs/`) matches only when asked about with its
     # slash, and a folder a run makes may not exist yet.
     name = ref + "/" if folder else ref
-    parents = sorted({f.rsplit("/", 1)[0] for f in files if "/" in f})
+    have = set(_folders(files) if folders is None else folders)
+    on_the_way = ref.split("/")[:-1]
+    held = {parent: _held(parent, on_the_way, have) for parent in [""] + sorted(have)}
+    most = max(held.values())
+    if most:
+        parents = [parent for parent, count in held.items() if count == most]
+        if near is not None:
+            parents.append(near)
+        return _ignored(project, [f"{parent}/{name}".lstrip("/") for parent in parents])
+    parents = _bases(files, project) if bases is None else bases
     return _ignored(project, [name] + [f"{parent}/{name}" for parent in parents])
 
 
-def _module_ok(module, files):
-    """A `python -m` module is checked only when its package is this project's."""
+def _held(parent, on_the_way, have):
+    """How many of the folders a path names on its way (`lib`, then `domain`) the project has
+    inside `parent`, from the first."""
+    count = 0
+    for depth in range(1, len(on_the_way) + 1):
+        if "/".join(([parent] if parent else []) + on_the_way[:depth]) not in have:
+            break
+        count = depth
+    return count
+
+
+def _installs(project, files):
+    """Every name the project's dependency files (`MANIFESTS`) give, as `_package` writes it."""
+    names = set()
+    for f in files:
+        if MANIFESTS.fullmatch(f.rsplit("/", 1)[-1]):
+            text = read(os.path.join(project, f)) or ""
+            names.update(map(_package, re.findall(r"[A-Za-z0-9][A-Za-z0-9_-]*", text)))
+    return names
+
+
+def _package(name):
+    """A package's name as Python's packaging compares them: `Foo-Bar` is `foo_bar`."""
+    return re.sub(r"[-_]+", "_", name).lower()
+
+
+def _module_ok(module, files, installs=frozenset()):
+    """A `python -m` module of this project's must be there. One of a package the project lacks
+    is someone else's: by its one name, a tool's (`python -m pytest`); dotted, a package's module
+    (`nltk.downloader`), so the package is Python's own or one the project's dependency files
+    name (`installs`). Any other dotted one was this project's, its package renamed or moved
+    since the doc named it, which a check taking every package the project lacks for someone
+    else's let through."""
     padded = ["/" + f for f in files]
     parts = module.split(".")
     top = "/" + parts[0]
     if not any(top + "/" in f or f.endswith(top + ".py") for f in padded):
-        return True
+        python = getattr(sys, "stdlib_module_names", None)  # Python 3.10 and later
+        return (len(parts) == 1 or python is None or parts[0] in python
+                or _package(parts[0]) in installs)
     rel = "/" + "/".join(parts)
     return any(f.endswith(rel + suffix) for f in padded
                for suffix in (".py", "/__init__.py", "/__main__.py"))
@@ -852,6 +1196,9 @@ def stale_docs(project, docs=(), history=()):
     files and READMEs are checked, and any doc in `docs`; never one in `history`, a record of
     what happened."""
     files = files_of(project)
+    folders = _folders(files)
+    bases = _bases(files, project, folders)
+    installs = _installs(project, files)
     exempt = {os.path.normpath(h).replace(os.sep, "/") for h in history}
     chosen = {f for f in files if f.rsplit("/", 1)[-1] in AGENT_FILES + ("README.md",)}
     chosen |= {os.path.normpath(d).replace(os.sep, "/") for d in docs}
@@ -862,10 +1209,11 @@ def stale_docs(project, docs=(), history=()):
             problems.append(f"{doc}: there is no such doc to check")
             continue
         stale = set()
+        near = doc.rsplit("/", 1)[0] if "/" in doc else ""
         for kind, name in references(BLOCK.sub("", text)):
-            ok = (_path_ok(name, files, project) if kind == "path"
+            ok = (_path_ok(name, files, project, bases, folders, near) if kind == "path"
                   else any(f.rsplit("/", 1)[-1] == name for f in files) if kind == "file"
-                  else _module_ok(name, files))
+                  else _module_ok(name, files, installs))
             if not ok:
                 stale.add(f"{kind} {name}")
         if stale:
@@ -875,30 +1223,44 @@ def stale_docs(project, docs=(), history=()):
     return problems
 
 
-def claude_problems(project):
-    """What is wrong with the project's Claude Code settings: its credit lines switched back
-    on, or the kit's hooks missing from the settings or from their folder."""
-    text = read(os.path.join(project, ".claude", "settings.json"))
-    if text is None:
-        return [".claude/settings.json is missing: install the kit again"]
+def local_setup(project):
+    """(level, text) for this computer's own setup of the kit for the project, which `doctor`
+    reports: none at all is the person's choice; once taken, Claude Code's credit lines stay off
+    and every hook its settings name is in place."""
+    if not has_local_setup(project):
+        return [("suggest", "this computer has none of the kit's setup for this project's "
+                            "assistants (Claude Code's hooks and settings): yours to take or "
+                            "leave; the kit's install sets it up (MERGE.md, step 2)")]
+    text = read(os.path.join(project, ".claude", "settings.local.json"))
     try:
-        settings = json.loads(text)
+        settings = json.loads(text) if text and text.strip() else {}
     except ValueError:
-        return [".claude/settings.json is not valid JSON"]
-    problems = []
+        return [("fix", ".claude/settings.local.json is not valid JSON")]
+    found = []
     attribution = settings.get("attribution") or {}
     if attribution.get("commit") != "" or attribution.get("pr") != "":
-        problems.append(".claude/settings.json lets Claude Code credit itself in commits or pull "
-                        "requests: its attribution must stay empty")
+        found.append(("fix", ".claude/settings.local.json lets Claude Code credit itself in commits "
+                             "or pull requests: install the kit again, which switches that off"))
     ours = [command for command in _hook_commands(settings) if CLAUDE_HOOKS in command]
     if not ours:
-        problems.append("the kit's hooks are not in .claude/settings.json: install the kit again")
+        found.append(("fix", "the kit's hooks are not in .claude/settings.local.json: install the "
+                             "kit again"))
     for command in ours:
         match = re.search(re.escape(CLAUDE_HOOKS) + r"/([^\s\"']+)", command)
         if match and not os.path.exists(os.path.join(project, *CLAUDE_HOOKS.split("/"),
                                                      *match.group(1).split("/"))):
-            problems.append(f"{CLAUDE_HOOKS}/{match.group(1)} is missing: install the kit again")
-    return problems
+            found.append(("fix", f"{CLAUDE_HOOKS}/{match.group(1)} is missing: install the kit "
+                                 "again"))
+    for folder in SKILL_FOLDERS:
+        path = os.path.join(project, *folder.split("/"))
+        if _theirs(path):
+            found.append(("warn", f"{folder}/ holds a skill of its own, not the kit's prompt "
+                                  "skill: rename that folder, then install the kit again to bring "
+                                  "it in for that assistant"))
+        elif read(os.path.join(path, "SKILL.md")) is None:
+            found.append(("fix", f"{folder}/SKILL.md is missing, so that assistant has no prompt "
+                                 "skill: install the kit again"))
+    return found or [("ok", "the kit's setup for this project's assistants is on this computer")]
 
 
 def _run(command):
@@ -1078,6 +1440,8 @@ def doctor(project, env=None, home=None):
         found.append(("warn", "pipx is not on PATH, so that command will not run as typed: use "
                               "`python -m pipx` instead, or add the folder pipx is in to your user "
                               "PATH (on Windows, %APPDATA%\\Python\\Python3XX\\Scripts)"))
+    found += local_setup(project)
+    found += [("warn", note) for note in committed_setup_notes(project)]
     return found + global_suggestions(home)
 
 
@@ -1234,9 +1598,54 @@ def kit_files_unignored(project):
     return problems
 
 
+def committed_setup(project):
+    """Each person's own assistant setup the project's git tracks (LOCAL_SETUP, OTHER_SETUP): its
+    files, by the folder or file they fall under."""
+    return _tracked_under(project, LOCAL_SETUP + OTHER_SETUP)
+
+
+def committed_setup_notes(project):
+    """A line for the owner when the project commits anyone's own assistant setup, with how to
+    stop from now on; none when it commits none."""
+    files = [name for names in committed_setup(project).values() for name in names]
+    if not files:
+        return []
+    named = ", ".join(files[:6]) + (f" and {len(files) - 6} more" if len(files) > 6 else "")
+    return [f"Committed here, though it is each person's own assistant setup (RULES.md, *Working "
+            f"with the owner*): {named}. To stop committing it from now on, with the owner's yes: "
+            "python scripts/agent_kit.py untrack --yes. Every file stays on this computer; every "
+            "other computer loses its copy at the pull that brings that change, and sets its own "
+            "up again (the kit's install, graphify's installer)."]
+
+
+def untrack(project):
+    """Stop committing each person's assistant setup that the project tracks: keep it out in
+    .gitignore and take it out of git's index, every file staying on this computer. Returns what
+    it did, a line each; the commit that follows is the owner's."""
+    found = committed_setup(project)
+    if not found:
+        return ["Nothing of anyone's own assistant setup is committed here."]
+    path = os.path.join(project, ".gitignore")
+    text = read(path) or ""
+    rows = text.rstrip("\n").split("\n") if text.strip() else []
+    tail = [entry for entry in found if not _has_row([row.strip() for row in rows], entry)]
+    if tail:
+        if GITIGNORE_NOTE not in [row.strip() for row in rows]:
+            rows += ([""] if rows and rows[-1].strip() else []) + [GITIGNORE_NOTE]
+        write(path, "\n".join(rows + tail) + "\n")
+    files = [name for names in found.values() for name in names]
+    for start in range(0, len(files), 100):  # a command line has a length limit on Windows
+        _git(project, "rm", "-q", "--cached", "--", *files[start:start + 100])
+    return [f".gitignore: {', '.join(tail)}" if tail else ".gitignore keeps them out already",
+            f"No longer tracked, and still on this computer: {', '.join(files)}",
+            "Commit it to finish. At their next pull, every other computer loses its copy of "
+            "these files and sets its own up again."]
+
+
 def check(project, docs=(), history=()):
-    """Every problem with the project's agent files, Claude Code settings and docs; none when
-    all is well."""
+    """Every problem with the project's agent files, its tools' configs and its docs; none when
+    all is well. This computer's own assistant setup is not the project's, so `doctor` looks at
+    that instead."""
     problems, shared = [], {}
     for name in AGENT_FILES:
         text = read(os.path.join(project, name))
@@ -1260,9 +1669,8 @@ def check(project, docs=(), history=()):
             line = other[at] if at < len(other) else "(the file ends here)"
             problems.append(f"{name} differs from {names[0]} at line {at + 1} of what they "
                             f"share: {line!r}. Change AGENTS.md, then run sync.")
-    return (problems + claude_problems(project) + machine_paths(project)
-            + scratch_unignored(project) + kit_files_unignored(project)
-            + stale_docs(project, docs, history))
+    return (problems + machine_paths(project) + scratch_unignored(project)
+            + kit_files_unignored(project) + stale_docs(project, docs, history))
 
 
 def words_in(text, words):
@@ -1332,7 +1740,39 @@ def update_prompt(repository, folder):
     """What to tell a project's assistant to bring the project up to date with the kit."""
     merge = "MERGE.md" if folder == "." else f"{folder}/MERGE.md"
     return (f"Clone `{clone_urls(repository)[0]}` into `scratch/{repository.rsplit('/', 1)[-1]}` "
-            f"(or pull the clone there) and follow its `{merge}`.")
+            f"(or, if it is there, switch it to `main` and pull) and follow its `{merge}`.")
+
+
+def unmerged(kit, project="."):
+    """Why the kit here may hold what the owner has not merged: its clone is on a branch other
+    than its repository's main (a harvest's, say), or has changes not committed. "" when it is
+    on main as committed, or when nothing can say (a copy, a repository with no commit yet)."""
+    if not _kit_repository(kit):
+        return ""
+    try:
+        _git(kit, "rev-parse", "--verify", "-q", "HEAD")
+        branch = _git(kit, "rev-parse", "--abbrev-ref", "HEAD")
+        dirty = _git(kit, "status", "--porcelain", "--", ".")
+    except (OSError, subprocess.CalledProcessError):
+        return ""
+    try:
+        main = _git(kit, "symbolic-ref", "--short", "refs/remotes/origin/HEAD").split("/", 1)[-1]
+    except (OSError, subprocess.CalledProcessError):
+        main = "main"
+    top = _kit_repository(kit)
+    try:  # real paths, as in where(): Windows may name one folder two ways
+        clone = os.path.relpath(os.path.realpath(top), os.path.realpath(project)).replace(os.sep, "/")
+    except ValueError:  # two drives on Windows
+        clone = ".."
+    clone = clone if not clone.startswith("..") else shown(top)
+    if branch != main:
+        return (f"the kit's clone is on {branch}, not {main}, so it may hold rules the owner has "
+                f"not merged (a harvest's). Once they are: git -C {clone} switch {main}, then "
+                f"git -C {clone} pull --ff-only")
+    if dirty:
+        return (f"the kit in {clone} has changes not committed, which the owner has not merged: "
+                "commit them on a branch of their own, or set them aside")
+    return ""
 
 
 def _remove_tree(path):
@@ -1345,6 +1785,237 @@ def _remove_tree(path):
             shutil.rmtree(path, onexc=writable)
         else:
             shutil.rmtree(path, onerror=writable)
+
+
+def _linked(info):
+    """Whether an lstat result is a link: a symbolic link, or on Windows a junction, whose tag
+    only Windows' stat module has."""
+    junction = getattr(stat, "IO_REPARSE_TAG_MOUNT_POINT", None)
+    return (stat.S_ISLNK(info.st_mode)
+            or (junction is not None and getattr(info, "st_reparse_tag", None) == junction))
+
+
+def _is_link(path):
+    """Whether `path` is a link, which a delete must remove alone, never what it points at."""
+    try:
+        return _linked(os.lstat(path))
+    except OSError:
+        return False
+
+
+def _inside(path, folder):
+    """Whether `path` is below `folder`: in it, and not the folder itself."""
+    path, folder = os.path.normcase(path), os.path.normcase(folder)
+    try:
+        return path != folder and os.path.commonpath([path, folder]) == folder
+    except ValueError:  # two drives on Windows
+        return False
+
+
+def _contents(path):
+    """(size, newest, checkouts) for what is at `path`, never through a link: how many bytes its
+    files hold, when anything in it last changed outside git's own folders (a timestamp), and
+    each git checkout in it (a folder holding a .git), it included."""
+    size, newest, checkouts, todo = 0, 0.0, [], [(path, False)]
+    while todo:
+        here, in_git = todo.pop()
+        try:
+            info = os.lstat(here)
+        except OSError:
+            continue
+        if not in_git:
+            newest = max(newest, info.st_mtime)
+        if _linked(info) or not stat.S_ISDIR(info.st_mode):
+            size += 0 if _linked(info) else info.st_size
+            continue
+        try:
+            names = os.listdir(here)
+        except OSError:
+            continue
+        if ".git" in names:
+            checkouts.append(here)
+        todo += [(os.path.join(here, name), in_git or name == ".git") for name in names]
+    return size, newest, checkouts
+
+
+def _unsaved(checkout, within=None):
+    """What a git checkout holds that is nowhere else, a phrase each (none when there is nothing
+    to lose): changes not committed, commits no remote has, a stash. With `within` (a path in the
+    checkout, from its top), only the changes there: deleting it leaves the checkout's commits
+    and stashes where they are. It writes nothing, so a listing never makes a clone look recently
+    used. Raises OSError or CalledProcessError when git cannot say."""
+    def git(*args):
+        return subprocess.run(["git", "--no-optional-locks", "-C", checkout, *args],
+                              capture_output=True, text=True, check=True).stdout.strip()
+    found = []
+    changed = git("status", "--porcelain", *(["--", within] if within else [])).splitlines()
+    if changed:
+        found.append(f"{len(changed)} change(s) not committed")
+    if within:
+        return found
+    head = subprocess.run(["git", "-C", checkout, "rev-parse", "--verify", "-q", "HEAD"],
+                          capture_output=True).returncode == 0
+    ahead = git("rev-list", "--count", *(["HEAD"] if head else []), "--branches", "--not",
+                "--remotes")
+    if ahead not in ("", "0"):
+        found.append(f"{ahead} commit(s) no remote has")
+    if git("stash", "list"):
+        found.append("a stash")
+    return found
+
+
+def _human(size):
+    """A size as people read it: 1 byte, 512 bytes, 3.4 MB."""
+    for unit in ("bytes", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            return (f"{size} byte{'' if size == 1 else 's'}" if unit == "bytes"
+                    else f"{size:.1f} {unit}")
+        size /= 1024
+
+
+def _ago(timestamp, now):
+    """How long before `now` a timestamp is, in its largest whole unit: "3 days ago"."""
+    seconds = max(0.0, now - timestamp)
+    for unit, length in (("day", 86400), ("hour", 3600), ("minute", 60)):
+        if seconds >= length:
+            count = int(seconds // length)
+            return f"{count} {unit}{'' if count == 1 else 's'} ago"
+    return "just now"
+
+
+def _remove(path):
+    """Delete what is at `path`: a link alone, never what it points at; a file; or a folder and
+    everything in it, git's read-only files included."""
+    if _is_link(path):
+        try:
+            os.unlink(path)
+        except OSError:  # Windows removes a junction, or a link to a folder, as a folder
+            os.rmdir(path)
+    elif os.path.isdir(path):
+        _remove_tree(path)
+    else:
+        try:
+            os.remove(path)
+        except PermissionError:  # read-only, which Windows refuses to delete
+            os.chmod(path, stat.S_IWRITE)
+            os.remove(path)
+
+
+def _git_work(path, checkouts, project, within=False):
+    """A phrase for each of `checkouts` holding git work that is nowhere else, or whose work git
+    cannot tell: none when deleting `path` loses nothing of git's. Each checkout is in `path`, or
+    with `within`, `path` is in it, and only its changes there count, unless `path` is in its
+    .git, which holds all its commits and stashes."""
+    held = []
+    for checkout in checkouts:
+        part = os.path.relpath(path, checkout).replace(os.sep, "/") if within else None
+        where = "" if checkout == path else (
+            " in " + os.path.relpath(checkout, project).replace(os.sep, "/"))
+        try:
+            found = _unsaved(checkout, None if part is None or part.split("/")[0] == ".git"
+                             else part)
+        except (OSError, subprocess.CalledProcessError) as error:
+            said = (getattr(error, "stderr", "") or str(error)).strip().splitlines()
+            held.append(f"what git cannot tell{where} ({said[-1] if said else 'git failed'})")
+            continue
+        if found:
+            held.append(", ".join(found) + where)
+    return held
+
+
+def _checkouts_around(path, scratch):
+    """Each git checkout `path` is in, up to `scratch` (a clone in scratch/, say)."""
+    found, folder = [], os.path.dirname(path)
+    while _inside(folder, scratch) or os.path.normcase(folder) == os.path.normcase(scratch):
+        if os.path.lexists(os.path.join(folder, ".git")):
+            found.append(folder)
+        folder = os.path.dirname(folder)
+    return found
+
+
+def scratch_contents(project):
+    """A line for each thing in the project's scratch/: its size, when it last changed, and the
+    git work in it that is nowhere else. Changes nothing."""
+    root = os.path.realpath(project)
+    scratch = os.path.join(root, SCRATCH)
+    names = sorted(os.listdir(scratch)) if os.path.isdir(scratch) else []
+    if not names:
+        return [f"{SCRATCH}/ holds nothing"]
+    lines, total, now = [], 0, time.time()
+    for name in names:
+        path = os.path.join(scratch, name)
+        if _is_link(path):
+            lines.append(f"{SCRATCH}/{name}: a link, to {shown(os.path.realpath(path))} (clean "
+                         "removes the link alone)")
+            continue
+        size, newest, checkouts = _contents(path)
+        total += size
+        held = _git_work(path, checkouts, root)
+        git = ("; git work nowhere else: " + "; ".join(held) if held
+               else "; git: all on a remote" if checkouts else "")
+        lines.append(f"{SCRATCH}/{name}: {_human(size)}, last changed {_ago(newest, now)}{git}")
+    lines.append(f"{len(names)} thing(s), {_human(total)}. Delete what is yours and done with "
+                 f"(RULES.md, *Cleaning up*): python scripts/agent_kit.py clean {SCRATCH}/<name>")
+    return lines
+
+
+def clean(project, paths=()):
+    """Throwaway work in the project's scratch/ (RULES.md, *Cleaning up*): with no path, what it
+    holds (scratch_contents), changing nothing; with paths, each one deleted, unless it is
+    outside scratch/ (or scratch/ itself), git tracks it, or it holds git work that is nowhere
+    else. A link goes alone, never what it points at. (lines, problems): what was removed, and
+    each path kept, with why."""
+    root = os.path.realpath(project)
+    scratch = os.path.join(root, SCRATCH)
+    if _is_link(scratch):
+        return [], [f"{SCRATCH}/ is a link, to {os.path.realpath(scratch)}: clean deletes only in "
+                    "a folder of the project's own"]
+    if not paths:
+        return scratch_contents(project), []
+    lines, problems, freed = [], [], 0
+    for name in paths:
+        given = os.path.abspath(os.path.join(root, name))
+        # The folder it is in, through any link, and the name itself as it is: a link is a name.
+        target = os.path.join(os.path.realpath(os.path.dirname(given)), os.path.basename(given))
+        named = name.replace(os.sep, "/")
+        if not _inside(target, scratch):
+            problems.append(f"{named}: kept, since it is not in {SCRATCH}/, the one place clean "
+                            "deletes: remove it with the tool that made it, or ask the owner")
+            continue
+        if not os.path.lexists(target):
+            problems.append(f"{named}: nothing there")
+            continue
+        try:
+            tracked = _git(root, "ls-files", "--",
+                           os.path.relpath(target, root).replace(os.sep, "/")).splitlines()
+        except (OSError, subprocess.CalledProcessError):
+            tracked = []  # not a repository, or no git: nothing is tracked
+        if tracked:
+            problems.append(f"{named}: kept, since git tracks {tracked[0]}"
+                            f"{' and more' if len(tracked) > 1 else ''} in it, and {SCRATCH}/ is "
+                            "never committed (RULES.md, *scratch/*): ask the owner")
+            continue
+        size, checkouts = 0, []
+        if not _is_link(target):
+            size, _, checkouts = _contents(target)
+        held = (_git_work(target, checkouts, root)
+                + _git_work(target, _checkouts_around(target, scratch), root, within=True))
+        if held:
+            problems.append(f"{named}: kept, since deleting it could lose git work that is "
+                            f"nowhere else: {'; '.join(held)}. Push or save it first, or ask the "
+                            "owner")
+            continue
+        try:
+            _remove(target)
+        except OSError as error:
+            problems.append(f"{named}: not all deleted ({error.strerror or error}): a program "
+                            "may still be using it. Stop it, then clean again")
+            continue
+        freed += size
+        lines.append(f"removed {named} ({_human(size)})")
+    if lines:
+        lines.append(f"{_human(freed)} freed")
+    return lines, problems
 
 
 def fetch_kit(repository, into):
@@ -1374,8 +2045,10 @@ def _kind(rel):
         return "the general rules"
     if rel.startswith(CLAUDE_HOOKS + "/"):
         return "Claude Code's hooks"
-    if rel == ".claude/settings.json":
+    if rel in (".claude/settings.json", ".claude/settings.local.json", LOCAL_RECORD):
         return "Claude Code's settings"
+    if any(rel.startswith(folder + "/") for folder in SKILL_FOLDERS):
+        return "the prompt skill"
     return rel
 
 
@@ -1397,7 +2070,7 @@ def outdated(project, fetch=None):
         except OSError as error:
             return "unknown", f"could not fetch {repository}: {error}", []
         kit = clone if folder == "." else os.path.join(clone, *folder.split("/"))
-        run = _install(project, kit, _Run(dry=True))
+        run = _install(project, kit, _Run(dry=True), has_local_setup(project))
     except SystemExit as refusal:
         return "unknown", str(refusal), []
     finally:
@@ -1433,9 +2106,16 @@ def main(argv=None):
         sys.stdout.reconfigure(errors="replace")
     parser = argparse.ArgumentParser(prog="agent_kit.py", description=__doc__.split("\n", 1)[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    put = commands.add_parser("install", help="put the general rules and hooks into a project, "
-                                              "or bring them up to date")
+    put = commands.add_parser("install", help="put the general rules into a project, and the kit's "
+                                              "setup for this computer's assistants, or bring "
+                                              "them up to date")
     put.add_argument("project")
+    put.add_argument("--rules-only", action="store_true",
+                     help="the project's part alone (the rules, the script and its record): none "
+                          "of the kit's setup for this computer's assistants")
+    put.add_argument("--any-branch", action="store_true",
+                     help="install from a kit clone on another branch, or with changes not "
+                          "committed (what the owner has not merged), all the same")
     mirror = commands.add_parser("sync", help="make CLAUDE.md and GEMINI.md say what AGENTS.md "
                                               "says")
     mirror.add_argument("--project", default=".")
@@ -1463,7 +2143,37 @@ def main(argv=None):
                                                 "that hold one of its project's words")
     harvest.add_argument("words", nargs="+", metavar="WORD")
     harvest.add_argument("--base", default="main", help="what the harvest's branch started from")
+    away = commands.add_parser("untrack", help="stop committing each person's own assistant setup "
+                                               "from now on: list it, or with --yes keep it out "
+                                               "of git, every file staying on this computer")
+    away.add_argument("--project", default=".")
+    away.add_argument("--yes", action="store_true", help="do it: the owner has said yes")
+    sweep = commands.add_parser("clean", help="the throwaway work in the project's scratch/: list "
+                                              "it, or delete what is named there, keeping any git "
+                                              "work that is nowhere else")
+    sweep.add_argument("paths", nargs="*", metavar="PATH",
+                       help="what to delete, from the project's root: scratch/<name>")
+    sweep.add_argument("--project", default=".")
     args = parser.parse_args(argv)
+    if args.command == "clean":
+        lines, problems = clean(args.project, args.paths)
+        for line in lines + problems:
+            print(line)
+        return 1 if problems else 0
+    if args.command == "untrack":
+        if not args.yes:
+            notes = committed_setup_notes(args.project)
+            print(notes[0] + " Run it again with --yes once the owner has said yes." if notes
+                  else "Nothing of anyone's own assistant setup is committed here.")
+            return 1 if notes else 0
+        try:
+            lines = untrack(args.project)
+        except (OSError, subprocess.CalledProcessError) as error:
+            print(f"Not done: git said {getattr(error, 'stderr', '') or error}")
+            return 1
+        for line in lines:
+            print(line)
+        return 0
     if args.command == "outdated":
         status, summary, lines = outdated(args.project)
         repository, folder = _recorded_source(args.project)
@@ -1505,7 +2215,11 @@ def main(argv=None):
         return 1 if any(level == "fix" for level, _ in found) else 0
     if args.command == "install":
         kit = os.path.dirname(os.path.abspath(__file__))
-        for line in install(args.project, kit):
+        problem = unmerged(kit, args.project)
+        if problem and not args.any_branch:
+            print(f"Not installed: {problem}. To install it all the same, add --any-branch.")
+            return 1
+        for line in install(args.project, kit, local=not args.rules_only):
             print(line)
         merge = os.path.join(kit, "MERGE.md")
         try:
@@ -1523,6 +2237,8 @@ def main(argv=None):
     problems = check(args.project, args.doc, args.history)
     for line in problems:
         print(line)
+    for line in committed_setup_notes(args.project):  # the owner's to decide: never a failure
+        print(f"note: {line}")
     print(f"agent kit: {len(problems)} problem(s)" if problems else "agent kit: all good")
     return 1 if problems else 0
 

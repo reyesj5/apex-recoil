@@ -142,3 +142,8 @@ Thumbs.db
 .claude/settings.local.json
 .claude/worktrees/
 **/graphify/SKILL.md.bak
+.claude/agent-kit.json
+.claude/hooks/agent-kit/
+.claude/skills/prompt/
+.agents/rules/agent-kit.md
+.agents/skills/prompt/

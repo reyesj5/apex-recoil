@@ -69,7 +69,7 @@ Each exception names the general rule it overrides.
 - **From the game's files, numbers only** (owner, 2026-11-04: "We don't need to extract any other files, or game assets."). No art or sounds come from them, the game's folder is only ever read, with the game closed, and nothing read from it is committed except the numbers the trainer needs ([roadmap](docs/roadmap.md), M12).
 - **Both .gitignore files.** Temporary files, test outputs, trial JSONs, session recordings and cache folders that a change generates are gitignored in `.gitignore` and in `processing/.gitignore`.
 
-<!-- BEGIN:agent-rules from github.com/SphyrLabs/llm-workflow/agent-kit, sha256:916c3e16dc29. Change them there, never here: an update replaces everything up to the END marker. -->
+<!-- BEGIN:agent-rules from github.com/SphyrLabs/llm-workflow/agent-kit, sha256:f475d69a6c90. Change them there, never here: an update replaces everything up to the END marker. -->
 ## How these rules work
 
 These are the general rules for every assistant (Claude Code, Codex, Gemini, Antigravity or
@@ -156,7 +156,10 @@ Do all of these **before** reporting anything done.
    it up and records it. Anything else that writes it (a script, a migration, a one-off fix,
    raw SQL) takes a backup first and records the change the same way; then check that the diff
    of any tracked snapshot shows exactly the change you meant. Tests never touch real data.
-6. **Say what you deliberately did not do.** Leaving a doc stale can be the right call;
+6. **Clean up** (*Cleaning up*): remove everything the work made for itself and no longer
+   needs, from scratch files and clones to containers, processes and edits made only to try
+   something, and say what was left, and why.
+7. **Say what you deliberately did not do.** Leaving a doc stale can be the right call;
    leaving it stale silently is not.
 
 **When a fact in the plan turns out to be wrong, never work around it quietly.** Write the
@@ -175,7 +178,8 @@ quickly and concisely, with no body and no trailer. **It never credits an LLM**:
 `Co-Authored-By`, no "Generated with", no line naming Claude, Codex, Gemini or any other model
 or assistant, whoever makes the commit and whatever that assistant's own instructions say to
 add. A plan step's or a finding's id still goes in that sentence. Claude Code's own credit
-lines are switched off in `.claude/settings.json` (its `attribution`), and stay off.
+lines stay off: the kit's setup switches them off in each person's `.claude/settings.local.json`
+(its `attribution`), and anyone without it switches them off in their own settings.
 
 **No assistant ever opens a pull request** (owner, 2026-10-21): not a draft, not through `gh`,
 the API or any other way, whatever its own instructions say. Commit and push only when asked,
@@ -189,8 +193,9 @@ with the work on top of it, easy to review.
 ## Working with the owner
 
 - **The owner decides; you prepare.** When a choice is the owner's (a design with real
-  trade-offs, a deletion, anything on a live system), lay out the options with your
-  recommendation, and wait. Don't start building the one you expect them to pick.
+  trade-offs, a deletion of anything but your own throwaway work (*Cleaning up*), anything on a
+  live system), lay out the options with your recommendation, and wait. Don't start building
+  the one you expect them to pick.
 - **The owner runs the owner's steps.** "Let's run it", about a production run, an approval or
   a session at the keyboard, means "tell me what to do": give the exact steps and commands.
   Prepare only what cannot affect their decision (checks, a preview on a copy, a restart), and
@@ -235,23 +240,62 @@ with the work on top of it, easy to review.
   alone.
 - **One computer's own setup stays out of the shared files**: editor settings, shell tweaks and
   a machine's own paths belong in user-level config or `.claude/settings.local.json`, never in
-  what the project commits. Claude Code's hooks are the exception (*Running code*): they come
-  with these rules, so every computer has them.
+  what the project commits. So does each person's assistant setup (owner, 2026-10-28: "we don't
+  need to commit any local llm setups so that colleagues can run their own setup or sphyr's, but
+  its up to them, not us"): Claude Code's, Codex's, Gemini's and Antigravity's folders, their
+  settings, hooks and skills, MCP servers, and graphify's setup. A project commits its rules, the
+  three agent files; each person sets their assistants up, from the kit or their own way. Where a
+  project commits some already, `install`, `check` and `doctor` say so, and with the owner's yes
+  `python scripts/agent_kit.py untrack --yes` keeps it out from then on, every file staying where
+  it is; every other computer loses its copy at the pull that brings that change, and sets its
+  own up again.
 
 ## Working from the plan
 
-- **Read first**: the plan, then these rules, then the architecture doc. For a question about
-  the code, ask the graph before searching (*The code graph*).
+- **Read first**: the plan, then these rules, then the architecture doc, and before building
+  anything people see, its design system and mockup (*Working from the design*). For a question
+  about the code, ask the graph before searching (*The code graph*).
 - **One phase at a time, in order.** Don't start a phase until everything it depends on is done.
 - **Start a phase with a short plan**: the goal, the files you will create or change, and the
   prerequisites you are relying on. A prerequisite only the owner can confirm, not yet
   confirmed, is a stop: ask.
 - **A detail marked unconfirmed is confirmed before it is built on**: in a recording, a sandbox
   or the vendor's docs, with the result written in the corrections doc.
-- **Keep the plan true as you go**: tick the tracker; mark what is built inside the phase, and
-  what is left; strike through a prerequisite or a decision once it is answered, with the answer
-  beside it; and add each follow-up or edge case you find to the phase it belongs to, never only
-  to your report.
+- **Keep the plan true as you go**: tick the tracker only once the step's checks have run and
+  every one passes; mark what is built inside the phase, and what is left; strike through a
+  prerequisite or a decision once it is answered, with the answer beside it; and add each
+  follow-up or edge case you find to the phase it belongs to, never only to your report.
+
+## Working from the design
+
+When the project has anything people see (a screen, a page, an email, a document or report it
+makes):
+
+- **Build what people see from a vetted design system and an approved mockup** (owner,
+  2026-10-31: "any work, especially for UIs, should be derived from a vetted design system and
+  mock ups first"). *Where things are kept* names both, with the version the owner approved.
+  Projects keep them as Claude artifacts: a Design System artifact, and Design artifacts for
+  the mockups (owner, 2026-10-31: "Projects will be using claude artifacts for these, but it
+  can also be generalized"); a project on another tool names that instead.
+- **No design system or no mockup is a stop.** Ask the owner to point to one or to have one made
+  (the design system first, then the mockup from it), and build nothing people see until the
+  owner approves it. Never invent a look in its place.
+- **Design system, then mockup, then code.** A new screen, or a change to how one looks or
+  works, is mocked up and approved before it is built. Where the code must differ from its
+  mockup, the mockup changes first, with the owner's yes; a fix that brings the code back to its
+  mockup needs none.
+- **A disagreement with the design system is the owner's call.** Where a mockup, a written
+  description or the code says something different from the design system, show the owner both
+  and ask which holds, then bring the others in line with the answer. A change to the design
+  system itself is the owner's decision.
+- **Only the design system's values and parts.** Colours, type, spacing, radii and motion come
+  from its tokens, components from its library: nothing typed into a component, no second copy
+  of a part it has. What it lacks is added to it first (*One owner for every fact*), and a check
+  fails on a raw value in a component (*A convention is a check*).
+- **Compare what was built with its mockup** before reporting it done: screenshots side by side,
+  at every size and theme the mockup shows.
+- **Every assistant can read them**: a design only one assistant can open (a Claude artifact, a
+  design app) has its snapshot in `docs/` (*Docs*).
 
 ## Running code
 
@@ -263,7 +307,8 @@ with the work on top of it, easy to review.
   or a home folder, in a committed file. Run a tool by its command (`graphify`, `node`), reach the
   project's files by paths relative to its root, and write the home folder as `~`; what works only
   with one computer's path goes in that computer's own settings (`.claude/settings.local.json`).
-  `python scripts/agent_kit.py check` fails on one in the agent files or an assistant's settings.
+  `python scripts/agent_kit.py check` fails on one in the agent files, or in an assistant's
+  settings that a project still commits.
 - **Until it has a sign-in, a server listens on 127.0.0.1 only**, and refuses a request
   addressed to any other host.
 - **Wait on a condition, never a fixed sleep**: poll for the state you need, with a timeout. A
@@ -275,15 +320,63 @@ with the work on top of it, easy to review.
   way in takes the same lock before it starts, and a new way in takes it too.
 - **No destructive command without a backup**: a restore, a migration, a drop, a mass delete.
   Never point a test, a script or a demo at real data unless that is its job.
-- **Claude Code's hooks come with these rules** (owner, 2026-10-23), in `.claude/settings.json`
-  and `.claude/hooks/agent-kit/`, both committed so every computer has them. A guard refuses a
+- **Claude Code's hooks come with the kit** (owner, 2026-10-23), for each person who takes them
+  (owner, 2026-10-28: "its up to them, not us"): the kit's install puts them in that computer's
+  `.claude/settings.local.json` and `.claude/hooks/agent-kit/`, never committed, and
+  `--rules-only` leaves them out. A guard refuses a
   command that destroys what cannot be put back (a recursive or forced delete, a force push, a
   hard reset, a dropped table) and anything that would open a pull request; a second keeps
   graphify's LLM work on Gemini, and a check at the start of a session warns when this computer
   is not set up for it (*The code graph*); every shell command
   and its output is logged in `.claude/logs/`, which is gitignored because output can hold
   secrets; and a notification and a sound say when a turn ends or a permission is needed. **A
-  refused command is never worked around**: find a way that loses nothing, or ask the owner.
+  refused command is never worked around**: find a way that loses nothing (a folder in
+  `scratch/` goes with `clean`, in *Cleaning up*), or ask the owner.
+
+## Cleaning up
+
+**Leave nothing behind** (owner, 2026-10-31: "we don't leave lingering garbage taking up space
+in the system. Make sure we do garbage collection"). What a response makes only for its own work
+goes before it reports, once nothing needs it any more: a file or a folder, a clone, an
+environment, a download, a screenshot or another image, a container with its image, volume and
+network, a process or a server, a worktree, a branch, an edit made only to try something. The
+computer is left as it was found, with only the work that was asked for added.
+
+- **Make throwaway work where it is easy to find and remove**: in `scratch/` (*scratch/*), in
+  the assistant's own folder for the session, or where the tool that makes it removes it too (a
+  temporary folder its code deletes, a test's temporary folder, a container run with `--rm`),
+  never loose in the project, the home folder or the system's temporary folder. Before making
+  what lives anywhere else (a container, an image, a server), note what is there already, so
+  that only what you added goes.
+- **Remove each thing with the tool that made it, by name**: a container with `docker stop`,
+  then `docker rm`; an image, a volume or a network with `docker image rm`, `docker volume rm` or
+  `docker network rm`; a worktree with `git worktree remove`; a branch with `git branch -d`; a
+  process by its id; a file by its name. A folder in `scratch/` goes with
+  `python scripts/agent_kit.py clean scratch/<name>`, which deletes nothing outside `scratch/`,
+  never follows a link out of it, and keeps, saying why, whatever git tracks and whatever holds
+  git work that is nowhere else (changes not committed, commits no remote has, a stash). It is
+  the one way to delete a folder there: the guard refuses a recursive delete, and a refused
+  command is never worked around (*Running code*).
+- **Undo every edit made only to try something**: a debug print, a skipped test, a loosened
+  setting, a commented-out check. `git status` and `git diff` show nothing but the change itself.
+- **What is not yours, or not done with, stays**: what the owner asked for or keeps (the work
+  itself, the project's own generated output, its dependencies and the services it runs on),
+  what was there before you, what another session may be using, and whatever holds work saved
+  nowhere else (a branch not pushed, a clone with changes, the only copy of something). Never a
+  blanket prune (`docker system prune`, `docker volume prune`, emptying a temporary folder): it
+  takes what is not yours too, so it waits for the owner's yes. What stays because the work goes
+  on is named in the report, and goes once that work is done.
+- **Collect the garbage once a session**, before its first report.
+  `python scripts/agent_kit.py clean` lists what `scratch/` holds, each thing with its size, when
+  it last changed and any git work in it that is nowhere else, changing nothing. Remove what this
+  session made and is done with, and what earlier sessions left that can be made again (a clone
+  with nothing unpushed, an environment, a cache, a build) and has not changed for a day, since
+  a session still running may be using what has. List the rest for the owner, with its size: a
+  capture, a log or recovered data may be the only copy of something, so it goes only with their
+  yes, and what they keep moves out of `scratch/`, which keeps nothing for good.
+- **Report what was cleaned, and what was left**: one line for what was removed and the space
+  freed (`clean` says it), and each thing left, with why. Say nothing was left only once `clean`,
+  `git status` and the tools that made things (`docker ps -a`, the running processes) show it.
 
 ## The code graph
 
@@ -310,16 +403,17 @@ When the project uses graphify (`graphify-out/`, `.graphifyignore`):
   it, and goes on.
 - **graphify belongs to the computer, not the project**: installed once per computer as a tool
   with its Gemini support (`pipx install "graphifyy[gemini]"`), never into a project's own
-  environment, where it would run instead. Its setup for each assistant is installed with
-  `--project`, so the hooks a project commits name plain `graphify`, never one computer's path.
-- **`graphify-out/` is generated and gitignored**, and `.graphifyignore` keeps dependencies,
-  builds and `scratch/` out of the graph.
+  environment, where it would run instead. Its setup for each assistant is each person's too
+  (*Working with the owner*): set up on their computer, never committed.
+- **`graphify-out/` is generated and gitignored**, and `.graphifyignore`, which keeps
+  dependencies, builds and `scratch/` out of the graph, is each person's as well.
 
 ## Tests
 
 - **Test first.** A bug or a review finding gets a test that fails on the code as it is and
   passes with the fix, in the suite it belongs to. A finding's id goes in the test's docstring
-  and in the commit message.
+  and in the commit message. New logic that computes or decides (a calculation, an algorithm,
+  a conflict resolver) gets its unit tests before it or with it, never after.
 - **Every test runs in a sandbox of its own**, set up before the code under test is imported:
   every setting the code reads from the environment points at a throwaway or is unset. The
   setup keeps the list of those settings, and a test reads the source and fails when the code
@@ -349,27 +443,49 @@ When the project uses graphify (`graphify-out/`, `.graphifyignore`):
   and what to do instead. A convention kept only in a doc drifts.
 - **Test the check**: a test that guards something (the docs, a contract) has a case proving
   it catches what it is for.
+- **A check every project needs is the kit's** (owner, 2026-10-28: "we want the agent-kit to
+  handle any generalized test and be able to be maintained across repos, not just this one"):
+  that the agent files agree, that the general rules are as installed, that the docs name only
+  what exists, that nothing committed names one computer. `python scripts/agent_kit.py check`
+  checks them, in CI, and a project keeps no copy of its own, which would drift from it. What a
+  project's copy catches that the kit's misses goes into the kit (its `HARVEST.md`), so every
+  project gets it.
 - **A warning fails like an error.** The type checker, the linter and the formatter pass only
   with nothing to report, so a new warning shows the day it appears instead of joining the old
   ones.
 - **CI runs every check, on every operating system the project runs on, and skips none.** A check
   that needs what a computer may lack (a tool, a service, a build) may skip itself on a computer
   without it, saying what it needs; in CI it fails instead, where a skip would pass in silence.
+  A pull request may run only the jobs its changed paths can affect (owner, 2026-10-25: "ci
+  path filters work"), as long as the end-to-end suites and the kit's check run on every pull
+  request and a push to the main branch runs everything. A check runs on one system only where
+  its result cannot differ between systems (a lock's audit) or the other systems' runners
+  cannot host what it needs (Linux containers on a Windows runner), and its doc says which.
 
 ## Data safety
 
 - **Every save leaves a backup and a version.** A bad write is a rollback, never a loss. A
   restore first backs up what it replaces, and leaves the version higher than before.
-- **Commit a text snapshot, never the binary store.** When real data lives in a database, the
-  repository tracks a text export of it as the recovery point, refreshed by every save, and
-  only the real data writes it, never a test's throwaway.
-- **A migration builds the new store beside the old one, verifies it, then swaps it in.** One
-  that fails leaves the old store as it was. A migration that must not change values refuses to
-  write if any would move. Once it has run everywhere it is deleted (git history keeps it), and
-  loading the old shape fails with a message saying how to restore it.
+- **Never commit a binary database, or live customer data, to git.** Back up live databases
+  outside git with point-in-time recovery and encrypted dumps, and verify restores
+  automatically (*Where things are kept* names how). Only when a local tool versions its own
+  non-sensitive dataset in git should it track a text export instead of the binary database
+  file, refreshed by every save and never written by a test's throwaway. An edit made to that
+  export outside the program (a pull, a hand edit, another tool) becomes a new version before
+  the program's next read or write, never overwritten by it, so putting back an older export
+  brings that version back.
+- **A failed migration leaves the database untouched.** Run schema migrations inside a
+  transaction (or verify a copy before swapping if the engine cannot), refuse to write if
+  values that must not move would change, and keep sequential schema migrations in git so CI
+  and fresh environments can migrate from scratch; delete only one-off data-conversion scripts
+  once they have run everywhere (git history keeps them), with loading the old shape failing
+  with a message saying how to restore it.
 - **Validate every write, and refuse rather than drop.** A write with a broken reference or an
   impossible value is refused with a clear message, never saved with the bad part silently
   dropped or coerced.
+- **A server trusts nothing a client says about who it is.** Every read and write of shared
+  data is scoped to the user a verified token names, enforced where the data lives (row-level
+  security) or by the server, never by the client's own checks.
 - **Read, change and save under one lock** whenever someone else may write in between, so no
   save is lost.
 - **Never lose an edit to a concurrent save.** A save made against an older version is merged
@@ -464,7 +580,8 @@ a point of sale, a third-party service):
   explicitly overridden, so they agree without anyone keeping copies in step.
 - **Variants are data, not code paths.** Channels, providers and plans are entries in a registry
   the code reads: adding one is an entry, never a branch or a schema change. A generated copy is
-  made by one command, and a test fails while it is stale.
+  made by one command, and a test fails while it is stale. It is never edited by hand, and it is
+  gitignored unless a tool reads it before any build could make it.
 - **Reference by id; names are labels.** Records point at each other by id, so a rename cannot
   break a link; order is an explicit field; anything derivable is derived, never stored twice
   where the copies could disagree. A retired field stays blank, and no new code uses it.
@@ -482,6 +599,9 @@ a point of sale, a third-party service):
   from its environment, with its type and when it is required; a missing or malformed one stops
   the start with a message naming it, never a failure at the first request that needs it. The
   check only gates the start: each setting is still read where it is used.
+- **Nothing async is left unwatched.** Every async call is awaited, returned, or given a handler
+  that reports its failure; background work most of all, where a failure no one handles
+  disappears. Where the linter can enforce it, it does (*A convention is a check*).
 - **Compare paths safely**: on Windows, two paths on different drives make relative-path helpers
   raise; catch it, and normalise separators.
 - **Shared runners, not copies.** When variants share a workflow, it is written once and each
@@ -495,6 +615,9 @@ a point of sale, a third-party service):
 - **Leave the comments a change is not about.** Never delete or rewrite a comment, a docstring
   or a licence header unrelated to the change. One the change makes wrong is corrected in the
   same change, as a doc would be (*Finishing a change*).
+- **Code from another project keeps what its licence asks for**: every file that holds it keeps
+  its copyright header, a file changed from it says it was modified, and the project keeps the
+  licence's notice file, wherever the licence asks for them (Apache-2.0 does).
 
 ## Screens the owner uses
 
@@ -512,6 +635,10 @@ When the project has a UI:
   summary and a filter for them.
 - **Say what is needed, where it is needed.** A warning that something is missing appears only
   where it is needed, and the fix is offered where the problem is shown.
+- **Every setting on every device** (owner, 2026-11-01: "any and all settings in phone and desk
+  should be in both somewhere that makes sense for each device"). A setting a phone offers, a
+  desk offers too, and the other way round, each where it fits that device; only a setting that
+  means nothing on the other device stays on one. A screen is not done until both have it.
 - **Poll one request at a time**, and drop a reply whose question is no longer asked.
 - **A report is a page, not terminal output**: searchable, the truth beside what was found. A
   page that carries real data is self-contained and uploaded nowhere.
@@ -520,12 +647,15 @@ When the project has a UI:
 
 - **Install from the lock, as it is**: a lock with hashes, so the same packages install
   everywhere. To move a version, change the requirement, make the lock again with its own
-  command, run the checks, and commit them together.
+  command, run the checks, and commit them together. That command is written at the head of
+  both the requirements and the lock.
 - **One package manager per part, its version pinned and enforced**, so each part has one lock:
   any other manager, or another version, refuses to run there rather than write a lock of its
   own. A dependency runs an install script only if it is allowed by name.
 - **CI pins every action to its release's commit**, runs every check, and audits every lock for
-  known vulnerabilities on each change and weekly.
+  known vulnerabilities on each change and weekly. A fix a dependency will not take up (it pins
+  the vulnerable version) is an override in the package manager's config, kept only once the
+  build is proven unchanged by it.
 - **Follow CI with the GitHub CLI** (owner, 2026-10-24: "so llms can see the ci notes/status"),
   where it runs on GitHub: after a push, find its run (`gh run list --branch <branch>`), look
   again until it ends (`gh run view <id>`), read a failed job's log
@@ -547,8 +677,11 @@ When the project has a UI:
   requires it there.
 - **The plan has one Progress tracker, at its top**, and it is the only place progress is
   tracked: a row per phase, a box per step, each step with an id that tests, commits and docs
-  can name. Its banner lists every correction.
-- **The corrections doc outranks the plan**: what turned out to be true is written there.
+  can name, and a new step takes the next id in its phase. A part big enough for a plan of its
+  own keeps its scope and decisions there and tracks nothing: its steps are boxes in the one
+  tracker. Its banner lists every correction.
+- **The corrections doc outranks the plan**: what turned out to be true is written there, each
+  correction numbered in order (C1, C2 and on), with its row in the plan's banner.
 - **What an area has taught is written down for the next agent.** Work on an area that runs over
   many sessions keeps one notes doc for it in `docs/`, named in the agent files: the conventions
   to keep, and the pitfalls already paid for, each with what works instead. Read it before
@@ -577,7 +710,8 @@ runner, a type checker) leaves it alone too (owner, 2026-10-24: "Yes add the lin
 ignore"): add `scratch/` to its ignores the same way, or its checks read the kit's clone and
 other throwaway work as the project's. `python scripts/agent_kit.py check` fails on an ESLint
 config that would. Its contents are disposable, and **nothing may depend on it**: no test, no
-script, no build step.
+script, no build step. What you put there goes once you are done with it, and what earlier
+sessions left is collected (*Cleaning up*): nothing is kept there for good.
 <!-- END:agent-rules -->
 
 ## graphify
