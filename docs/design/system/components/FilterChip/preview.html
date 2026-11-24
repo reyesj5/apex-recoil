@@ -1,0 +1,30 @@
+<!-- @dsCard group="Selection" height=190 subtitle="Weapon class filter with counts; touch chips on phones" -->
+<div class="sd-preview">
+  <div role="radiogroup" aria-label="Weapon class" class="sd-chips" style="max-width: 340px;">
+    <button type="button" class="sd-chip" role="radio" aria-checked="false">All <span class="sd-chip__count">31</span></button>
+    <button type="button" class="sd-chip" role="radio" aria-checked="true">AR <span class="sd-chip__count">5</span></button>
+    <button type="button" class="sd-chip" role="radio" aria-checked="false">SMG <span class="sd-chip__count">5</span></button>
+    <button type="button" class="sd-chip" role="radio" aria-checked="false">LMG <span class="sd-chip__count">4</span></button>
+    <button type="button" class="sd-chip" role="radio" aria-checked="false">Marksman <span class="sd-chip__count">4</span></button>
+    <button type="button" class="sd-chip" role="radio" aria-checked="false">Sniper <span class="sd-chip__count">4</span></button>
+    <button type="button" class="sd-chip" role="radio" aria-checked="false">Shotgun <span class="sd-chip__count">5</span></button>
+    <button type="button" class="sd-chip" role="radio" aria-checked="false">Pistol <span class="sd-chip__count">4</span></button>
+  </div>
+  <div role="radiogroup" aria-label="Weapon" class="sd-chips sd-chips--scroll" style="max-width: 358px;">
+    <button type="button" class="sd-chip sd-chip--touch" role="radio" aria-checked="true">R-301</button>
+    <button type="button" class="sd-chip sd-chip--touch" role="radio" aria-checked="false">R-99</button>
+    <button type="button" class="sd-chip sd-chip--touch" role="radio" aria-checked="false">Flatline</button>
+    <button type="button" class="sd-chip sd-chip--touch" role="radio" aria-checked="false">Volt</button>
+    <button type="button" class="sd-chip sd-chip--touch" role="radio" aria-checked="false">Spitfire</button>
+    <button type="button" class="sd-chip sd-chip--touch" role="radio" aria-checked="false">C.A.R.</button>
+  </div>
+</div>
+<script>
+document.querySelectorAll('[role="radiogroup"]').forEach(function (group) {
+  group.addEventListener('click', function (event) {
+    var chip = event.target.closest('button');
+    if (!chip || !group.contains(chip)) return;
+    group.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-checked', String(b === chip)); });
+  });
+});
+</script>

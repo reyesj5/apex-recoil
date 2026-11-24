@@ -30,7 +30,7 @@ def test_vang():
 
 def test_angular_pixel_distance_ground_truth():
     """
-    Test against exact outputs from processing/recoils.ipynb:
+    Test against exact outputs from the original project's recoils.ipynb notebook (in git's history):
     print(np.round(points(-3.16, 134.51, -13.95, 134.77), 2)) -> 490.59
     print(np.round(points(-16.09, -167.97, -5.71, -169.34), 2)) -> 475.75
     print(np.round(points(-18.22, -173.22, -6.04, -174.02), 2)) -> 554.77

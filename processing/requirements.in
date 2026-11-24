@@ -1,0 +1,10 @@
+# The pipeline's requirements. requirements.txt is their lock, every package pinned with its hashes, made
+# from this file by uv in processing/ (README.md, Dependencies):
+#   uv pip compile requirements.in --universal --generate-hashes --python-version 3.12 -o requirements.txt
+numpy>=1.24.0
+scipy>=1.10.0
+opencv-python>=4.8.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+tabulate>=0.9.0
+pytest>=7.0.0

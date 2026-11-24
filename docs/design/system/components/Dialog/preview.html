@@ -1,0 +1,39 @@
+<!-- @dsCard group="Overlays" height=720 subtitle="A confirmation with a footer, and settings with sections" -->
+<div class="sd-preview">
+  <div class="sd-scrim">
+    <section role="dialog" aria-labelledby="weapon-title" aria-describedby="weapon-text" class="sd-dialog sd-dialog--lg">
+      <button type="button" class="sd-dialog__close" aria-label="Close"><svg class="sd-icon sd-icon--16" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+      <div class="sd-dialog__head">
+        <h2 id="weapon-title" class="sd-dialog__title">New weapon</h2>
+        <p id="weapon-text" class="sd-dialog__description">It starts with one shot, four magazines and 600 RPM, and goes to the server with the next Save.</p>
+      </div>
+      <label class="sd-field">Weapon id
+        <input type="text" class="sd-input" value="havoc_turbo" aria-describedby="weapon-hint">
+      </label>
+      <p id="weapon-hint" style="margin: -10px 0 0; font-size: 12px; color: var(--text-muted);">Saved as havoc_turbo.</p>
+      <div class="sd-dialog__footer">
+        <button type="button" class="sd-btn sd-btn--secondary">Cancel</button>
+        <button type="button" class="sd-btn sd-btn--primary">Add weapon</button>
+      </div>
+    </section>
+    <section role="dialog" aria-labelledby="settings-title" aria-describedby="settings-text" class="sd-dialog sd-dialog--roomy">
+      <button type="button" class="sd-dialog__close" aria-label="Close"><svg class="sd-icon sd-icon--16" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+      <div class="sd-dialog__head">
+        <h2 id="settings-title" class="sd-dialog__title">Settings</h2>
+        <p id="settings-text" class="sd-dialog__description">Changes apply at once and stay in this browser.</p>
+      </div>
+      <div class="sd-stack">
+        <h3 class="sd-section-label">Mouse</h3>
+        <div class="sd-fields-2">
+          <label class="sd-field">Sensitivity<input type="number" class="sd-input sd-input--number" value="5" step="0.1"></label>
+          <label class="sd-field">ADS multiplier<input type="number" class="sd-input sd-input--number" value="1" step="0.05"></label>
+        </div>
+        <label class="sd-toggle-row">Invert Y <input type="checkbox" role="switch" class="sd-switch"></label>
+      </div>
+      <div class="sd-stack">
+        <h3 class="sd-section-label">Sound</h3>
+        <label class="sd-toggle-row">Play sounds <input type="checkbox" role="switch" class="sd-switch" checked></label>
+      </div>
+    </section>
+  </div>
+</div>

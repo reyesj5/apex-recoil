@@ -1,0 +1,15 @@
+{
+  // Node-side TypeScript: tool configs and the Playwright end-to-end tests (which also run code in the page).
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["e2e", "vitest.config.mts", "playwright.config.ts"]
+}

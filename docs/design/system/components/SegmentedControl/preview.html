@@ -1,0 +1,40 @@
+<!-- @dsCard group="Selection" height=200 subtitle="Volt on the range and in page headers; neutral for fire mode" -->
+<div class="sd-preview">
+  <div class="sd-row">
+    <div role="radiogroup" aria-label="Mode" class="sd-segmented sd-segmented--floating">
+      <button type="button" class="sd-segmented__item" role="radio" aria-checked="true">Follow path</button>
+      <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">Still target</button>
+      <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">Moving target</button>
+    </div>
+    <div role="radiogroup" aria-label="Show results as" class="sd-segmented sd-segmented--floating">
+      <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">Target</button>
+      <button type="button" class="sd-segmented__item" role="radio" aria-checked="true">Dots</button>
+      <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">Lines</button>
+    </div>
+  </div>
+  <div class="sd-row">
+    <div role="radiogroup" aria-label="Period" class="sd-segmented">
+      <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">7 days</button>
+      <button type="button" class="sd-segmented__item" role="radio" aria-checked="true">30 days</button>
+      <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">All time</button>
+    </div>
+  </div>
+  <div class="sd-panel" style="max-width: 340px;">
+    <div class="sd-toggle-row" style="cursor: default;">
+      <span id="fire-mode-label">Fire mode</span>
+      <div role="radiogroup" aria-labelledby="fire-mode-label" class="sd-segmented sd-segmented--neutral">
+        <button type="button" class="sd-segmented__item" role="radio" aria-checked="true">Auto</button>
+        <button type="button" class="sd-segmented__item" role="radio" aria-checked="false">Single</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.querySelectorAll('[role="radiogroup"]').forEach(function (group) {
+  group.addEventListener('click', function (event) {
+    var item = event.target.closest('button');
+    if (!item || !group.contains(item)) return;
+    group.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-checked', String(b === item)); });
+  });
+});
+</script>

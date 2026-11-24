@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Studio, keyboard shortcuts and a new weapon</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050607}
+*{box-sizing:border-box}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #C5F23A;outline-offset:2px}
+.dialog{position:relative;display:flex;flex-direction:column;gap:16px;padding:24px;border-radius:14px;border:1px solid #343B46;background:#171B21;box-shadow:0 18px 40px rgba(0,0,0,0.45)}
+.dialog-head{display:flex;flex-direction:column;gap:8px}
+.dialog-title{margin:0;font-family:'Chakra Petch',sans-serif;font-size:18px;font-weight:700;line-height:1}
+.dialog-desc{margin:0;font-size:14px;line-height:1.45;color:#848E9B}
+.dialog-close{position:absolute;top:16px;right:16px;width:24px;height:24px;padding:0;border:0;background:transparent;color:#ECEFF3;opacity:0.7;display:flex;align-items:center;justify-content:center}
+.footer{display:flex;justify-content:flex-end;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:38px;padding:0 14px;border-radius:9px;border:1px solid transparent;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer}
+.btn.primary{background:#C5F23A;color:#0A0C0F;font-weight:700}
+.btn.secondary{border-color:#343B46;background:#171B21;color:#ECEFF3}
+kbd{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;line-height:1.3;padding:2px 6px;border-radius:5px;border:1px solid #343B46;color:#A7B0BC;white-space:nowrap}
+</style>
+</helmet>
+<div style="width: 1392px; display: flex; align-items: flex-start; gap: 32px; padding: 40px; background: #050607; color: #ECEFF3; font-family: Inter, system-ui, sans-serif; font-size: 14px;">
+
+  <section class="dialog" role="dialog" aria-labelledby="keys-title" style="width: 768px;">
+    <button type="button" class="dialog-close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+    <div class="dialog-head">
+      <h2 id="keys-title" class="dialog-title">Keyboard shortcuts</h2>
+      <p class="dialog-desc">Every action in the Studio has a key.</p>
+    </div>
+    <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; font-size: 13px;">
+      <sc-for list="{{shortcuts}}" as="s" hint-placeholder-count="16">
+        <div style="display: flex; gap: 12px;">
+          <dt style="display: flex; flex: none; width: 80px; align-items: flex-start; gap: 4px; padding-top: 2px;">
+            <sc-for list="{{s.keys}}" as="k" hint-placeholder-count="2"><kbd>{{k.key}}</kbd></sc-for>
+          </dt>
+          <dd style="margin: 0;">
+            <span style="font-weight: 600;">{{s.action}}</span>
+            <span style="display: block; font-size: 12px; color: #A7B0BC;">{{s.detail}}</span>
+          </dd>
+        </div>
+      </sc-for>
+    </dl>
+    <div class="footer"><button type="button" class="btn primary">Got it</button></div>
+  </section>
+
+  <section class="dialog" role="dialog" aria-labelledby="weapon-title" style="width: 512px;">
+    <button type="button" class="dialog-close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+    <div class="dialog-head">
+      <h2 id="weapon-title" class="dialog-title">New weapon</h2>
+      <p class="dialog-desc">It starts with one shot, four magazines and 600 RPM, and goes to the server with the next Save.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label for="weapon-id" style="font-size: 12px; color: #A7B0BC;">Weapon id</label>
+      <input id="weapon-id" type="text" value="havoc_turbo" aria-describedby="weapon-id-hint" style="height: 38px; padding: 0 12px; border-radius: 9px; border: 1px solid #646D79; background: #0D1014; font-size: 14px;">
+      <p id="weapon-id-hint" style="margin: 0; font-size: 12px; color: #848E9B;">Saved as havoc_turbo.</p>
+    </div>
+    <div class="footer">
+      <button type="button" class="btn secondary">Cancel</button>
+      <button type="button" class="btn primary">Add weapon</button>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1392,"height":668}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // The Studio's shortcuts dialog (client/studio/dialogs.tsx), in its order
+    const shortcuts = [
+      [['Ctrl', 'S'], 'Save spec', "Saves the weapon's pattern and settings."],
+      [['Ctrl', 'Z'], 'Undo', 'Takes back the last change to the pattern.'],
+      [['Ctrl', 'Y'], 'Redo', 'Or Ctrl Shift Z.'],
+      [['V'], 'Select', 'Drag shots to move them; right-click a shot to remove it, middle-click to mark an anchor.'],
+      [['H'], 'Pan', 'Or hold Space, or drag with the right or middle button.'],
+      [['A'], 'Align', 'Drag the whole spray onto the wall decals.'],
+      [['C'], 'Correct shots', 'Click to add a missing shot where it fits the sequence.'],
+      [['F'], 'Fit and center', 'Shows the whole screenshot or pattern.'],
+      [['Wheel'], 'Zoom', 'Zooms around the pointer.'],
+      [['P'], 'Pattern overlay', 'Shows or hides the pattern, to look at the decals.'],
+      [['O'], 'Compare', 'The saved spec against the candidate, shot by shot.'],
+      [['[', ']'], 'Previous and next spray', 'Goes through the screenshots or the analyzed sprays.'],
+      [['M'], 'Capture panel', 'Shows or hides the panel on the left.'],
+      [['E'], 'Inspector', 'Shows or hides the panel on the right.'],
+      [['Space'], 'Snap the wall', 'While a spray is recording, captures the wall at once.'],
+      [['?'], 'Shortcuts', 'Opens this list.']
+    ];
+    return {
+      shortcuts: shortcuts.map((s) => ({ keys: s[0].map((k) => ({ key: k })), action: s[1], detail: s[2] }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  // The server (server/), the API's schemas (shared/) and the Node tests (test/). Node runs the TypeScript
+  // itself by stripping the types, so only erasable syntax is allowed (no enums, namespaces or parameter
+  // properties) and imports name the .ts file. tsc only typechecks (pnpm tsc).
+  "compilerOptions": {
+    "target": "ES2024",
+    "lib": ["ES2024"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["server", "shared", "test"]
+}

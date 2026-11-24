@@ -1,0 +1,43 @@
+<!-- @dsCard height=288 -->
+<div class="sd-preview sd-cover">
+  <style>
+    .sd-cover.sd-preview { position: relative; display: block; width: 960px; height: 288px; padding: 0; overflow: hidden; background: var(--ground); }
+    .sd-cover svg { position: absolute; inset: 0; }
+    .sd-cover .c-volt { fill: var(--volt); }
+    .sd-cover .c-target { fill: var(--target); }
+    .sd-cover .c-tint { fill: var(--text-secondary); }
+    .sd-cover .c-cut { fill: var(--ground); }
+    .sd-cover .r-panel { rx: var(--radius-panel); }
+    .sd-cover .r-card-lg { rx: var(--radius-card-lg); }
+    .sd-cover .r-card { rx: var(--radius-card); }
+    .sd-cover__text { position: absolute; left: 48px; bottom: 40px; max-width: 440px; }
+    .sd-cover__name { font-family: var(--font-display); font-size: 80px; font-weight: 700; line-height: 0.95; color: var(--text); }
+    .sd-cover__tagline { margin-top: 8px; font-size: 14px; color: var(--text-muted); }
+  </style>
+  <svg width="960" height="288" viewBox="0 0 960 288" aria-hidden="true">
+    <!-- blocks: volt 216x264 (radius-panel), target 96x96 (radius-card-lg), text-secondary 168x48 (radius-card); positions on space-24 steps -->
+    <!-- arrangement: one tall volt slab with two satellites to its right; slab bleeds off the bottom, tint off the right edge -->
+    <!-- pattern: literal motif, the spray. The mark is shot dots pulled into one point, so 13 shots of the R-301's climb are cut out of the slab in ground -->
+    <!-- scales: space-24 pitch for blocks; shot diameters space-14, space-12, space-10, space-8, growing toward the start; radii radius-panel, radius-card-lg, radius-card -->
+    <rect class="c-volt r-panel" x="576" y="24" width="216" height="288"></rect>
+    <rect class="c-target r-card-lg" x="816" y="24" width="96" height="96"></rect>
+    <rect class="c-tint r-card" x="816" y="144" width="168" height="48"></rect>
+    <circle class="c-cut" cx="676" cy="266" r="7"></circle>
+    <circle class="c-cut" cx="687" cy="241.8" r="7"></circle>
+    <circle class="c-cut" cx="687" cy="206.6" r="7"></circle>
+    <circle class="c-cut" cx="700.2" cy="184.6" r="6"></circle>
+    <circle class="c-cut" cx="698" cy="158.2" r="6"></circle>
+    <circle class="c-cut" cx="702.4" cy="136.2" r="5"></circle>
+    <circle class="c-cut" cx="700.2" cy="123" r="5"></circle>
+    <circle class="c-cut" cx="704.6" cy="112" r="5"></circle>
+    <circle class="c-cut" cx="720" cy="98.8" r="4"></circle>
+    <circle class="c-cut" cx="733.2" cy="101" r="4"></circle>
+    <circle class="c-cut" cx="737.6" cy="92.2" r="4"></circle>
+    <circle class="c-cut" cx="728.8" cy="76.8" r="4"></circle>
+    <circle class="c-cut" cx="717.8" cy="63.6" r="4"></circle>
+  </svg>
+  <div class="sd-cover__text">
+    <div class="sd-cover__name">Spraydown</div>
+    <div class="sd-cover__tagline">Graphite and volt: a dark range with one bright accent.</div>
+  </div>
+</div>

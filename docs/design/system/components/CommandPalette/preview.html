@@ -1,0 +1,40 @@
+<!-- @dsCard group="Overlays" height=600 subtitle="Weapon search, opened with Ctrl K, and nothing found" -->
+<div class="sd-preview">
+  <div class="sd-scrim">
+    <section role="dialog" aria-label="Search weapons" class="sd-command">
+      <div class="sd-command__input">
+        <svg class="sd-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input type="search" placeholder="Search weapons" aria-label="Search weapons">
+      </div>
+      <div role="listbox" aria-label="Weapons" class="sd-command__list">
+        <div role="group" aria-label="Assault rifle">
+          <div class="sd-command__heading" aria-hidden="true">Assault rifle</div>
+          <div role="option" aria-selected="true" class="sd-command__item">Flatline <span class="sd-command__meta">600 RPM</span></div>
+          <div role="option" aria-selected="false" class="sd-command__item">R-301 <span class="sd-command__meta">810 RPM</span></div>
+          <div role="option" aria-selected="false" class="sd-command__item">HAVOC <span class="sd-command__meta">672 RPM</span></div>
+        </div>
+        <div role="group" aria-label="SMG">
+          <div class="sd-command__heading" aria-hidden="true">SMG</div>
+          <div role="option" aria-selected="false" class="sd-command__item">Alternator <span class="sd-command__meta">600 RPM</span></div>
+          <div role="option" aria-selected="false" class="sd-command__item">R-99 <span class="sd-command__meta">1080 RPM</span></div>
+        </div>
+      </div>
+    </section>
+    <section role="dialog" aria-label="Search weapons, nothing found" class="sd-command">
+      <div class="sd-command__input">
+        <svg class="sd-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input type="search" value="kraber x" aria-label="Search weapons">
+      </div>
+      <p class="sd-command__empty" role="status">No weapon matches.</p>
+    </section>
+  </div>
+</div>
+<script>
+document.querySelectorAll('[role="listbox"]').forEach(function (list) {
+  list.addEventListener('mousemove', function (event) {
+    var item = event.target.closest('[role="option"]');
+    if (!item) return;
+    list.querySelectorAll('[role="option"]').forEach(function (o) { o.setAttribute('aria-selected', String(o === item)); });
+  });
+});
+</script>

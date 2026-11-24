@@ -1,0 +1,30 @@
+<!-- @dsCard group="Selection" height=360 subtitle="Loadout grid and the selected weapon (art left out: crosshair placeholder)" -->
+<div class="sd-preview">
+  <div class="sd-stack" style="max-width: 308px;">
+    <div class="sd-weapon-card">
+      <div class="sd-weapon-card__art"><svg class="sd-weapon-tile__placeholder" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><line x1="22" x2="17" y1="12" y2="12"></line><line x1="7" x2="2" y1="12" y2="12"></line><line x1="12" x2="12" y1="7" y2="2"></line><line x1="12" x2="12" y1="22" y2="17"></line></svg></div>
+      <div style="min-width: 0;">
+        <div class="sd-weapon-card__name">R-301</div>
+        <div class="sd-weapon-card__meta">Assault rifle · 810 RPM</div>
+      </div>
+    </div>
+    <div role="radiogroup" aria-label="Weapon" class="sd-weapon-grid">
+      <button type="button" class="sd-weapon-tile" role="radio" aria-checked="false"><svg class="sd-weapon-tile__placeholder" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><line x1="22" x2="17" y1="12" y2="12"></line><line x1="7" x2="2" y1="12" y2="12"></line><line x1="12" x2="12" y1="7" y2="2"></line><line x1="12" x2="12" y1="22" y2="17"></line></svg><span class="sd-weapon-tile__name">Flatline</span><span class="sd-weapon-tile__meta">600 RPM</span></button>
+      <button type="button" class="sd-weapon-tile" role="radio" aria-checked="true"><svg class="sd-weapon-tile__placeholder" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><line x1="22" x2="17" y1="12" y2="12"></line><line x1="7" x2="2" y1="12" y2="12"></line><line x1="12" x2="12" y1="7" y2="2"></line><line x1="12" x2="12" y1="22" y2="17"></line></svg><span class="sd-weapon-tile__name">R-301</span><span class="sd-weapon-tile__meta">810 RPM</span></button>
+      <button type="button" class="sd-weapon-tile" role="radio" aria-checked="false"><svg class="sd-weapon-tile__placeholder" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><line x1="22" x2="17" y1="12" y2="12"></line><line x1="7" x2="2" y1="12" y2="12"></line><line x1="12" x2="12" y1="7" y2="2"></line><line x1="12" x2="12" y1="22" y2="17"></line></svg><span class="sd-weapon-tile__name">HAVOC</span><span class="sd-weapon-tile__meta">672 RPM</span></button>
+      <button type="button" class="sd-weapon-tile" role="radio" aria-checked="false"><svg class="sd-weapon-tile__placeholder" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><line x1="22" x2="17" y1="12" y2="12"></line><line x1="7" x2="2" y1="12" y2="12"></line><line x1="12" x2="12" y1="7" y2="2"></line><line x1="12" x2="12" y1="22" y2="17"></line></svg><span class="sd-weapon-tile__name">Hemlok</span><span class="sd-weapon-tile__meta">384 RPM</span></button>
+    </div>
+  </div>
+</div>
+<script>
+var grid = document.querySelector('[role="radiogroup"]');
+var names = { 'Flatline': ['Assault rifle', '600'], 'R-301': ['Assault rifle', '810'], 'HAVOC': ['Assault rifle', '672'], 'Hemlok': ['Assault rifle', '384'] };
+grid.addEventListener('click', function (event) {
+  var tile = event.target.closest('button');
+  if (!tile) return;
+  grid.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-checked', String(b === tile)); });
+  var name = tile.querySelector('.sd-weapon-tile__name').textContent;
+  document.querySelector('.sd-weapon-card__name').textContent = name;
+  document.querySelector('.sd-weapon-card__meta').textContent = names[name][0] + ' · ' + names[name][1] + ' RPM';
+});
+</script>

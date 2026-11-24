@@ -1,0 +1,37 @@
+<!-- @dsCard group="Navigation" height=300 width=1200 subtitle="Trainer and Studio top bars, and the Studio status bar" -->
+<div class="sd-preview" style="padding: 0; gap: 24px;">
+  <header class="sd-topbar">
+    <a href="#home" class="sd-brand" aria-label="Spraydown, home"><img src="/_blob/36a1df24b09baa2fe166fd5a45d05ea5" alt=""></a>
+    <nav aria-label="Main" class="sd-nav">
+      <a href="#train" class="sd-nav__link" aria-current="page">Train</a>
+      <a href="#patterns" class="sd-nav__link">Patterns</a>
+      <a href="#progress" class="sd-nav__link">Progress</a>
+    </nav>
+    <button type="button" class="sd-search"><svg class="sd-icon sd-icon--16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg><span class="sd-search__text">Search weapons</span><kbd class="sd-kbd">Ctrl K</kbd></button>
+    <div class="sd-topbar__end">
+      <label for="topbar-lang" class="sd-visually-hidden">Language</label>
+      <select id="topbar-lang" class="sd-select sd-select--quiet"><option>English</option><option>Русский</option><option>中文</option></select>
+      <button type="button" class="sd-btn sd-btn--icon sd-btn--compact" aria-label="Help"><svg class="sd-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg></button>
+      <button type="button" class="sd-btn sd-btn--icon sd-btn--compact" aria-label="Settings"><svg class="sd-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"></line><line x1="10" x2="3" y1="4" y2="4"></line><line x1="21" x2="12" y1="12" y2="12"></line><line x1="8" x2="3" y1="12" y2="12"></line><line x1="21" x2="16" y1="20" y2="20"></line><line x1="12" x2="3" y1="20" y2="20"></line><line x1="14" x2="14" y1="2" y2="6"></line><line x1="8" x2="8" y1="10" y2="14"></line><line x1="16" x2="16" y1="18" y2="22"></line></svg></button>
+    </div>
+  </header>
+  <div style="font-size: 13px;">
+    <header class="sd-topbar sd-topbar--studio">
+      <a href="#studio" class="sd-brand sd-brand--sm" aria-label="Spraydown Studio, home"><img src="/_blob/36a1df24b09baa2fe166fd5a45d05ea5" alt=""><span class="sd-tag">Studio</span></a>
+      <span class="sd-topbar__rule" aria-hidden="true"></span>
+      <button type="button" class="sd-weapon-picker" aria-label="Weapon: R-99. Change weapon"><span class="sd-weapon-picker__name">R-99</span><span class="sd-weapon-picker__meta">SMG · Auto · 1080 RPM</span><svg class="sd-icon sd-icon--14" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--text-muted);"><path d="m6 9 6 6 6-6"></path></svg></button>
+      <div class="sd-topbar__end">
+        <span role="status" class="sd-badge sd-badge--warning sd-badge--lg"><span class="sd-badge__dot"></span>Unsaved changes</span>
+        <button type="button" class="sd-btn sd-btn--icon sd-btn--sm" aria-label="Undo"><svg class="sd-icon sd-icon--16" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg></button>
+        <button type="button" class="sd-btn sd-btn--icon sd-btn--sm" aria-label="Redo" disabled><svg class="sd-icon sd-icon--16" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"></path><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"></path></svg></button>
+        <button type="button" class="sd-btn sd-btn--icon sd-btn--sm" aria-label="Keyboard shortcuts"><svg class="sd-icon sd-icon--16" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"></path></svg></button>
+        <button type="button" class="sd-btn sd-btn--primary sd-btn--sm">Save spec <kbd class="sd-kbd sd-kbd--inset">Ctrl S</kbd></button>
+      </div>
+    </header>
+    <footer class="sd-statusbar" style="margin-top: 24px;">
+      <span>R-99 · 33 shots · scale 100%</span>
+      <span class="sd-statusbar__end">Job queue: idle</span>
+      <span>Storage: local</span>
+    </footer>
+  </div>
+</div>

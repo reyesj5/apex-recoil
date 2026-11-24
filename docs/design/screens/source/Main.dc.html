@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trainer, ready to practice</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0C0F}
+*{box-sizing:border-box}
+button,select,input{font:inherit;color:inherit}
+a{color:#C5F23A}a:hover{color:#DDF98A}
+:focus-visible{outline:2px solid #C5F23A;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-direction: column; background: #0A0C0F; color: #ECEFF3; font-family: Inter, system-ui, sans-serif; font-size: 14px;">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid #1C2128; background: #0D1014;">
+    <a href="#" aria-label="Spraydown, home" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #ECEFF3;">
+      <span style="width: 32px; height: 32px; border-radius: 8px; background: {{accent}}; color: #0A0C0F; display: flex; align-items: center; justify-content: center;">
+        <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><circle cx="16" cy="19.95" r="4.6" fill="currentColor"></circle><circle cx="48" cy="19.95" r="4.6" fill="currentColor"></circle><circle cx="24" cy="30.95" r="5.2" fill="currentColor"></circle><circle cx="40" cy="30.95" r="5.2" fill="currentColor"></circle><circle cx="32" cy="42.45" r="6.2" fill="currentColor"></circle></svg>
+      </span>
+      <span style="font-family: 'Chakra Petch', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.02em;">Spray<span style="color: {{accent}};">down</span></span>
+    </a>
+    <nav aria-label="Main" style="display: flex; gap: 4px;">
+      <a href="#" aria-current="page" style="padding: 8px 12px; border-radius: 8px; background: #171B21; color: #ECEFF3; font-weight: 600; text-decoration: none;">Train</a>
+      <a href="#" style="padding: 8px 12px; border-radius: 8px; color: #A7B0BC; font-weight: 500; text-decoration: none;">Patterns</a>
+      <a href="Progress.dc.html" style="padding: 8px 12px; border-radius: 8px; color: #A7B0BC; font-weight: 500; text-decoration: none;">Progress</a>
+    </nav>
+    <button type="button" style="flex: 1 1 240px; max-width: 420px; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #262C35; background: #111419; color: #848E9B; cursor: pointer;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <span style="flex: 1; text-align: left;">Search weapons</span>
+      <kbd style="font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 2px 6px; border-radius: 5px; border: 1px solid #343B46; color: #A7B0BC;">Ctrl K</kbd>
+    </button>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+      <label for="lang" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;">Language</label>
+      <select id="lang" style="height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #262C35; background: #111419; color: #ECEFF3; cursor: pointer;">
+        <option>English</option>
+        <option>Русский</option>
+        <option>中文</option>
+      </select>
+      <a href="Studio.dc.html" aria-label="Recoil Studio" style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #262C35; background: #111419; color: #A7B0BC; display: flex; align-items: center; justify-content: center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+      </a>
+      <button type="button" aria-label="Help" style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #262C35; background: #111419; color: #A7B0BC; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+      </button>
+      <button type="button" aria-label="Settings" style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #262C35; background: #111419; color: #A7B0BC; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"></line><line x1="10" x2="3" y1="4" y2="4"></line><line x1="21" x2="12" y1="12" y2="12"></line><line x1="8" x2="3" y1="12" y2="12"></line><line x1="21" x2="16" y1="20" y2="20"></line><line x1="12" x2="3" y1="20" y2="20"></line><line x1="14" x2="14" y1="2" y2="6"></line><line x1="8" x2="8" y1="10" y2="14"></line><line x1="16" x2="16" y1="18" y2="22"></line></svg>
+      </button>
+    </div>
+  </header>
+
+  <div style="flex: 1; display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 20px 20px; align-items: stretch;">
+
+    <aside aria-label="Loadout" style="flex: 1 1 300px; max-width: 340px; display: flex; flex-direction: column; gap: 14px; background: #111419; border: 1px solid #1C2128; border-radius: 14px; padding: 16px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <h2 style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #848E9B;">Loadout</h2>
+        <span style="font-size: 12px; color: #848E9B;">31 weapons</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 12px; background: #151920; border: 1px solid #232830;">
+        <div style="width: 112px; height: 56px; display: flex; align-items: center; justify-content: center;">
+          <sc-if value="{{sel.hasImg}}" hint-placeholder-val="{{ true }}">
+            <img src="{{sel.img}}" alt="{{sel.name}}" style="max-width: 112px; max-height: 56px; object-fit: contain;">
+          </sc-if>
+          <sc-if value="{{sel.noImg}}" hint-placeholder-val="{{ false }}">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#5B6470" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><line x1="22" x2="17" y1="12" y2="12"></line><line x1="7" x2="2" y1="12" y2="12"></line><line x1="12" x2="12" y1="7" y2="2"></line><line x1="12" x2="12" y1="22" y2="17"></line></svg>
+          </sc-if>
+        </div>
+        <div style="min-width: 0;">
+          <div style="font-family: 'Chakra Petch', sans-serif; font-size: 22px; font-weight: 700; line-height: 1.1;">{{sel.name}}</div>
+          <div style="margin-top: 4px; font-size: 12px; color: #A7B0BC;">{{sel.meta}}</div>
+        </div>
+      </div>
+
+      <div style="position: relative;">
+        <label for="weapon-search" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;">Filter weapons</label>
+        <input id="weapon-search" type="search" placeholder="Filter weapons" style="width: 100%; height: 38px; padding: 0 12px; border-radius: 9px; border: 1px solid #646D79; background: #0D1014; color: #ECEFF3; font-size: 13px;">
+      </div>
+
+      <div role="group" aria-label="Weapon class" style="display: flex; flex-wrap: wrap; gap: 6px;">
+        <sc-for list="{{cats}}" as="c" hint-placeholder-count="8">
+          <button type="button" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}" style="{{c.style}}">{{c.label}} <span style="{{c.countStyle}}">{{c.count}}</span></button>
+        </sc-for>
+      </div>
+
+      <div style="max-height: 292px; overflow-y: auto; padding-right: 4px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <sc-for list="{{weapons}}" as="w" hint-placeholder-count="8">
+          <button type="button" aria-pressed="{{w.pressed}}" onClick="{{w.pick}}" style="{{w.style}}">
+            <sc-if value="{{w.hasImg}}" hint-placeholder-val="{{ true }}">
+              <img src="{{w.img}}" alt="" style="max-width: 100%; height: 34px; object-fit: contain;">
+            </sc-if>
+            <sc-if value="{{w.noImg}}" hint-placeholder-val="{{ false }}">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#5B6470" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><line x1="22" x2="17" y1="12" y2="12"></line><line x1="7" x2="2" y1="12" y2="12"></line><line x1="12" x2="12" y1="7" y2="2"></line><line x1="12" x2="12" y1="22" y2="17"></line></svg>
+            </sc-if>
+            <span style="font-size: 13px; font-weight: 600; color: #ECEFF3;">{{w.name}}</span>
+            <span style="font-size: 11px; color: #848E9B;">{{w.rpm}}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h3 style="margin: 0; font-size: 13px; font-weight: 600;">Magazine</h3>
+          <span style="font-size: 12px; color: #848E9B;">{{sel.magSummary}}</span>
+        </div>
+        <div role="group" aria-label="Magazine" style="{{tierGrid}}">
+          <sc-for list="{{tiers}}" as="t" hint-placeholder-count="5">
+            <button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="{{t.style}}">
+              <span style="{{t.bar}}"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: #ECEFF3;">{{t.size}}</span>
+              <span style="font-size: 10px; color: #A7B0BC;">{{t.label}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 4px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <span id="fire-mode-label" style="font-size: 13px; font-weight: 600;">Fire mode</span>
+          <div role="group" aria-labelledby="fire-mode-label" style="display: flex; padding: 3px; gap: 2px; background: #0D1014; border: 1px solid #262C35; border-radius: 9px;">
+            <button type="button" aria-pressed="true" style="height: 28px; padding: 0 12px; border-radius: 6px; border: 0; background: #262C35; box-shadow: inset 0 0 0 1px #646D79; color: #ECEFF3; font-size: 12px; font-weight: 600; cursor: pointer;">Auto</button>
+            <button type="button" aria-pressed="false" style="height: 28px; padding: 0 12px; border-radius: 6px; border: 0; background: transparent; color: #A7B0BC; font-size: 12px; font-weight: 600; cursor: pointer;">Single</button>
+          </div>
+        </div>
+        <label style="display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer;">
+          <span style="font-size: 13px; font-weight: 600;">Corrupted stock</span>
+          <input type="checkbox" role="switch" style="width: 36px; height: 20px; accent-color: {{accent}}; cursor: pointer;">
+        </label>
+        <sc-if value="{{sel.thermite}}" hint-placeholder-val="{{ false }}">
+          <label style="display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer;">
+            <span style="font-size: 13px; font-weight: 600;">Thermite grenade</span>
+            <input type="checkbox" role="switch" style="width: 36px; height: 20px; accent-color: {{accent}}; cursor: pointer;">
+          </label>
+        </sc-if>
+      </div>
+    </aside>
+
+    <main style="flex: 999 1 560px; min-width: 0; display: flex;">
+      <section aria-label="Practice range" style="position: relative; flex: 1; min-height: 600px; border-radius: 14px; border: 1px solid #1C2128; background-color: #0D1014; background-image: radial-gradient(#1C222A 1px, transparent 1px); background-size: 24px 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+
+        <div role="toolbar" aria-label="Practice options" style="position: absolute; top: 14px; left: 14px; right: 14px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+          <div role="group" aria-label="Mode" style="display: flex; padding: 3px; gap: 2px; background: #111419; border: 1px solid #262C35; border-radius: 10px;">
+            <sc-for list="{{modes}}" as="m" hint-placeholder-count="3">
+              <button type="button" aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button>
+            </sc-for>
+          </div>
+          <div role="group" aria-label="Show results as" style="display: flex; padding: 3px; gap: 2px; background: #111419; border: 1px solid #262C35; border-radius: 10px;">
+            <sc-for list="{{views}}" as="v" hint-placeholder-count="3">
+              <button type="button" aria-pressed="{{v.pressed}}" onClick="{{v.pick}}" style="{{v.style}}">{{v.label}}</button>
+            </sc-for>
+          </div>
+          <label style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px; background: #111419; border: 1px solid #262C35; border-radius: 10px; font-size: 12px; color: #A7B0BC;">Replay
+            <select style="height: 28px; border: 0; background: transparent; color: #ECEFF3; font-weight: 600; cursor: pointer;">
+              <option>0.5×</option>
+              <option selected>1×</option>
+              <option>2×</option>
+            </select>
+          </label>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 72px 16px 64px;">
+          <svg role="img" aria-label="{{sel.patternLabel}}" viewBox="0 0 320 370" preserveAspectRatio="xMidYMin slice" style="{{sel.svgStyle}}">
+            <defs>
+              <marker id="pdot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2"><circle cx="5" cy="5" r="4" fill="#E7EBF0" fill-opacity="0.6"></circle></marker>
+            </defs>
+            <polyline points="{{sel.points}}" fill="none" stroke="#E7EBF0" stroke-opacity="0.22" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" marker-mid="url(#pdot)" marker-end="url(#pdot)"></polyline>
+            <circle cx="160" cy="26" r="9" fill="none" stroke="{{accent}}" stroke-width="2"></circle>
+            <line x1="160" x2="160" y1="12" y2="19" stroke="{{accent}}" stroke-width="2"></line>
+            <line x1="160" x2="160" y1="33" y2="40" stroke="{{accent}}" stroke-width="2"></line>
+            <line x1="146" x2="153" y1="26" y2="26" stroke="{{accent}}" stroke-width="2"></line>
+            <line x1="167" x2="174" y1="26" y2="26" stroke="{{accent}}" stroke-width="2"></line>
+          </svg>
+          <div style="text-align: center;">
+            <p style="margin: 0; font-size: 16px; font-weight: 600;">Click and hold anywhere in the range to spray</p>
+            <p style="margin: 6px 0 0; font-size: 13px; color: #A7B0BC;">Follow the path with your aim as the gun climbs, and your shots stay on the start point.</p>
+          </div>
+        </div>
+
+        <button type="button" style="position: absolute; left: 14px; bottom: 14px; display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid #262C35; background: #111419; color: #A7B0BC; font-size: 12px; cursor: pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="6"></rect><path d="M12 7v4"></path></svg>
+          <span>Sensitivity <strong style="color: #ECEFF3; font-family: 'JetBrains Mono', monospace;">5.0</strong></span>
+          <span>ADS <strong style="color: #ECEFF3; font-family: 'JetBrains Mono', monospace;">1.0×</strong></span>
+          <span>Invert Y <strong style="color: #ECEFF3;">off</strong></span>
+        </button>
+        <button type="button" aria-label="Mute sounds" style="position: absolute; right: 14px; bottom: 14px; width: 38px; height: 38px; border-radius: 10px; border: 1px solid #262C35; background: #111419; color: #A7B0BC; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+        </button>
+      </section>
+    </main>
+
+    <aside aria-label="Session" style="flex: 1 1 260px; max-width: 320px; display: flex; flex-direction: column; gap: 14px; background: #111419; border: 1px solid #1C2128; border-radius: 14px; padding: 16px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <h2 style="margin: 0; font-family: 'Chakra Petch', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #848E9B;">Session</h2>
+        <span style="font-size: 12px; color: #848E9B;">Today</span>
+      </div>
+      <div style="padding: 16px; border-radius: 12px; background: #151920; border: 1px solid #232830;">
+        <div style="font-size: 12px; color: #A7B0BC;">Last score</div>
+        <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: #A7B0BC;">Your first run today shows up here.</p>
+      </div>
+      <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <div style="padding: 12px; border-radius: 10px; background: #151920; border: 1px solid #232830;">
+          <dt style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #848E9B;">Tries</dt>
+          <dd style="margin: 4px 0 0; font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-weight: 700;">0</dd>
+        </div>
+        <div style="padding: 12px; border-radius: 10px; background: #151920; border: 1px solid #232830;">
+          <dt style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #848E9B;">Median</dt>
+          <dd style="margin: 4px 0 0; font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-weight: 700;"><span style="font-family: Inter, sans-serif; font-weight: 400; color: #848E9B;">–</span></dd>
+        </div>
+        <div style="padding: 12px; border-radius: 10px; background: #151920; border: 1px solid #232830;">
+          <dt style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #848E9B;">Best today</dt>
+          <dd style="margin: 4px 0 0; font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-weight: 700;"><span style="font-family: Inter, sans-serif; font-weight: 400; color: #848E9B;">–</span></dd>
+        </div>
+        <div style="padding: 12px; border-radius: 10px; background: #151920; border: 1px solid #232830;">
+          <dt style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #848E9B;">All-time best</dt>
+          <dd style="margin: 4px 0 0; font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-weight: 700; color: {{accent}};">86</dd>
+        </div>
+      </dl>
+      <div style="display: flex; align-items: center; justify-content: center; height: 72px; border-radius: 10px; border: 1px dashed #343B46; color: #848E9B; font-size: 12px; text-align: center; padding: 0 12px;">Your runs from today appear here as a trend.</div>
+      <a href="Progress.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px; border-radius: 10px; border: 1px solid #343B46; background: #171B21; color: #ECEFF3; font-weight: 600; text-decoration: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
+        Open progress
+      </a>
+      <div style="padding: 14px; border-radius: 12px; background: #151920; border: 1px solid #232830; display: flex; flex-direction: column; gap: 10px;">
+        <h3 style="margin: 0; font-size: 13px; font-weight: 600;">Before you start</h3>
+        <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #A7B0BC;">Turn off “Enhance pointer precision” in Windows mouse settings. <a href="#" style="color: {{accent}};">How</a></p>
+        <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #A7B0BC;">Enter your in-game sensitivity so patterns match the game. <a href="#" style="color: {{accent}};">Set it</a></p>
+      </div>
+      <footer style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid #1C2128; font-size: 11px; line-height: 1.5; color: #848E9B;">
+        <nav aria-label="Legal and help" style="display: flex; flex-wrap: wrap; gap: 4px 12px;">
+          <a href="#" style="color: #A7B0BC;">Privacy</a>
+          <a href="#" style="color: #A7B0BC;">Cookie settings</a>
+          <a href="#" style="color: #A7B0BC;">FAQ</a>
+          <a href="#" style="color: #A7B0BC;">Changelog</a>
+        </nav>
+        <span>© [YEAR] [OWNER NAME]</span>
+        <span>Based on <a href="https://github.com/metaflow/apex-recoil" style="color: #A7B0BC;">apex-recoil</a> by Mikhail Goncharov, Apache License 2.0.</span>
+        <span>This app is not affiliated with or sponsored by Electronic Arts Inc. or its licensors. Game content and materials are trademarks and copyrights of Electronic Arts Inc. or its licensors.</span>
+      </footer>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#C5F23A","options":["#C5F23A","#5AD2F4","#FF8A3D"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const accent = this.props.accent ?? '#C5F23A';
+    const hex = accent.replace('#', '');
+    const rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
+    const soft = 'rgba(' + rgb + ',0.12)';
+    const cat = s.cat || 'all';
+    const weaponId = s.weapon || 'r301';
+    const mode = s.mode || 'path';
+    const view = s.view || 'dots';
+    const set = (patch) => this.setState(Object.assign({}, this.state || {}, patch));
+    const W = [
+      ['flatline', 'Flatline', 'ar', 600, [19, 23, 27, 29, 35], '/_blob/521f61e671a8fd2e584691f9f1785ce3'],
+      ['r301', 'R-301', 'ar', 810, [21, 23, 28, 31, 37], '/_blob/761827c9b04a0938d6e2dc378c6bb190'],
+      ['havoc_tc', 'HAVOC', 'ar', 672, [18, 21, 25, 29, 35], '/_blob/6394dff45a5470b5d51f8e5c5a93fa4c'],
+      ['hemlok', 'Hemlok', 'ar', 384, [21, 24, 27, 30], '/_blob/b15f27f99756511beaf05ab79f976de6'],
+      ['nemesis', 'Nemesis', 'ar', 582, [20, 24, 28, 32, 36], '/_blob/61640da020eef4e1dc29356bfab5314b'],
+      ['alternator', 'Alternator', 'smg', 600, [18, 20, 22, 26, 32], '/_blob/e57b22484a3b285e7fa7a8f1c636900d'],
+      ['prowler', 'Prowler', 'smg', 800, [20, 25, 30, 35], '/_blob/d29b239ef800ae08ffef48f763bc4912'],
+      ['r99', 'R-99', 'smg', 1080, [18, 21, 24, 27, 33], '/_blob/f409ef6d92da1cbeace84aa33bd8dac7'],
+      ['volt', 'Volt', 'smg', 720, [20, 22, 24, 27, 32], '/_blob/3c38aa15d2c41d0c4ff9c431fae6ed7b'],
+      ['car', 'C.A.R.', 'smg', 930, [20, 23, 26, 30, 36], '/_blob/86d76767d5cd1058d536817af23fa64a'],
+      ['devotion_tc', 'Devotion', 'lmg', 900, [36, 40, 44, 48], '/_blob/d0318f6e457565b7ec803cb07be9a901'],
+      ['lstar', 'L-STAR', 'lmg', 600, [24, 26, 28, 30], '/_blob/34a3bdef7fc453dfdab6e46f080eef94'],
+      ['spitfire', 'Spitfire', 'lmg', 540, [35, 40, 45, 50], '/_blob/3cd1a96435d0da136b01687856363814'],
+      ['rampage', 'Rampage', 'lmg', 300, [28, 32, 36, 40], '/_blob/c1cf38b7fb295ed5a025daa42044d188'],
+      ['g7_scout', 'G7 Scout', 'marksman', 246, [10, 12, 14, 26], ''],
+      ['triple_take', 'Triple Take', 'marksman', 81, [12], ''],
+      ['bocek', 'Bocek Bow', 'marksman', 180, [40], ''],
+      ['3030_repeater', '30-30 Repeater', 'marksman', 139, [6, 7, 8, 10], ''],
+      ['charge_rifle', 'Charge Rifle', 'sniper', 26, [6, 7, 8, 9], ''],
+      ['longbow', 'Longbow', 'sniper', 78, [6, 8, 10, 12], ''],
+      ['sentinel', 'Sentinel', 'sniper', 38, [4, 5, 6, 7], ''],
+      ['kraber', 'Kraber', 'sniper', 25, [4], ''],
+      ['eva8', 'EVA-8', 'shotgun', 193, [8], ''],
+      ['mastiff', 'Mastiff', 'shotgun', 79, [5], ''],
+      ['mozambique', 'Mozambique', 'shotgun', 202, [5], ''],
+      ['mozambique_akimbo', 'Mozambique Akimbo', 'shotgun', 225, [10], ''],
+      ['peacekeeper', 'Peacekeeper', 'shotgun', 51, [5], ''],
+      ['re45', 'RE-45', 'pistol', 780, [20, 21, 23, 26], ''],
+      ['p2020', 'P2020', 'pistol', 420, [9, 10, 11, 12, 15], ''],
+      ['p2020_akimbo', 'P2020 Akimbo', 'pistol', 480, [18, 20, 22, 24, 30], ''],
+      ['wingman', 'Wingman', 'pistol', 168, [5, 6, 7, 8, 10], '']
+    ];
+    // Each weapon's path to follow, from the start point at the top
+    const P = {"r99":"160,26 157,39 156,51 159,62 160,80 155,103 149,123 143,137 139,155 138,168 143,184 149,199 150,212 152,228 150,233 145,235 139,241 132,240 139,250 147,251 156,254 160,257 165,259 160,262 153,260 145,260 141,262 146,266 153,269 148,276 150,276 151,276 151,276","r301":"160,26 155,37 155,53 149,63 150,75 148,85 149,91 147,96 144,98 140,102 134,101 132,105 136,112 141,118 147,123 153,124 158,124 162,124 163,129 161,133 156,137 151,138 147,141 141,140 138,139 134,139 131,141 131,144 131,148 129,151 127,153 126,153 125,154 124,154 122,154 121,154 120,154","flatline":"160,26 166,47 168,55 178,70 187,79 188,91 187,103 182,106 172,102 169,100 166,105 165,113 170,116 180,124 189,124 199,124 200,132 204,141 213,147 223,154 227,154 229,157 227,164 221,166 213,170 207,172 200,174 194,172 192,180 192,180 190,181 189,182 188,183 187,184 185,184","volt":"160,26 155,38 154,54 155,72 151,82 151,103 143,115 141,133 145,147 140,161 141,170 148,173 157,172 162,177 168,184 166,189 160,189 156,190 157,194 161,197 166,199 169,199 170,200 170,202 171,205 171,211 173,212 173,212 174,213 176,213 177,214 179,214","alternator":"160,26 163,43 158,56 163,71 158,85 164,102 159,116 162,128 154,138 160,153 149,162 155,172 145,176 147,180 142,184 151,195 149,204 157,208 150,218 161,217 158,227 168,224 162,231 172,232 168,237 174,240 171,242 171,242 169,243 168,243 168,243 166,243","devotion_tc":"160,26 161,63 161,100 161,124 164,149 167,168 171,182 174,196 181,202 184,211 188,219 193,227 199,233 206,236 214,237 222,238 226,236 233,238 232,244 232,250 227,255 223,258 217,262 210,265 202,270 199,273 199,278 197,284 193,289 187,293 181,295 174,294 168,294 162,298 158,302 156,307 153,311 155,314 156,319 154,324 151,327 147,329 146,331 146,334 149,337 154,346 159,352 166,356","havoc_tc":"160,26 154,34 151,45 154,55 152,65 151,70 156,83 158,87 158,99 154,100 149,104 145,102 141,102 139,111 142,112 147,117 152,113 157,112 156,121 154,132 156,136 158,138 160,149 162,155 172,164 176,170 175,176 174,184 173,190 174,194 174,195 175,195 175,196 176,196 176,196","prowler":"160,26 164,45 165,55 164,69 165,77 174,87 179,98 180,108 185,117 187,128 193,133 197,140 196,148 192,154 179,156 168,159 163,163 157,168 161,176 160,186 153,194 152,201 150,208 157,212 163,216 166,223 166,226 159,231 149,231 142,231 134,234 131,237 123,244 123,249 127,254","re45":"160,26 158,39 157,50 150,62 146,75 143,87 133,97 127,103 118,110 110,116 105,123 99,127 100,134 94,141 93,147 90,155 91,162 86,169 83,173 77,175 81,178 76,181 72,187 66,190 62,195 61,196","spitfire":"160,26 161,41 162,47 167,56 171,63 173,72 173,81 171,84 166,83 165,81 163,84 161,91 164,94 170,98 175,100 180,98 183,99 185,107 187,115 192,118 197,120 199,120 198,126 193,128 190,131 186,133 181,135 176,132 174,137 172,143 171,146 166,145 164,143 161,146 160,152 163,153 168,157 171,158 177,156 180,157 181,165 182,173 186,178 192,180 194,181 193,187 189,191 187,194 182,198 177,201 172,198 170,204 167,210 168,215 161,214","lstar":"160,26 172,38 190,43 203,62 198,77 192,82 186,91 179,110 178,125 177,135 179,148 175,161 176,172 175,184 171,195 170,207 168,217 171,227 174,235 173,240 170,249 170,260 166,268 163,277 164,286 166,295 167,304 159,317 158,317 157,318","rampage":"160,26 158,40 167,49 171,64 164,74 163,91 158,102 152,110 145,118 141,125 139,135 147,140 155,146 160,153 167,155 172,159 178,165 177,171 174,175 178,179 174,185 178,190 181,196 178,203 181,208 185,214 181,221 186,229 192,238 196,246 195,256 192,263 194,269 191,275 194,282 197,288 194,296 199,299 203,303 200,307","car":"160,26 162,41 167,52 166,66 174,80 174,92 180,108 186,118 186,134 177,149 175,166 171,170 162,170 156,171 155,178 162,184 174,184 180,189 179,194 173,197 167,198 158,198 156,199 156,203 160,209 166,213 167,220 169,220 170,221 171,221 172,222 174,221 175,221 177,221 178,222 179,222","nemesis":"160,26 159,32 158,39 158,44 158,42 159,49 160,54 161,61 161,58 159,65 159,71 158,77 158,75 159,81 160,87 161,94 161,91 160,97 159,104 159,110 159,107 159,113 160,120 161,126 161,124 160,129 159,136 158,141 158,139 160,145 161,151 162,158 162,155 161,161 160,168 159,175","hemlok":"160,26 158,33 157,41 157,38 158,46 160,54 159,51 158,58 156,65 157,62 158,70 159,78 160,75 158,84 156,93 156,90 158,97 159,104 159,101 157,110 156,118 155,114 157,122 159,130 158,127 157,135 155,143 155,140 157,148 158,156","wingman":"160,26 159,41 159,54 158,68 157,82 157,96 156,109 155,123 157,137 157,152","p2020":"160,26 159,33 159,40 159,47 160,54 159,61 158,68 159,74 160,81 159,88 158,94 157,100 157,107 156,114 157,120","p2020_akimbo":"160,26 163,32 157,38 162,43 157,48 162,54 157,60 163,65 157,71 163,77 158,83 163,88 157,94 163,100 157,106 163,111 157,116 163,122 157,127 162,133 157,140 163,146 158,151 162,155 157,161 162,166 157,172 163,178 158,183 163,189","peacekeeper":"160,26 161,45 162,65 163,82 164,99","mastiff":"160,26 161,43 162,59 160,76 161,93","eva8":"160,26 160,39 161,52 160,66 160,78 160,91 160,104 160,117","mozambique":"160,26 161,36 161,48 162,59 162,69","mozambique_akimbo":"160,26 164,35 157,45 164,54 156,62 163,71 156,82 164,92 156,101 163,112","g7_scout":"160,26 161,35 162,45 162,54 163,63 164,71 163,80 162,89 163,98 164,107 165,117 165,128 166,137 165,146 164,155 163,165 163,175 164,185 163,194 164,204 163,214 163,223 164,231 165,242 166,251 165,260","triple_take":"160,26 160,40 161,54 162,65 162,80 162,94 163,107 163,121 162,134 163,147 163,159 164,172","3030_repeater":"160,26 159,41 160,57 161,70 162,85 163,98 164,114 165,128 164,142 163,156","bocek":"160,26 159,29 160,32 159,35 159,39 159,42 159,45 159,49 159,52 159,55 160,59 159,62 159,65 159,69 159,72 159,76 159,79 159,83 159,87 158,91 158,94 158,97 158,101 158,104 158,108 158,111 158,115 158,118 158,121 157,124 157,128 157,131 157,135 157,138 157,141 157,144 157,148 157,151 156,154 156,158","charge_rifle":"160,26 160,44 160,64 160,86 160,103 160,124 160,145 160,167 160,187","longbow":"160,26 160,43 161,63 162,84 161,102 162,120 161,138 161,155 160,174 160,193 159,211 159,229","sentinel":"160,26 160,49 159,71 160,93 160,118 160,141 160,162","kraber":"160,26 160,58 161,85 160,114"};
+    const catNames = { all: 'All', ar: 'AR', smg: 'SMG', lmg: 'LMG', marksman: 'Marksman', sniper: 'Sniper', shotgun: 'Shotgun', pistol: 'Pistol' };
+    const catLong = { ar: 'Assault rifle', smg: 'SMG', lmg: 'LMG', marksman: 'Marksman', sniper: 'Sniper rifle', shotgun: 'Shotgun', pistol: 'Pistol' };
+    const chip = 'display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; ';
+    const cats = Object.keys(catNames).map((id) => ({
+      label: catNames[id],
+      count: id === 'all' ? W.length : W.filter((w) => w[2] === id).length,
+      pressed: String(id === cat),
+      countStyle: 'font-weight: 500; color: ' + (id === cat ? '#A7B0BC' : '#848E9B') + ';',
+      style: chip + (id === cat ? 'border: 1px solid ' + accent + '; background: ' + soft + '; color: #ECEFF3;' : 'border: 1px solid #262C35; background: #171B21; color: #A7B0BC;'),
+      pick: () => set({ cat: id })
+    }));
+    const tile = 'display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 92px; padding: 8px; border-radius: 10px; cursor: pointer; text-align: center; ';
+    const weapons = W.filter((w) => cat === 'all' || w[2] === cat).map((w) => ({
+      name: w[1],
+      rpm: w[3] + ' RPM',
+      img: w[5],
+      hasImg: !!w[5],
+      noImg: !w[5],
+      pressed: String(w[0] === weaponId),
+      style: tile + (w[0] === weaponId ? 'border: 1px solid ' + accent + '; background: ' + soft + ';' : 'border: 1px solid #232830; background: #151920;'),
+      pick: () => set({ weapon: w[0] })
+    }));
+    const sel = W.find((w) => w[0] === weaponId) || W[1];
+    const labels = ['Base', 'Lv 1', 'Lv 2', 'Lv 3', 'Corrupted'];
+    const colors = ['#8C96A3', '#E7EBF0', '#4C8DFF', '#B26BFF', '#FF4D5E'];
+    const tier = Math.min(s.tier ?? 2, sel[4].length - 1);
+    const magTile = 'display: flex; flex-direction: column; gap: 6px; padding: 8px 4px 7px; border-radius: 9px; cursor: pointer; text-align: center; ';
+    const tiers = sel[4].map((size, i) => ({
+      size: size,
+      label: sel[4].length === 1 ? 'Standard' : labels[i],
+      bar: 'display: block; height: 3px; border-radius: 2px; background: ' + (sel[4].length === 1 ? '#8C96A3' : colors[i]) + ';',
+      pressed: String(i === tier),
+      style: magTile + (i === tier ? 'border: 1px solid ' + accent + '; background: ' + soft + ';' : 'border: 1px solid #262C35; background: #151920;'),
+      pick: () => set({ tier: i })
+    }));
+    const seg = 'height: 30px; padding: 0 12px; border-radius: 7px; border: 0; font-size: 12px; font-weight: 600; cursor: pointer; ';
+    const segStyle = (on) => seg + (on ? 'background: ' + accent + '; color: #0A0C0F;' : 'background: transparent; color: #A7B0BC;');
+    const modes = [['path', 'Follow path'], ['still', 'Still target'], ['moving', 'Moving target']].map((m) => ({ label: m[1], pressed: String(m[0] === mode), style: segStyle(m[0] === mode), pick: () => set({ mode: m[0] }) }));
+    const views = [['target', 'Target'], ['dots', 'Dots'], ['lines', 'Lines']].map((v) => ({ label: v[1], pressed: String(v[0] === view), style: segStyle(v[0] === view), pick: () => set({ view: v[0] }) }));
+    return {
+      accent: accent,
+      cats: cats,
+      weapons: weapons,
+      tiers: tiers,
+      tierGrid: 'display: grid; grid-template-columns: repeat(' + tiers.length + ', minmax(0, 1fr)); gap: 6px;',
+      modes: modes,
+      views: views,
+      sel: {
+        name: sel[1],
+        meta: catLong[sel[2]] + ' · ' + sel[3] + ' RPM',
+        img: sel[5],
+        hasImg: !!sel[5],
+        noImg: !sel[5],
+        points: P[sel[0]],
+        // As tall as the path: the start point stays at the top and the instructions follow the path
+        svgStyle: 'width: 320px; max-width: 100%; height: ' + (Math.max.apply(null, P[sel[0]].split(' ').map((p) => Number(p.split(',')[1]))) + 24) + 'px;',
+        patternLabel: sel[1] + ': the path to follow',
+        thermite: sel[0] === 'rampage',
+        magSummary: tiers[tier].size + ' rounds'
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

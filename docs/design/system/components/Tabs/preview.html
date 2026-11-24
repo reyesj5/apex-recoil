@@ -1,0 +1,18 @@
+<!-- @dsCard group="Selection" height=130 subtitle="Studio capture methods" -->
+<div class="sd-preview" style="font-size: 13px;">
+  <div class="sd-panel" style="max-width: 340px;">
+    <div role="tablist" aria-label="Capture method" class="sd-tabs">
+      <button type="button" role="tab" class="sd-tabs__tab" aria-selected="true">Live</button>
+      <button type="button" role="tab" class="sd-tabs__tab" aria-selected="false">Screenshots</button>
+      <button type="button" role="tab" class="sd-tabs__tab" aria-selected="false">Manual</button>
+    </div>
+  </div>
+</div>
+<script>
+var list = document.querySelector('[role="tablist"]');
+list.addEventListener('click', function (event) {
+  var tab = event.target.closest('[role="tab"]');
+  if (!tab) return;
+  list.querySelectorAll('[role="tab"]').forEach(function (t) { t.setAttribute('aria-selected', String(t === tab)); });
+});
+</script>

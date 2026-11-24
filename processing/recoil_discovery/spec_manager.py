@@ -4,10 +4,43 @@ Handles reading, validating, comparing, and updating weapon specifications
 in client/specs.json and client/raw_recoils.json.
 """
 
+import os
 import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
+
+
+def spec_marks_valid(spec: Dict[str, Any]) -> bool:
+    """
+    Whether what a spec says about its numbers can be saved (the cases are shared/spec-marks.cases.json):
+    known_shots, how many of the pattern's first shots are real, with none meaning all of them
+    (docs/corrections.md, C8); and checked_patch, the game patch they were checked against.
+    """
+    if "known_shots" in spec:
+        known = spec["known_shots"]
+        # bool is an int in Python, and a JSON true is no count
+        if type(known) is not int or not 0 <= known <= len(spec.get("x", [])):
+            return False
+    if "checked_patch" in spec:
+        patch = spec["checked_patch"]
+        if patch is not None and (not isinstance(patch, str) or not patch):
+            return False
+    return True
+
+
+def has_unknown_shots(spec: Dict[str, Any]) -> bool:
+    """Whether the spec holds shots that aren't real, so a new recording must not blend into them."""
+    known = spec.get("known_shots")
+    return known is not None and known < len(spec.get("x", []))
+
+
+def read_installed_patch(game_dir: Path) -> str:
+    """The patch of a game installed in this folder, as its gameversion.txt names it. Only reads."""
+    version_file = Path(game_dir) / "gameversion.txt"
+    if not version_file.is_file():
+        raise FileNotFoundError(f"No gameversion.txt in {game_dir}: is that the game's folder?")
+    return version_file.read_text(encoding="utf-8").strip()
 
 
 class SpecManager:
@@ -19,6 +52,8 @@ class SpecManager:
         base_dir = Path(__file__).resolve().parent.parent.parent
         self.specs_path = specs_path or (base_dir / "client" / "specs.json")
         self.raw_recoils_path = raw_recoils_path or (base_dir / "client" / "raw_recoils.json")
+        # Beside the specs, so a throwaway copy of them has its own
+        self.patch_path = self.specs_path.with_name("patch.json")
         self._cached_specs: Optional[List[Dict[str, Any]]] = None
 
     def load_specs(self, reload: bool = False) -> List[Dict[str, Any]]:
@@ -29,10 +64,24 @@ class SpecManager:
         return self._cached_specs
 
     def save_specs(self, specs: List[Dict[str, Any]]) -> None:
-        """Write weapon specifications back to client/specs.json formatted cleanly."""
+        """Write weapon specifications back to client/specs.json formatted cleanly and atomically."""
         self._cached_specs = specs
-        with open(self.specs_path, 'w', encoding='utf-8') as f:
+        tmp_path = self.specs_path.with_name(f"{self.specs_path.name}.tmp.{os.getpid()}")
+        with open(tmp_path, 'w', encoding='utf-8') as f:
             json.dump(specs, f, indent=4)
+        tmp_path.replace(self.specs_path)
+
+    def current_patch(self) -> str:
+        """The game patch patterns are checked against (client/patch.json)."""
+        return json.loads(self.patch_path.read_text(encoding="utf-8"))["current"]
+
+    def set_current_patch(self, patch: str) -> None:
+        """Makes `patch` the current one, keeping the rest of the file, with an atomic swap."""
+        data = json.loads(self.patch_path.read_text(encoding="utf-8"))
+        data["current"] = patch
+        tmp_path = self.patch_path.with_name(f"{self.patch_path.name}.tmp.{os.getpid()}")
+        tmp_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        tmp_path.replace(self.patch_path)
 
     def get_weapon_spec(self, weapon_name: str) -> Optional[Dict[str, Any]]:
         """Retrieve spec for a specific weapon name with alias normalization."""
@@ -167,6 +216,12 @@ class SpecManager:
                 # Merge spec fields, preserving existing audio and metadata if omitted in new_spec
                 for k, v in new_spec.items():
                     w[k] = v
+                # A measured pattern is real all the way through
+                if "x" in new_spec and "known_shots" in w and "known_shots" not in new_spec:
+                    w["known_shots"] = len(new_spec["x"])
+                # A check vouches for the numbers it saw: new ones wait for their own
+                if "x" in new_spec and w.get("checked_patch") and "checked_patch" not in new_spec:
+                    w["checked_patch"] = None
                 found = True
                 break
 

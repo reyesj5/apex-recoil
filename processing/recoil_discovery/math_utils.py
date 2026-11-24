@@ -104,8 +104,3 @@ def scale_to_game_distances(
     scaled_x = [round(float(x * scale), 2) for x in x_coords]
     scaled_y = [round(float(y * scale), 2) for y in y_coords]
     return scaled_x, scaled_y
-
-
-def extend_array(lst: list, desired_length: int, fill_value: Any = 0) -> list:
-    """Pads a list to desired length with a fill value."""
-    return lst + [fill_value] * max(0, desired_length - len(lst))
